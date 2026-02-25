@@ -1,98 +1,88 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import React from 'react';
+import { View, Text, ScrollView, TouchableOpacity, Image } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useAppSelector } from '../../store/hooks';
+import { FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+export default function DashboardScreen() {
+  const { user, role } = useAppSelector((state) => state.auth);
 
-export default function HomeScreen() {
+  const mockCases = [
+    { id: '1', patient: 'أحمد محمد', treatment: 'حشو عصب', status: 'Pending', time: '10:00 AM' },
+    { id: '2', patient: 'سارة محمود', treatment: 'تقويم أسنان', status: 'Accepted', time: '01:30 PM' },
+  ];
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+    <SafeAreaView className="flex-1 bg-slate-50">
+      <ScrollView className="flex-1 px-5 pt-4">
+        
+        <View className="flex-row justify-between items-center mb-8">
+          <View>
+            <Text className="text-slate-500 font-medium">Welcome back,</Text>
+            <Text className="text-2xl font-black text-slate-900">
+              {role === 'Doctor' ? 'Dr. ' : ''}{user?.fullName || 'User'} 👋
+            </Text>
+          </View>
+          <TouchableOpacity className="w-12 h-12 bg-white rounded-2xl items-center justify-center shadow-sm border border-slate-100">
+            <MaterialCommunityIcons name="bell-outline" size={24} color="#1e293b" />
+          </TouchableOpacity>
+        </View>
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+        {/* Stats Cards */}
+        <View className="flex-row justify-between mb-8">
+          <View className="bg-blue-600 p-4 rounded-[24px] w-[48%] shadow-lg shadow-blue-300">
+            <FontAwesome5 name="briefcase-medical" size={20} color="white" />
+            <Text className="text-white/80 mt-2 font-medium">Total Cases</Text>
+            <Text className="text-white text-2xl font-black">12</Text>
+          </View>
+          <View className="bg-white p-4 rounded-[24px] w-[48%] border border-slate-100 shadow-sm">
+            <FontAwesome5 name="clock" size={20} color="#2563eb" />
+            <Text className="text-slate-500 mt-2 font-medium">Pending</Text>
+            <Text className="text-slate-900 text-2xl font-black">04</Text>
+          </View>
+        </View>
+
+        {/* Recent Cases Section */}
+        <View className="flex-row justify-between items-end mb-4">
+          <Text className="text-lg font-bold text-slate-900">Recent Cases</Text>
+          <TouchableOpacity>
+            <Text className="text-blue-600 font-bold">View All</Text>
+          </TouchableOpacity>
+        </View>
+
+        {mockCases.map((item) => (
+          <TouchableOpacity 
+            key={item.id}
+            className="bg-white p-4 rounded-2xl mb-3 flex-row items-center border border-slate-50 shadow-sm"
+          >
+            <View className={`w-12 h-12 rounded-xl items-center justify-center ${item.status === 'Pending' ? 'bg-orange-100' : 'bg-green-100'}`}>
+              <FontAwesome5 
+                name="user-alt" 
+                size={18} 
+                color={item.status === 'Pending' ? '#f97316' : '#22c55e'} 
+              />
+            </View>
+            <View className="ml-4 flex-1">
+              <Text className="text-slate-900 font-bold text-base">{item.patient}</Text>
+              <Text className="text-slate-500 text-sm">{item.treatment}</Text>
+            </View>
+            <View className="items-end">
+              <Text className="text-slate-900 font-bold">{item.time}</Text>
+              <Text className={`text-[10px] font-black uppercase tracking-tighter ${item.status === 'Pending' ? 'text-orange-500' : 'text-green-500'}`}>
+                {item.status}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        ))}
+
+        {/* Quick Actions */}
+        <Text className="text-lg font-bold text-slate-900 mt-6 mb-4">Quick Actions</Text>
+        <TouchableOpacity className="bg-slate-900 p-4 rounded-2xl flex-row items-center justify-center mb-10">
+          <FontAwesome5 name="plus" size={16} color="white" />
+          <Text className="text-white font-bold ml-2">Add New Case Request</Text>
+        </TouchableOpacity>
+
+      </ScrollView>
+    </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-  },
-});

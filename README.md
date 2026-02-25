@@ -1,50 +1,150 @@
-# Welcome to your Expo app 👋
+# 🦷 UniDent Care Mobile
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+<p align="center">
+<h1 align="center">🦷 UniDent Care Mobile</h1>
+<p align="center">
+A professional cross-platform mobile application for dental healthcare management.
+Built with React Native & Expo to serve Patients, Doctors, and Dental Students.
+</p>
+</p>
 
-## Get started
+<p align="center">
+<img src="[https://img.shields.io/badge/Expo-52-black?logo=expo](https://www.google.com/search?q=https://img.shields.io/badge/Expo-52-black%3Flogo%3Dexpo)" alt="Expo" />
+<img src="[https://img.shields.io/badge/React_Native-0.76-61DAFB?logo=react](https://www.google.com/search?q=https://img.shields.io/badge/React_Native-0.76-61DAFB%3Flogo%3Dreact)" alt="React Native" />
+<img src="[https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript)" alt="TypeScript" />
+<img src="[https://img.shields.io/badge/NativeWind-4-06B6D4?logo=tailwindcss](https://www.google.com/search?q=https://img.shields.io/badge/NativeWind-4-06B6D4%3Flogo%3Dtailwindcss)" alt="NativeWind" />
+</p>
 
-1. Install dependencies
+---
 
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## ⚡ Quick Start
 
 ```bash
-npm run reset-project
+# Install dependencies
+npm install
+
+# Start development server
+npx expo start -c
+
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Scan the QR code with **Expo Go** (Android/iOS) to view the app.
 
-## Learn more
+---
 
-To learn more about developing your project with Expo, look at the following resources:
+## 🛠️ Mobile Tech Stack
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+<table>
+<tr>
+<td><b>Framework</b></td>
+<td>React Native (Expo SDK 52)</td>
+</tr>
+<tr>
+<td><b>Navigation</b></td>
+<td>Expo Router (File-based Routing)</td>
+</tr>
+<tr>
+<td><b>Styling</b></td>
+<td>NativeWind v4 (Tailwind CSS)</td>
+</tr>
+<tr>
+<td><b>State</b></td>
+<td>Redux Toolkit + RTK Query</td>
+</tr>
+<tr>
+<td><b>Validation</b></td>
+<td>Zod + React Hook Form</td>
+</tr>
+<tr>
+<td><b>HTTP Client</b></td>
+<td>Axios</td>
+</tr>
+<tr>
+<td><b>Icons</b></td>
+<td>Lucide React Native</td>
+</tr>
+<tr>
+<td><b>Storage</b></td>
+<td>Expo Secure Store / MMKV</td>
+</tr>
+</table>
 
-## Join the community
+---
 
-Join our community of developers creating universal apps.
+## 📁 Project Structure (Feature-First)
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+The mobile app uses a hybrid structure between **Expo Router** for navigation and **Feature-based** logic for scalability:
+
+```
+src/
+├── app/                          # 🚏 Expo Router (File-based Routing)
+│   ├── (auth)/                   # Authentication Group
+│   │   ├── login.tsx
+│   │   ├── signup/               # Multi-role Signup
+│   │   └── forget-password.tsx
+│   ├── (tabs)/                   # Main App Navigation
+│   │   ├── dashboard/            # Role-based Dashboards
+│   │   ├── cases/                # Case Management
+│   │   └── profile/              # User Settings
+│   └── _layout.tsx               # Root Layout & Providers
+│
+├── features/                     # 🧠 Business Logic Modules
+│   ├── auth/                     # Auth Logic, Hooks & Services
+│   ├── cases/                    # Case handling & forms
+│   ├── dashboard/                # Analytics & Stats logic
+│   └── students/                 # Student-Doctor relationship
+│
+├── components/                   # 🧩 Shared UI Components
+│   ├── ui/                       # Atom components (Buttons, Inputs)
+│   └── shared/                   # Common Layout components
+│
+├── store/                        # 🏪 Redux Global State
+├── services/                     # 🌐 Base API & Axios config
+├── styles/                       # 🎨 Tailwind Global CSS
+├── hooks/                        # 🛠️ Global Custom Hooks
+└── types/                        # 🏷️ Global TypeScript Definitions
+
+```
+
+---
+
+## 🧩 Feature Module Pattern
+
+Each feature in `src/features/` is self-contained:
+
+```
+feature/
+├── components/      # UI components specific to this feature
+├── hooks/           # Feature-specific logic (e.g., useCaseSubmit)
+├── schemas/         # Zod validation (Shared with Web)
+├── screens/         # Main Screen UI
+├── services/        # API calls (Axios/RTK Query)
+└── types/           # Feature-specific types
+
+```
+
+---
+
+## 🔗 Main Routes
+
+| Route | Description |
+| --- | --- |
+| `/(auth)/login` | Secure User Login |
+| `/(tabs)/dashboard` | Role-based Dashboard (Patient/Dr/Student) |
+| `/(tabs)/cases` | List of Dental Cases |
+| `/cases/[id]` | Detailed Case View |
+| `/add-case` | Multi-step Case Creation |
+| `/(tabs)/profile` | User Profile & App Settings |
+
+---
+
+## 📦 Key Dependencies
+
+| Package | Purpose |
+| --- | --- |
+| `expo-router` | Modern file-based navigation |
+| `nativewind` | Utility-first styling (Tailwind) |
+| `@reduxjs/toolkit` | Global state management |
+| `react-hook-form` | High-performance form handling |
+| `lucide-react-native` | Beautiful & consistent icons |
+| `axios` | Robust HTTP requests |

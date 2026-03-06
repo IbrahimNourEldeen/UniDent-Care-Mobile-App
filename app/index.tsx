@@ -1,182 +1,195 @@
-import React from "react";
+import { FontAwesome5 } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import * as SecureStore from "expo-secure-store";
 import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
+  ArrowRight,
+  ArrowUpRight,
+  GraduationCap,
+  ShieldCheck,
+  Stethoscope,
+  UserRound,
+} from "lucide-react-native";
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
   Dimensions,
+  ScrollView,
   StatusBar,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
-import {
-  Stethoscope,
-  GraduationCap,
-  UserRound,
-  ArrowRight,
-  ShieldCheck,
-  ChevronRight,
-  CircleDot,
-} from "lucide-react-native";
-import { FontAwesome5 } from "@expo/vector-icons";
 
 const { width } = Dimensions.get("window");
 
 export default function LandingScreen() {
   const router = useRouter();
+  const [isChecking, setIsChecking] = useState(true);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const token = await SecureStore.getItemAsync("token");
+        if (token) {
+          router.replace("/(screens)" as any);
+        } else {
+          setIsChecking(false);
+        }
+      } catch (e) {
+        setIsChecking(false);
+      }
+    };
+    checkAuth();
+  }, []);
 
   const roles = [
     {
       title: "Doctor",
-      desc: "Manage clinical cases, supervise students, and provide expert care.",
-      icon: <Stethoscope color="#2563eb" size={28} />,
+      desc: "Manage clinical cases & provide care.",
+      icon: <Stethoscope color="#2563eb" size={26} />,
       href: "/(auth)/doctor-signup",
-      bgColor: "bg-blue-50",
-      accentColor: "text-blue-600",
-      stats: "Verified Professionals",
-      tag: "Mentor",
+      bgLight: "bg-blue-50",
+      accent: "text-blue-600",
+      tag: "Professional",
     },
     {
       title: "Student",
-      desc: "Document clinical cases, learn from experts, and build your portfolio.",
-      icon: <GraduationCap color="#4f46e5" size={28} />,
+      desc: "Document cases & build portfolio.",
+      icon: <GraduationCap color="#7c3aed" size={26} />,
       href: "/(auth)/student-signup",
-      bgColor: "bg-indigo-50",
-      accentColor: "text-indigo-600",
-      stats: "Academic Track",
-      tag: "Learner",
+      bgLight: "bg-violet-50",
+      accent: "text-violet-600",
+      tag: "Academic",
     },
     {
       title: "Patient",
-      desc: "Access top-tier dental services and track your medical history.",
-      icon: <UserRound color="#0d9488" size={28} />,
+      desc: "Access top-tier dental services.",
+      icon: <UserRound color="#059669" size={26} />,
       href: "/(auth)/patient-signup",
-      bgColor: "bg-teal-50",
-      accentColor: "text-teal-600",
-      stats: "Quality Care",
-      tag: "Health",
+      bgLight: "bg-emerald-50",
+      accent: "text-emerald-600",
+      tag: "Care",
     },
   ];
 
+  // إذا كان يفحص الحالة لا نعرض شيئاً لمنع الوميض (Flicker)
+  if (isChecking) {
+    return (
+      <View className="flex-1 bg-white items-center justify-center">
+        <ActivityIndicator size="large" color="#2563eb" />
+      </View>
+    );
+  }
+
   return (
-    <SafeAreaView className="flex-1 bg-slate-50">
-      <StatusBar barStyle="dark-content" />
-      
-      {/* Header - Glassmorphism style */}
-      <View className="px-6 h-18 flex-row items-center justify-between bg-white/80 border-b border-slate-200">
-        <View className="flex-row items-center">
-          <View className="w-10 h-10 bg-blue-600 rounded-2xl items-center justify-center shadow-lg shadow-blue-300">
-            <FontAwesome5 name="tooth" size={20} color="white" />
+    <SafeAreaView className="flex-1 bg-white">
+      <StatusBar barStyle="dark-content" backgroundColor="white" />
+
+      {/* Floating Modern Navbar (Capsule Design) */}
+      <View className="px-5 pt-2 z-50 absolute top-12 left-0 right-0">
+        <View className="flex-row items-center justify-between bg-white/90 px-2 py-2 rounded-full shadow-xl shadow-slate-200 border border-slate-50">
+          <View className="flex-row items-center pl-2">
+            <View className="w-9 h-9 bg-blue-600 rounded-full items-center justify-center">
+              <FontAwesome5 name="tooth" size={16} color="white" />
+            </View>
+            <Text className="ml-3 text-lg font-black text-slate-900 tracking-tight">
+              UniDent<Text className="text-blue-600">Care</Text>
+            </Text>
           </View>
-          <Text className="ml-3 text-2xl font-black text-slate-900 tracking-tighter">
-            UniDent<Text className="text-blue-600">Care</Text>
-          </Text>
+          <TouchableOpacity
+            onPress={() => router.push("/(auth)/login")}
+            className="bg-slate-900 px-6 py-3 rounded-full"
+          >
+            <Text className="text-white font-bold text-sm">Sign In</Text>
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity
-          onPress={() => router.push("/(auth)/login")}
-          className="bg-slate-100 px-5 py-2.5 rounded-2xl border border-slate-200"
-        >
-          <Text className="text-slate-900 font-bold text-sm">Sign In</Text>
-        </TouchableOpacity>
       </View>
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 60 }}
+        contentContainerStyle={{ paddingTop: 100, paddingBottom: 60 }}
+        className="bg-slate-50/30"
       >
-        {/* Hero Section */}
-        <View className="px-8 pt-14 pb-12">
-          <View className="flex-row items-center self-start bg-white border border-blue-100 px-3 py-1.5 rounded-full mb-6 shadow-sm">
-            <ShieldCheck color="#2563eb" size={14} />
-            <Text className="ml-2 text-blue-700 text-[10px] font-black uppercase tracking-widest">
-              End-to-End Dental Ecosystem
+        <View className="px-6 pt-10 pb-10">
+          <View className="flex-row items-center self-start bg-blue-50 px-4 py-2 rounded-full mb-6">
+            <ShieldCheck color="#2563eb" size={16} />
+            <Text className="ml-2 text-blue-700 text-xs font-extrabold tracking-wide uppercase">
+              Dental Excellence
             </Text>
           </View>
 
-          <Text className="text-[42px] font-black text-slate-900 leading-[52px] tracking-tight">
-            Bridging the gap in{"\n"}
-            <Text className="text-blue-600 italic">Dental Excellence.</Text>
+          <Text className="text-[46px] font-black text-slate-900 leading-[52px] tracking-tight">
+            The Future of{"\n"}
+            <Text className="text-blue-600">Dentistry.</Text>
           </Text>
 
-          <Text className="mt-6 text-slate-500 text-lg font-medium leading-7">
-            A unified platform where Doctors mentor, Students excel, and
-            Patients receive the best care.
+          <Text className="mt-5 text-slate-500 text-lg font-medium leading-7 pr-6">
+            Connecting experts, students, and patients in one seamless digital
+            environment.
           </Text>
 
           <TouchableOpacity
-            activeOpacity={0.8}
+            activeOpacity={0.9}
             onPress={() => router.push("/(auth)/patient-signup")}
-            className="mt-10 w-full bg-slate-900 h-16 rounded-[22px] flex-row items-center justify-center shadow-2xl shadow-slate-400"
+            className="mt-10 w-full bg-blue-600 h-16 rounded-full flex-row items-center justify-center shadow-2xl shadow-blue-300"
           >
             <Text className="text-white font-bold text-lg mr-2">
-              Get Started Now
+              Start Journey
             </Text>
-            <ArrowRight color="white" size={20} />
+            <ArrowRight color="white" size={22} />
           </TouchableOpacity>
         </View>
 
-        {/* Roles Section */}
-        <View className="px-6 mt-2">
-          <View className="flex-row items-center mb-6">
-            <CircleDot color="#2563eb" size={16} />
-            <Text className="ml-2 text-xl font-black text-slate-900">
-              Select Your Portal
-            </Text>
-          </View>
+        <View className="px-5">
+          <Text className="ml-2 text-sm font-black text-slate-400 mb-5 uppercase tracking-[2px]">
+            Choose Your Portal
+          </Text>
 
           {roles.map((role, index) => (
             <TouchableOpacity
               key={index}
               onPress={() => router.push(role.href as any)}
-              activeOpacity={0.95}
-              className="mb-5 bg-white p-6 rounded-[32px] border border-white shadow-xl shadow-slate-200/50"
+              activeOpacity={0.8}
+              className="mb-4 bg-white p-6 rounded-[35px] border border-slate-100 shadow-sm shadow-slate-200/50"
             >
-              <View className="flex-row items-center mb-4">
+              <View className="flex-row items-center justify-between mb-5">
                 <View
-                  className={`w-14 h-14 rounded-[20px] ${role.bgColor} items-center justify-center`}
+                  className={`w-14 h-14 rounded-2xl ${role.bgLight} items-center justify-center`}
                 >
                   {role.icon}
                 </View>
-                <View className="ml-4 flex-1">
-                  <View className="flex-row items-center justify-between">
-                    <Text className="text-xl font-black text-slate-900 tracking-tight">
-                      {role.title}
-                    </Text>
-                    <View className={`${role.bgColor} px-3 py-1 rounded-full`}>
-                       <Text className={`${role.accentColor} text-[9px] font-black uppercase`}>{role.tag}</Text>
-                    </View>
-                  </View>
-                  <Text className="text-slate-400 text-xs font-bold mt-0.5">
-                    {role.stats}
+                <View className="bg-slate-50 px-3 py-1.5 rounded-full">
+                  <Text
+                    className={`${role.accent} text-[10px] font-black uppercase tracking-widest`}
+                  >
+                    {role.tag}
                   </Text>
                 </View>
               </View>
 
-              <Text className="text-slate-500 font-medium leading-6 mb-5">
+              <Text className="text-2xl font-black text-slate-900 mb-2 tracking-tight">
+                {role.title}
+              </Text>
+
+              <Text className="text-slate-500 text-sm font-medium leading-5 mb-6 pr-4">
                 {role.desc}
               </Text>
 
-              <View className="flex-row items-center justify-between bg-slate-50 p-4 rounded-2xl">
-                <Text className="text-sm font-bold text-slate-600">
-                  Access Portal
+              <View className="flex-row items-center bg-slate-50 self-start px-4 py-2 rounded-full">
+                <Text className="text-xs font-bold text-slate-900 mr-2">
+                  Enter Portal
                 </Text>
-                <ChevronRight color="#cbd5e1" size={18} />
+                <ArrowUpRight color="#0f172a" size={14} />
               </View>
             </TouchableOpacity>
           ))}
         </View>
 
-        {/* Footer */}
-        <View className="mt-12 items-center px-6">
-          <View className="w-12 h-1 bg-slate-200 rounded-full mb-8" />
-          <View className="flex-row items-center opacity-40 mb-2">
-            <FontAwesome5 name="tooth" size={14} color="#000" />
-            <Text className="ml-2 font-black text-slate-900 tracking-widest uppercase text-[10px]">
-              UniDent Care
-            </Text>
-          </View>
-          <Text className="text-slate-400 text-[10px] font-bold">
-            DESIGNED FOR THE FUTURE OF DENTISTRY
+        <View className="mt-12 items-center px-6 opacity-30">
+          <FontAwesome5 name="tooth" size={16} color="#94a3b8" />
+          <Text className="mt-2 font-black text-slate-900 tracking-[3px] uppercase text-[10px]">
+            UniDent Care
           </Text>
         </View>
       </ScrollView>

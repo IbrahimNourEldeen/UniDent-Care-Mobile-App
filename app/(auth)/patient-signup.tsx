@@ -17,7 +17,6 @@ import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import {
   User,
-  Mail,
   Lock,
   Phone,
   Fingerprint,
@@ -26,6 +25,7 @@ import {
   EyeOff,
   ArrowRight,
   ChevronLeft,
+  MapPin, // أيقونة المدينة
 } from "lucide-react-native";
 import { FontAwesome5 } from "@expo/vector-icons";
 
@@ -43,16 +43,16 @@ export default function PatientSignupScreen() {
     control,
     handleSubmit,
     formState: { errors },
-  } = useForm<any>({
+  } = useForm<PatientSignupValues>({
     resolver: zodResolver(patientSignupSchema),
     defaultValues: {
       fullName: "",
-      email: "",
       password: "",
       phoneNumber: "",
       nationalId: "",
-      birthDate: "",
+      birthDate: new Date().toISOString(), // قيمة افتراضية بتنسيق ISO
       gender: 0,
+      city: 0,
     },
   });
 
@@ -65,7 +65,7 @@ export default function PatientSignupScreen() {
       }
     },
     onError: (err: any) => {
-      const errorMsg = err?.response?.data?.message || "Something went wrong";
+      const errorMsg = err?.response?.data?.message || "Registration failed";
       Alert.alert("Signup Failed", errorMsg);
     },
   });
@@ -98,13 +98,11 @@ export default function PatientSignupScreen() {
             <Text className="text-3xl font-black text-slate-900 mt-4 text-center">
               Patient Registration
             </Text>
-            <Text className="text-slate-500 font-medium text-center mt-1 italic">
-              Your dental health journey starts here
-            </Text>
           </View>
 
           <View className="space-y-4">
             
+            {/* Full Name */}
             <View>
               <Text className="text-sm font-bold text-slate-700 mb-2 ml-1">Full Name</Text>
               <View className={`flex-row items-center bg-white border-2 ${errors.fullName ? 'border-red-400' : 'border-slate-100'} rounded-2xl px-4 py-3 shadow-sm`}>
@@ -123,32 +121,10 @@ export default function PatientSignupScreen() {
                   )}
                 />
               </View>
-              {errors.fullName && <Text className="text-xs text-red-500 font-bold mt-1 ml-1">{errors.fullName.message as string}</Text>}
+              {errors.fullName && <Text className="text-xs text-red-500 font-bold mt-1 ml-1">{errors.fullName.message}</Text>}
             </View>
 
-            <View className="mt-4">
-              <Text className="text-sm font-bold text-slate-700 mb-2 ml-1">Email Address</Text>
-              <View className={`flex-row items-center bg-white border-2 ${errors.email ? 'border-red-400' : 'border-slate-100'} rounded-2xl px-4 py-3 shadow-sm`}>
-                <Mail color="#94a3b8" size={20} />
-                <Controller
-                  control={control}
-                  name="email"
-                  render={({ field: { onChange, onBlur, value } }) => (
-                    <TextInput
-                      className="flex-1 ml-3 text-slate-900 font-medium"
-                      placeholder="ahmed@example.com"
-                      keyboardType="email-address"
-                      autoCapitalize="none"
-                      onBlur={onBlur}
-                      onChangeText={onChange}
-                      value={value}
-                    />
-                  )}
-                />
-              </View>
-              {errors.email && <Text className="text-xs text-red-500 font-bold mt-1 ml-1">{errors.email.message as string}</Text>}
-            </View>
-
+            {/* Phone Number */}
             <View className="mt-4">
               <Text className="text-sm font-bold text-slate-700 mb-2 ml-1">Phone Number</Text>
               <View className={`flex-row items-center bg-white border-2 ${errors.phoneNumber ? 'border-red-400' : 'border-slate-100'} rounded-2xl px-4 py-3 shadow-sm`}>
@@ -159,7 +135,7 @@ export default function PatientSignupScreen() {
                   render={({ field: { onChange, onBlur, value } }) => (
                     <TextInput
                       className="flex-1 ml-3 text-slate-900 font-medium"
-                      placeholder="+20 123..."
+                      placeholder="01xxxxxxxxx"
                       keyboardType="phone-pad"
                       onBlur={onBlur}
                       onChangeText={onChange}
@@ -168,8 +144,10 @@ export default function PatientSignupScreen() {
                   )}
                 />
               </View>
+              {errors.phoneNumber && <Text className="text-xs text-red-500 font-bold mt-1 ml-1">{errors.phoneNumber.message}</Text>}
             </View>
 
+            {/* National ID */}
             <View className="mt-4">
               <Text className="text-sm font-bold text-slate-700 mb-2 ml-1">National ID</Text>
               <View className={`flex-row items-center bg-white border-2 ${errors.nationalId ? 'border-red-400' : 'border-slate-100'} rounded-2xl px-4 py-3 shadow-sm`}>
@@ -180,7 +158,7 @@ export default function PatientSignupScreen() {
                   render={({ field: { onChange, onBlur, value } }) => (
                     <TextInput
                       className="flex-1 ml-3 text-slate-900 font-medium"
-                      placeholder="14-digit number"
+                      placeholder="14-digit national ID"
                       keyboardType="numeric"
                       maxLength={14}
                       onBlur={onBlur}
@@ -190,46 +168,90 @@ export default function PatientSignupScreen() {
                   )}
                 />
               </View>
-              {errors.nationalId && <Text className="text-xs text-red-500 font-bold mt-1 ml-1">{errors.nationalId.message as string}</Text>}
+              {errors.nationalId && <Text className="text-xs text-red-500 font-bold mt-1 ml-1">{errors.nationalId.message}</Text>}
             </View>
 
+            {/* Birth Date (String Input for ISO) */}
             <View className="mt-4">
-              <Text className="text-sm font-bold text-slate-700 mb-2 ml-1">Gender</Text>
-              <Controller
-                control={control}
-                name="gender"
-                render={({ field: { onChange, value } }) => (
-                  <View className="flex-row space-x-4">
-                    <TouchableOpacity 
-                      onPress={() => onChange(0)}
-                      className={`flex-1 flex-row items-center justify-center p-4 rounded-2xl border-2 ${value === 0 ? 'border-blue-600 bg-blue-50' : 'border-slate-100 bg-white'}`}
-                    >
-                      <Text className={`font-bold ${value === 0 ? 'text-blue-600' : 'text-slate-400'}`}>Male</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity 
-                      onPress={() => onChange(1)}
-                      className={`flex-1 flex-row items-center justify-center p-4 rounded-2xl border-2 ${value === 1 ? 'border-blue-600 bg-blue-50' : 'border-slate-100 bg-white'}`}
-                    >
-                      <Text className={`font-bold ${value === 1 ? 'text-blue-600' : 'text-slate-400'}`}>Female</Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
-              />
+              <Text className="text-sm font-bold text-slate-700 mb-2 ml-1">Date of Birth</Text>
+              <View className={`flex-row items-center bg-white border-2 ${errors.birthDate ? 'border-red-400' : 'border-slate-100'} rounded-2xl px-4 py-3 shadow-sm`}>
+                <Calendar color="#94a3b8" size={20} />
+                <Controller
+                  control={control}
+                  name="birthDate"
+                  render={({ field: { onChange, onBlur, value } }) => (
+                    <TextInput
+                      className="flex-1 ml-3 text-slate-900 font-medium"
+                      placeholder="YYYY-MM-DD"
+                      onBlur={onBlur}
+                      onChangeText={onChange}
+                      value={value}
+                    />
+                  )}
+                />
+              </View>
             </View>
 
+            {/* City & Gender Row */}
+            <View className="flex-row space-x-3 mt-4">
+              <View className="flex-1">
+                <Text className="text-sm font-bold text-slate-700 mb-2 ml-1">City ID</Text>
+                <View className={`flex-row items-center bg-white border-2 border-slate-100 rounded-2xl px-4 py-3 shadow-sm`}>
+                  <MapPin color="#94a3b8" size={18} />
+                  <Controller
+                    control={control}
+                    name="city"
+                    render={({ field: { onChange, value } }) => (
+                      <TextInput
+                        className="flex-1 ml-2 text-slate-900 font-medium"
+                        placeholder="0"
+                        keyboardType="numeric"
+                        onChangeText={(val) => onChange(Number(val))}
+                        value={value.toString()}
+                      />
+                    )}
+                  />
+                </View>
+              </View>
+
+              <View className="flex-1">
+                <Text className="text-sm font-bold text-slate-700 mb-2 ml-1">Gender</Text>
+                <Controller
+                  control={control}
+                  name="gender"
+                  render={({ field: { onChange, value } }) => (
+                    <View className="flex-row bg-slate-100 p-1 rounded-2xl">
+                      <TouchableOpacity 
+                        onPress={() => onChange(0)}
+                        className={`flex-1 py-2 rounded-xl items-center ${value === 0 ? 'bg-white shadow-sm' : ''}`}
+                      >
+                        <Text className={`font-bold ${value === 0 ? 'text-blue-600' : 'text-slate-400'}`}>M</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity 
+                        onPress={() => onChange(1)}
+                        className={`flex-1 py-2 rounded-xl items-center ${value === 1 ? 'bg-white shadow-sm' : ''}`}
+                      >
+                        <Text className={`font-bold ${value === 1 ? 'text-blue-600' : 'text-slate-400'}`}>F</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                />
+              </View>
+            </View>
+
+            {/* Password */}
             <View className="mt-4">
-              <Text className="text-sm font-bold text-slate-700 mb-2 ml-1">Secure Password</Text>
+              <Text className="text-sm font-bold text-slate-700 mb-2 ml-1">Password</Text>
               <View className={`flex-row items-center bg-white border-2 ${errors.password ? 'border-red-400' : 'border-slate-100'} rounded-2xl px-4 py-3 shadow-sm`}>
                 <Lock color="#94a3b8" size={20} />
                 <Controller
                   control={control}
                   name="password"
-                  render={({ field: { onChange, onBlur, value } }) => (
+                  render={({ field: { onChange, value } }) => (
                     <TextInput
                       className="flex-1 ml-3 text-slate-900 font-medium"
                       placeholder="••••••••"
                       secureTextEntry={!showPassword}
-                      onBlur={onBlur}
                       onChangeText={onChange}
                       value={value}
                     />
@@ -239,31 +261,24 @@ export default function PatientSignupScreen() {
                   {showPassword ? <EyeOff color="#94a3b8" size={20} /> : <Eye color="#94a3b8" size={20} />}
                 </TouchableOpacity>
               </View>
-              {errors.password && <Text className="text-xs text-red-500 font-bold mt-1 ml-1">{errors.password.message as string}</Text>}
+              {errors.password && <Text className="text-[10px] text-red-500 font-bold mt-1 ml-1">{errors.password.message}</Text>}
             </View>
 
             <TouchableOpacity
               onPress={handleSubmit(onSubmit)}
               disabled={signupMutation.isPending}
               activeOpacity={0.8}
-              className={`mt-10 bg-slate-900 h-16 rounded-2xl flex-row items-center justify-center shadow-xl shadow-slate-200 ${signupMutation.isPending ? 'opacity-70' : ''}`}
+              className={`mt-10 bg-slate-900 h-16 rounded-3xl flex-row items-center justify-center shadow-xl ${signupMutation.isPending ? 'opacity-70' : ''}`}
             >
               {signupMutation.isPending ? (
                 <ActivityIndicator color="white" />
               ) : (
                 <>
-                  <Text className="text-white text-lg font-bold mr-2">Create My Account</Text>
+                  <Text className="text-white text-lg font-bold mr-2">Create Account</Text>
                   <ArrowRight color="white" size={20} />
                 </>
               )}
             </TouchableOpacity>
-
-            <View className="mt-6 mb-10 flex-row justify-center">
-              <Text className="text-slate-500 font-medium">Already registered? </Text>
-              <TouchableOpacity onPress={() => router.push("/(auth)/login")}>
-                <Text className="text-blue-600 font-bold">Sign in</Text>
-              </TouchableOpacity>
-            </View>
 
           </View>
         </ScrollView>

@@ -1,31 +1,34 @@
-import React, { useState } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  ScrollView,
-  ActivityIndicator,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import {
-  User,
-  Mail,
-  Stethoscope,
-  Lock,
+  Activity,
+  ArrowRight,
+  AtSign,
+  ChevronLeft,
   Eye,
   EyeOff,
-  ArrowRight,
-  ChevronLeft,
-  Activity,
+  Hash,
+  Lock,
+  Mail,
+  Phone,
+  Stethoscope,
+  User,
 } from "lucide-react-native";
+import React, { useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import {
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import {
   doctorSignupSchema,
@@ -44,11 +47,13 @@ export default function DoctorSignupScreen() {
   } = useForm<DoctorSignupValues>({
     resolver: zodResolver(doctorSignupSchema),
     defaultValues: {
-      name: "",
+      fullName: "",
+      username: "",
       email: "",
+      phone: "",
       password: "",
       specialty: "",
-      universityId: 0,
+      universityId: "",
     },
   });
 
@@ -94,7 +99,7 @@ export default function DoctorSignupScreen() {
             <View className="w-16 h-16 bg-teal-600 rounded-2xl items-center justify-center shadow-lg shadow-teal-200">
               <Activity stroke="white" size={32} />
             </View>
-            <Text className="text-3xl font-black text-slate-900 mt-4">
+            <Text className="text-3xl font-black text-slate-900 mt-4 text-center">
               Join UniDent
             </Text>
             <Text className="text-slate-500 font-medium text-center mt-1">
@@ -108,12 +113,12 @@ export default function DoctorSignupScreen() {
                 Full Name
               </Text>
               <View
-                className={`flex-row items-center bg-white border-2 ${errors.name ? "border-red-400" : "border-slate-100"} rounded-2xl px-4 py-3`}
+                className={`flex-row items-center bg-white border-2 ${errors.fullName ? "border-red-400" : "border-slate-100"} rounded-2xl px-4 py-3`}
               >
                 <User stroke="#94a3b8" size={20} />
                 <Controller
                   control={control}
-                  name="name"
+                  name="fullName"
                   render={({ field: { onChange, onBlur, value } }) => (
                     <TextInput
                       className="flex-1 ml-3 text-slate-900 font-medium"
@@ -125,9 +130,39 @@ export default function DoctorSignupScreen() {
                   )}
                 />
               </View>
-              {errors.name && (
+              {errors.fullName && (
                 <Text className="text-xs text-red-500 font-bold mt-1 ml-1">
-                  {errors.name.message}
+                  {errors.fullName.message}
+                </Text>
+              )}
+            </View>
+
+            <View className="mt-4">
+              <Text className="text-sm font-bold text-slate-700 mb-2 ml-1">
+                Username
+              </Text>
+              <View
+                className={`flex-row items-center bg-white border-2 ${errors.username ? "border-red-400" : "border-slate-100"} rounded-2xl px-4 py-3`}
+              >
+                <AtSign stroke="#94a3b8" size={20} />
+                <Controller
+                  control={control}
+                  name="username"
+                  render={({ field: { onChange, onBlur, value } }) => (
+                    <TextInput
+                      className="flex-1 ml-3 text-slate-900 font-medium"
+                      placeholder="dr_ahmed99"
+                      autoCapitalize="none"
+                      onBlur={onBlur}
+                      onChangeText={onChange}
+                      value={value}
+                    />
+                  )}
+                />
+              </View>
+              {errors.username && (
+                <Text className="text-xs text-red-500 font-bold mt-1 ml-1">
+                  {errors.username.message}
                 </Text>
               )}
             </View>
@@ -159,6 +194,36 @@ export default function DoctorSignupScreen() {
               {errors.email && (
                 <Text className="text-xs text-red-500 font-bold mt-1 ml-1">
                   {errors.email.message}
+                </Text>
+              )}
+            </View>
+
+            <View className="mt-4">
+              <Text className="text-sm font-bold text-slate-700 mb-2 ml-1">
+                Phone Number
+              </Text>
+              <View
+                className={`flex-row items-center bg-white border-2 ${errors.phone ? "border-red-400" : "border-slate-100"} rounded-2xl px-4 py-3`}
+              >
+                <Phone stroke="#94a3b8" size={20} />
+                <Controller
+                  control={control}
+                  name="phone"
+                  render={({ field: { onChange, onBlur, value } }) => (
+                    <TextInput
+                      className="flex-1 ml-3 text-slate-900 font-medium"
+                      placeholder="+201234567890"
+                      keyboardType="phone-pad"
+                      onBlur={onBlur}
+                      onChangeText={onChange}
+                      value={value}
+                    />
+                  )}
+                />
+              </View>
+              {errors.phone && (
+                <Text className="text-xs text-red-500 font-bold mt-1 ml-1">
+                  {errors.phone.message}
                 </Text>
               )}
             </View>
@@ -199,18 +264,18 @@ export default function DoctorSignupScreen() {
               <View
                 className={`flex-row items-center bg-white border-2 ${errors.universityId ? "border-red-400" : "border-slate-100"} rounded-2xl px-4 py-3`}
               >
-                {/* <IdCard stroke="#94a3b8" size={20} /> */}
+                <Hash stroke="#94a3b8" size={20} />
                 <Controller
                   control={control}
                   name="universityId"
                   render={({ field: { onChange, onBlur, value } }) => (
                     <TextInput
                       className="flex-1 ml-3 text-slate-900 font-medium"
-                      placeholder="1234567"
+                      placeholder="7+ digits required"
                       keyboardType="numeric"
                       onBlur={onBlur}
                       onChangeText={onChange}
-                      value={value?.toString()}
+                      value={value}
                     />
                   )}
                 />

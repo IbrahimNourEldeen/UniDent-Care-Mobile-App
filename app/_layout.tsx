@@ -1,15 +1,15 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack, useRouter, useSegments } from "expo-router";
+import * as SecureStore from "expo-secure-store";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, View } from "react-native";
 import { Provider } from "react-redux";
 import { store } from "../store/store";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
-import * as SecureStore from "expo-secure-store";
-import { View, ActivityIndicator } from "react-native";
 
-import { useAppDispatch, useAppSelector } from "../store/hooks";
-import { getProfileByRole } from "../features/auth/services/authService";
-import { getDecodedToken } from "@/utils/decodeToken";
 import { setUserFromReload } from "@/store/slices/authSlice";
+import { getDecodedToken } from "@/utils/decodeToken";
+import { getProfileByRole } from "../features/auth/services/authService";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
 
 const queryClient = new QueryClient();
 
@@ -45,12 +45,16 @@ function InitialRootNavigation() {
     if (!isReady) return;
 
     const inAuthGroup = segments[0] === "(auth)";
-    
-    if (!isAuthenticated && !inAuthGroup && segments[0] !== undefined && segments[0] !== "") {
+
+    if (
+      !isAuthenticated &&
+      !inAuthGroup &&
+      segments[0] !== undefined &&
+      segments[0] !== ""
+    ) {
       router.replace("/(auth)/login");
-    } 
-    else if (isAuthenticated && inAuthGroup) {
-      router.replace("/(tabs)");
+    } else if (isAuthenticated && inAuthGroup) {
+      router.replace("/(screens)");
     }
   }, [isAuthenticated, segments, isReady]);
 
@@ -65,8 +69,6 @@ function InitialRootNavigation() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" />
-      <Stack.Screen name="(auth)" />
-      <Stack.Screen name="(tabs)" />
     </Stack>
   );
 }

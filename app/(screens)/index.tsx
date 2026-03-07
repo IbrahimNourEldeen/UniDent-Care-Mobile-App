@@ -33,7 +33,7 @@ export default function AuthBoundary() {
       }
 
       if (!user) {
-        const userData = await getProfileByRole(decoded.role, decoded.userId);
+        const userData = await getProfileByRole(decoded.role, decoded.publicId);
         dispatch(setUserFromReload({ user: userData, role: decoded.role }));
       }
 

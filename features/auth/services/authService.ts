@@ -34,8 +34,8 @@ export const authService = {
     },
 };
 
-export const getProfileByRole = async (role: string, userId: string) => {
+export const getProfileByRole = async (role: string, publicId: string) => {
     const endpoint = role === "Student" ? "Students" : role === "Doctor" ? "Doctors" : "Patients";
-    const res = await api.get(`/${endpoint}/${userId}`);
+    const res = await api.get(`/${endpoint}/${publicId}`);
     return res.data.data;
 };

@@ -12,7 +12,7 @@ export interface ApiResponse<T> {
 }
 
 export type UserBase = {
-    userId: string;
+    publicId: string;
     fullName: string;
     email: string;
     createAt: string;

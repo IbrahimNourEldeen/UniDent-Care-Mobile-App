@@ -27,7 +27,7 @@ function InitialRootNavigation() {
         if (token) {
           const decoded = getDecodedToken(token);
           if (decoded) {
-            const user = await getProfileByRole(decoded.role, decoded.userId);
+            const user = await getProfileByRole(decoded.role, decoded.publicId);
             dispatch(setUserFromReload({ user, role: decoded.role }));
           }
         }

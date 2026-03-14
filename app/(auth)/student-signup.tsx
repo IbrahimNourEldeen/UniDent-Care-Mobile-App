@@ -1,275 +1,155 @@
 import React, { useState } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  ScrollView,
-  ActivityIndicator,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-} from "react-native";
+import { View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import {
-  User,
-  Mail,
-  Lock,
-  GraduationCap,
-  Eye,
-  EyeOff,
-  ArrowRight,
-  ChevronLeft,
-  BookOpen,
-  Phone,
-  AtSign,
-  Building2,
-  Hash,
-} from "lucide-react-native";
+import { LinearGradient } from "expo-linear-gradient"; 
+import { User, Mail, Lock, GraduationCap, Eye, EyeOff, ArrowRight, ChevronLeft, BookOpen, Phone, AtSign, Hash, Sparkles } from "lucide-react-native";
 
-import {
-  studentSignupSchema,
-  StudentSignupValues,
-} from "../../features/auth/schemas/studentSignupSchema";
+import { studentSignupSchema, StudentSignupValues } from "../../features/auth/schemas/studentSignupSchema";
 import { authService } from "../../features/auth/services/authService";
 
 export default function StudentSignupScreen() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
 
-  const {
-    control,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<StudentSignupValues>({
+  const { control, handleSubmit, formState: { errors } } = useForm<StudentSignupValues>({
     resolver: zodResolver(studentSignupSchema),
-    defaultValues: {
-      fullName: "",
-      username: "",
-      email: "",
-      phone: "",
-      universityId: "",
-      university: "",
-      level: 1, // Default level
-      password: "",
-    },
+    defaultValues: { fullName: "", username: "", email: "", phone: "", universityId: "", level: 1, password: "" },
   });
 
   const signupMutation = useMutation({
     mutationFn: authService.registerStudent,
-    onSuccess: (res) => {
-      if (res.success) {
-        Alert.alert("Success! 🎓", "Academic account created successfully.");
-        router.push("/(auth)/login");
-      }
+    onSuccess: () => {
+      Alert.alert("Success! 🎓", "Academic account created.");
+      router.push("/(auth)/login");
     },
-    onError: (err: any) => {
-      const msg = err?.response?.data?.message || "Registration failed. Check your data.";
-      Alert.alert("Error", msg);
-    },
+    onError: (err: any) => Alert.alert("Error", err?.response?.data?.message || "Registration failed"),
   });
 
-  const onSubmit = (data: StudentSignupValues) => signupMutation.mutate(data);
-
   return (
-    <SafeAreaView className="flex-1 bg-[#F9FAFF]">
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        className="flex-1"
-      >
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ flexGrow: 1 }}
-          className="px-6 py-4"
-        >
-          {/* Back Button */}
-          <TouchableOpacity
-            onPress={() => router.back()}
-            className="flex-row items-center mb-6 self-start p-2 -ml-2"
-          >
-            <ChevronLeft color="#4f46e5" size={24} />
-            <Text className="text-indigo-600 font-bold text-lg ml-1">Back</Text>
+    <SafeAreaView className="flex-1 bg-[#F1F5F9]">
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} className="flex-1">
+        <ScrollView showsVerticalScrollIndicator={false} className="px-5">
+          
+          {/* Header Section */}
+          <View className="mt-8 mb-6 flex-row justify-between items-center">
+            <TouchableOpacity onPress={() => router.back()} className="w-10 h-10 bg-white rounded-full items-center justify-center shadow-sm">
+              <ChevronLeft color="#1e293b" size={24} />
+            </TouchableOpacity>
+            <View className="bg-indigo-100 px-4 py-1.5 rounded-full">
+              <Text className="text-indigo-600 font-bold text-xs uppercase tracking-widest">Student Portal</Text>
+            </View>
+          </View>
+
+          <View className="mb-8">
+            <Text className="text-3xl font-black text-slate-900 leading-tight">Create your{"\n"}Academic Account</Text>
+            <View className="h-1.5 w-12 bg-indigo-600 rounded-full mt-3" />
+          </View>
+
+          {/* Form Card 1: Personal Info */}
+          <View className="bg-white rounded-[32px] p-6 shadow-xl shadow-slate-200 mb-5 border border-slate-50">
+            <View className="flex-row items-center mb-5 gap-2">
+               <Sparkles size={18} color="#4f46e5" />
+               <Text className="font-black text-slate-800 uppercase text-[11px] tracking-widest">Personal Information</Text>
+            </View>
+
+            <View className="space-y-4">
+              {/* Full Name */}
+              <View className="bg-slate-50 rounded-2xl px-4 py-3 border border-slate-100">
+                <Text className="text-[10px] font-bold text-slate-400 uppercase mb-1">Full Name</Text>
+                <View className="flex-row items-center">
+                  <User color="#4f46e5" size={18} />
+                  <Controller control={control} name="fullName" render={({ field: { onChange, value } }) => (
+                    <TextInput className="flex-1 ml-3 text-slate-900 font-bold text-[15px]" placeholder="Ahmed Mohamed" onChangeText={onChange} value={value} />
+                  )} />
+                </View>
+              </View>
+
+              <View className="flex-row gap-3">
+                <View className="flex-1 bg-slate-50 rounded-2xl px-4 py-3 border border-slate-100">
+                  <Text className="text-[10px] font-bold text-slate-400 uppercase mb-1">Username</Text>
+                  <Controller control={control} name="username" render={({ field: { onChange, value } }) => (
+                    <TextInput className="text-slate-900 font-bold" placeholder="@user" autoCapitalize="none" onChangeText={onChange} value={value} />
+                  )} />
+                </View>
+                <View className="flex-1 bg-slate-50 rounded-2xl px-4 py-3 border border-slate-100">
+                  <Text className="text-[10px] font-bold text-slate-400 uppercase mb-1">Phone</Text>
+                  <Controller control={control} name="phone" render={({ field: { onChange, value } }) => (
+                    <TextInput className="text-slate-900 font-bold" placeholder="01..." keyboardType="phone-pad" onChangeText={onChange} value={value} />
+                  )} />
+                </View>
+              </View>
+
+              <View className="bg-slate-50 rounded-2xl px-4 py-3 border border-slate-100">
+                <Text className="text-[10px] font-bold text-slate-400 uppercase mb-1">Email Address</Text>
+                <View className="flex-row items-center">
+                  <Mail color="#4f46e5" size={18} />
+                  <Controller control={control} name="email" render={({ field: { onChange, value } }) => (
+                    <TextInput className="flex-1 ml-3 text-slate-900 font-bold" placeholder="name@uni.edu" autoCapitalize="none" onChangeText={onChange} value={value} />
+                  )} />
+                </View>
+              </View>
+            </View>
+          </View>
+
+          {/* Form Card 2: Academic & Security */}
+          <View className="bg-white rounded-[32px] p-6 shadow-xl shadow-slate-200 mb-8 border border-slate-50">
+            <View className="flex-row items-center mb-5 gap-2">
+               <GraduationCap size={18} color="#4f46e5" />
+               <Text className="font-black text-slate-800 uppercase text-[11px] tracking-widest">Academic & Security</Text>
+            </View>
+
+            <View className="space-y-4">
+              <View className="flex-row gap-3">
+                <View className="flex-[2] bg-slate-50 rounded-2xl px-4 py-3 border border-slate-100">
+                  <Text className="text-[10px] font-bold text-slate-400 uppercase mb-1">University ID</Text>
+                  <Controller control={control} name="universityId" render={({ field: { onChange, value } }) => (
+                    <TextInput className="text-slate-900 font-bold text-xs" placeholder="UUID Code" onChangeText={onChange} value={value} />
+                  )} />
+                </View>
+                <View className="flex-1 bg-slate-50 rounded-2xl px-4 py-3 border border-slate-100">
+                  <Text className="text-[10px] font-bold text-slate-400 uppercase mb-1">Level</Text>
+                  <Controller control={control} name="level" render={({ field: { onChange, value } }) => (
+                    <TextInput className="text-slate-900 font-bold" keyboardType="numeric" onChangeText={(t) => onChange(Number(t))} value={value?.toString()} />
+                  )} />
+                </View>
+              </View>
+
+              <View className="bg-slate-50 rounded-2xl px-4 py-3 border border-slate-100">
+                <Text className="text-[10px] font-bold text-slate-400 uppercase mb-1">Password</Text>
+                <View className="flex-row items-center">
+                  <Lock color="#4f46e5" size={18} />
+                  <Controller control={control} name="password" render={({ field: { onChange, value } }) => (
+                    <TextInput className="flex-1 ml-3 text-slate-900 font-bold" placeholder="••••••••" secureTextEntry={!showPassword} onChangeText={onChange} value={value} />
+                  )} />
+                  <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                    {showPassword ? <EyeOff color="#94a3b8" size={18} /> : <Eye color="#94a3b8" size={18} />}
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </View>
+
+          {/* Submit Button */}
+          <TouchableOpacity onPress={handleSubmit((d) => signupMutation.mutate(d))} disabled={signupMutation.isPending} activeOpacity={0.9}>
+            <LinearGradient colors={['#4f46e5', '#3b82f6']} start={{x:0, y:0}} end={{x:1, y:0}} className="h-16 rounded-2xl flex-row items-center justify-center shadow-lg shadow-blue-300">
+              {signupMutation.isPending ? <ActivityIndicator color="white" /> : (
+                <View className="flex-row items-center">
+                  <Text className="text-white text-lg font-black mr-2">Create Account</Text>
+                  <ArrowRight color="white" size={20} />
+                </View>
+              )}
+            </LinearGradient>
           </TouchableOpacity>
 
-          {/* Header */}
-          <View className="items-center mb-8">
-            <View className="w-16 h-16 bg-indigo-600 rounded-2xl items-center justify-center shadow-lg shadow-indigo-200">
-              <BookOpen color="white" size={30} />
-            </View>
-            <Text className="text-3xl font-black text-slate-900 mt-4 text-center">
-              Student Portal
-            </Text>
-            <Text className="text-slate-500 font-medium text-center mt-1">
-              Create your account to start learning
-            </Text>
+          <View className="py-8 flex-row justify-center">
+            <Text className="text-slate-400 font-bold">Already a student? </Text>
+            <TouchableOpacity onPress={() => router.push("/(auth)/login")}><Text className="text-indigo-600 font-black">Sign In</Text></TouchableOpacity>
           </View>
 
-          {/* Form Fields */}
-          <View className="space-y-4">
-            
-            {/* Full Name & Username */}
-            <View>
-              <Text className="text-sm font-bold text-slate-700 mb-2 ml-1">Full Name</Text>
-              <View className={`flex-row items-center bg-white border-2 ${errors.fullName ? "border-red-400" : "border-indigo-50/50"} rounded-2xl px-4 py-3.5 shadow-sm`}>
-                <User color="#94a3b8" size={20} />
-                <Controller
-                  control={control}
-                  name="fullName"
-                  render={({ field: { onChange, onBlur, value } }) => (
-                    <TextInput className="flex-1 ml-3 text-slate-900 font-medium" placeholder="Ahmed Ali" onBlur={onBlur} onChangeText={onChange} value={value} />
-                  )}
-                />
-              </View>
-              {errors.fullName && <Text className="text-[10px] text-red-500 font-bold mt-1 ml-1">{errors.fullName.message}</Text>}
-            </View>
-
-            <View>
-              <Text className="text-sm font-bold text-slate-700 mb-2 ml-1">Username</Text>
-              <View className={`flex-row items-center bg-white border-2 ${errors.username ? "border-red-400" : "border-indigo-50/50"} rounded-2xl px-4 py-3.5 shadow-sm`}>
-                <AtSign color="#94a3b8" size={20} />
-                <Controller
-                  control={control}
-                  name="username"
-                  render={({ field: { onChange, onBlur, value } }) => (
-                    <TextInput className="flex-1 ml-3 text-slate-900 font-medium" placeholder="ahmed_99" autoCapitalize="none" onBlur={onBlur} onChangeText={onChange} value={value} />
-                  )}
-                />
-              </View>
-              {errors.username && <Text className="text-[10px] text-red-500 font-bold mt-1 ml-1">{errors.username.message}</Text>}
-            </View>
-
-            {/* Email & Phone */}
-            <View>
-              <Text className="text-sm font-bold text-slate-700 mb-2 ml-1">Email Address</Text>
-              <View className={`flex-row items-center bg-white border-2 ${errors.email ? "border-red-400" : "border-indigo-50/50"} rounded-2xl px-4 py-3.5 shadow-sm`}>
-                <Mail color="#94a3b8" size={20} />
-                <Controller
-                  control={control}
-                  name="email"
-                  render={({ field: { onChange, onBlur, value } }) => (
-                    <TextInput className="flex-1 ml-3 text-slate-900 font-medium" placeholder="student@uni.edu" keyboardType="email-address" autoCapitalize="none" onBlur={onBlur} onChangeText={onChange} value={value} />
-                  )}
-                />
-              </View>
-              {errors.email && <Text className="text-[10px] text-red-500 font-bold mt-1 ml-1">{errors.email.message}</Text>}
-            </View>
-
-            <View>
-              <Text className="text-sm font-bold text-slate-700 mb-2 ml-1">Phone Number</Text>
-              <View className={`flex-row items-center bg-white border-2 ${errors.phone ? "border-red-400" : "border-indigo-50/50"} rounded-2xl px-4 py-3.5 shadow-sm`}>
-                <Phone color="#94a3b8" size={20} />
-                <Controller
-                  control={control}
-                  name="phone"
-                  render={({ field: { onChange, onBlur, value } }) => (
-                    <TextInput className="flex-1 ml-3 text-slate-900 font-medium" placeholder="01012345678" keyboardType="phone-pad" onBlur={onBlur} onChangeText={onChange} value={value} />
-                  )}
-                />
-              </View>
-              {errors.phone && <Text className="text-[10px] text-red-500 font-bold mt-1 ml-1">{errors.phone.message}</Text>}
-            </View>
-
-            {/* University & University ID */}
-            <View>
-              <Text className="text-sm font-bold text-slate-700 mb-2 ml-1">University Name</Text>
-              <View className={`flex-row items-center bg-white border-2 ${errors.university ? "border-red-400" : "border-indigo-50/50"} rounded-2xl px-4 py-3.5 shadow-sm`}>
-                <Building2 color="#94a3b8" size={20} />
-                <Controller
-                  control={control}
-                  name="university"
-                  render={({ field: { onChange, onBlur, value } }) => (
-                    <TextInput className="flex-1 ml-3 text-slate-900 font-medium" placeholder="Cairo University" onBlur={onBlur} onChangeText={onChange} value={value} />
-                  )}
-                />
-              </View>
-              {errors.university && <Text className="text-[10px] text-red-500 font-bold mt-1 ml-1">{errors.university.message}</Text>}
-            </View>
-
-            <View className="flex-row space-x-4">
-              <View className="flex-[2]">
-                <Text className="text-sm font-bold text-slate-700 mb-2 ml-1">Student ID</Text>
-                <View className={`flex-row items-center bg-white border-2 ${errors.universityId ? "border-red-400" : "border-indigo-50/50"} rounded-2xl px-4 py-3.5 shadow-sm`}>
-                  <Hash color="#94a3b8" size={18} />
-                  <Controller
-                    control={control}
-                    name="universityId"
-                    render={({ field: { onChange, value } }) => (
-                      <TextInput className="flex-1 ml-2 text-slate-900 font-medium" placeholder="ID Number" keyboardType="numeric" onChangeText={onChange} value={value} />
-                    )}
-                  />
-                </View>
-              </View>
-
-              <View className="flex-1">
-                <Text className="text-sm font-bold text-slate-700 mb-2 ml-1">Level</Text>
-                <View className={`flex-row items-center bg-white border-2 ${errors.level ? "border-red-400" : "border-indigo-50/50"} rounded-2xl px-4 py-3.5 shadow-sm`}>
-                  <GraduationCap color="#94a3b8" size={18} />
-                  <Controller
-                    control={control}
-                    name="level"
-                    render={({ field: { onChange, value } }) => (
-                      <TextInput 
-                        className="flex-1 ml-2 text-slate-900 font-medium" 
-                        placeholder="1-7" 
-                        keyboardType="numeric" 
-                        maxLength={1} 
-                        onChangeText={(text) => onChange(parseInt(text) || 0)} 
-                        value={value?.toString()} 
-                      />
-                    )}
-                  />
-                </View>
-              </View>
-            </View>
-
-            {/* Password */}
-            <View>
-              <Text className="text-sm font-bold text-slate-700 mb-2 ml-1">Password</Text>
-              <View className={`flex-row items-center bg-white border-2 ${errors.password ? "border-red-400" : "border-indigo-50/50"} rounded-2xl px-4 py-3.5 shadow-sm`}>
-                <Lock color="#94a3b8" size={20} />
-                <Controller
-                  control={control}
-                  name="password"
-                  render={({ field: { onChange, value } }) => (
-                    <TextInput className="flex-1 ml-3 text-slate-900 font-medium" placeholder="••••••••" secureTextEntry={!showPassword} onChangeText={onChange} value={value} />
-                  )}
-                />
-                <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                  {showPassword ? <EyeOff color="#94a3b8" size={20} /> : <Eye color="#94a3b8" size={20} />}
-                </TouchableOpacity>
-              </View>
-              {errors.password && <Text className="text-[10px] text-red-500 font-bold mt-1 ml-1 leading-4">{errors.password.message}</Text>}
-            </View>
-
-            {/* Submit Button */}
-            <TouchableOpacity
-              onPress={handleSubmit(onSubmit)}
-              disabled={signupMutation.isPending}
-              activeOpacity={0.8}
-              className={`mt-6 bg-slate-900 h-16 rounded-2xl flex-row items-center justify-center shadow-xl shadow-indigo-100 ${signupMutation.isPending ? "opacity-70" : ""}`}
-            >
-              {signupMutation.isPending ? (
-                <ActivityIndicator color="white" />
-              ) : (
-                <>
-                  <Text className="text-white text-lg font-bold mr-2">Create Account</Text>
-                  <ArrowRight color="white" size={20} />
-                </>
-              )}
-            </TouchableOpacity>
-
-            {/* Footer */}
-            <View className="mt-4 mb-10 flex-row justify-center">
-              <Text className="text-slate-500 font-medium">Already a member? </Text>
-              <TouchableOpacity onPress={() => router.push("/(auth)/login")}>
-                <Text className="text-indigo-600 font-bold">Log in</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

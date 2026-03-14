@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
-import { Platform, StyleSheet } from "react-native";
+import { Platform } from "react-native";
 
 export default function TabsLayout() {
   return (
@@ -9,8 +9,17 @@ export default function TabsLayout() {
         headerShown: false,
         tabBarShowLabel: false,
         tabBarActiveTintColor: "#000000",
-        tabBarInactiveTintColor: "#262626",
-        tabBarStyle: styles.tabBar,
+        tabBarInactiveTintColor: "#8e8e8e",
+        tabBarStyle: {
+          backgroundColor: "#ffffff",
+          height: Platform.OS === "ios" ? 88 : 65,
+          borderTopWidth: 0.5,
+          borderTopColor: "#dbdbdb",
+          elevation: 0,
+          shadowOpacity: 0,
+          paddingBottom: Platform.OS === "ios" ? 30 : 10,
+          paddingTop: 10,
+        },
       }}
     >
       <Tabs.Screen
@@ -19,7 +28,7 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? "home" : "home-outline"}
-              size={26}
+              size={24}
               color={color}
             />
           ),
@@ -31,8 +40,8 @@ export default function TabsLayout() {
         options={{
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
-              name={focused ? "add-circle" : "add-circle-outline"}
-              size={30}
+              name={focused ? "add" : "add-outline"}
+              size={26}
               color={color}
             />
           ),
@@ -40,12 +49,25 @@ export default function TabsLayout() {
       />
 
       <Tabs.Screen
-        name="my-cases"
+        name="profile"
         options={{
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
-              name={focused ? "copy" : "copy-outline"}
-              size={26}
+              name={focused ? "person" : "person-outline"}
+              size={24}
+              color={color}
+            />
+          ),
+        }}
+      />
+
+      <Tabs.Screen
+        name="settings"
+        options={{
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? "settings" : "settings-outline"}
+              size={24}
               color={color}
             />
           ),
@@ -54,16 +76,3 @@ export default function TabsLayout() {
     </Tabs>
   );
 }
-
-const styles = StyleSheet.create({
-  tabBar: {
-    backgroundColor: "#ffffff",
-    height: Platform.OS === "ios" ? 88 : 65,
-    borderTopWidth: 0.5,
-    borderTopColor: "#dbdbdb",
-    elevation: 0,
-    shadowOpacity: 0,
-    paddingBottom: Platform.OS === "ios" ? 30 : 10,
-    paddingTop: 10,
-  },
-});

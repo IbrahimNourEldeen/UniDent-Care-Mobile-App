@@ -2,13 +2,14 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import {
+  AlertCircle,
   ArrowRight,
+  ChevronLeft,
   Eye,
   EyeOff,
   Lock,
   Mail,
   ShieldCheck,
-  AlertCircle, // أيقونة للخطأ
   XCircle,
 } from "lucide-react-native";
 import React, { useState } from "react";
@@ -36,7 +37,7 @@ export default function LoginScreen() {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const [showPassword, setShowPassword] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null); // حالة رسالة الخطأ
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const {
     control,
@@ -56,11 +57,11 @@ export default function LoginScreen() {
       }
     },
     onError: (error: any) => {
-      // استخراج الرسالة وعرضها في الـ Banner
-      const msg = error?.response?.data?.message || "Invalid credentials. Please try again.";
+      const msg =
+        error?.response?.data?.message ||
+        "Invalid credentials. Please try again.";
       setErrorMessage(msg);
-      
-      // اختياري: إخفاء الرسالة تلقائياً بعد 5 ثواني
+
       setTimeout(() => setErrorMessage(null), 5000);
     },
   });
@@ -73,9 +74,14 @@ export default function LoginScreen() {
         contentContainerStyle={{ flexGrow: 1 }}
         keyboardShouldPersistTaps="handled"
       >
+        <TouchableOpacity onPress={() => router.replace("/")} className="absolute">
+          <View className="flex-row items-center mb-6 self-start p-2 -ml-2">
+            <ChevronLeft color="#4f46e5" size={24} />
+            <Text className="text-blue-600 font-bold text-lg ml-1">Home</Text>
+          </View>
+        </TouchableOpacity>
+
         <View className="flex-1 justify-center px-6 py-10">
-          
-          {/* Logo Section */}
           <View className="items-center mb-10">
             <View className="w-20 h-20 bg-blue-600 rounded-3xl items-center justify-center shadow-xl shadow-blue-500/50">
               <ShieldCheck color="white" size={40} />
@@ -88,7 +94,6 @@ export default function LoginScreen() {
             </Text>
           </View>
 
-          {/* Error Message Banner - التصميم الجديد */}
           {errorMessage && (
             <View className="mb-6 flex-row items-center bg-red-50 border border-red-200 p-4 rounded-2xl shadow-sm">
               <AlertCircle color="#ef4444" size={20} />
@@ -102,7 +107,6 @@ export default function LoginScreen() {
           )}
 
           <View className="space-y-4">
-            {/* Email Field */}
             <View>
               <Text className="text-sm font-bold text-slate-700 mb-2 ml-1">
                 Email Address
@@ -117,11 +121,11 @@ export default function LoginScreen() {
                   render={({ field: { onChange, onBlur, value } }) => (
                     <TextInput
                       className="flex-1 ml-3 text-slate-900 font-medium"
-                      placeholder="name@unident.com"
+                      placeholder="Email or Phone number"
                       onBlur={onBlur}
                       onChangeText={onChange}
                       value={value}
-                      keyboardType="email-address"
+                      keyboardType="default"
                       autoCapitalize="none"
                       placeholderTextColor="#cbd5e1"
                     />
@@ -135,7 +139,6 @@ export default function LoginScreen() {
               )}
             </View>
 
-            {/* Password Field */}
             <View className="mt-4">
               <View className="flex-row justify-between items-center mb-2 ml-1">
                 <Text className="text-sm font-bold text-slate-700">

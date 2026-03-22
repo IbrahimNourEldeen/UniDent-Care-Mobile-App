@@ -19,9 +19,12 @@ import {
   forgetPasswordSchema,
   ForgetPasswordValues,
 } from "../../features/auth/schemas/forgetPasswordSchema";
+import { useThemeLanguage } from "../../store/ThemeLanguageContext";
 
 export default function ForgetPasswordScreen() {
   const router = useRouter();
+  const { theme } = useThemeLanguage();
+  const isDark = theme === "dark";
 
   const {
     control,
@@ -51,40 +54,41 @@ export default function ForgetPasswordScreen() {
   const onSubmit = (data: ForgetPasswordValues) => forgetMutation.mutate(data);
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView className="flex-1 bg-white dark:bg-slate-950">
       <View className="px-6 pt-10">
         <TouchableOpacity
           onPress={() => router.back()}
-          className="mb-8 w-10 h-10 items-center justify-center rounded-full bg-slate-50"
+          className="mb-8 w-10 h-10 items-center justify-center rounded-full bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800"
         >
-          <ArrowLeft color="#1e293b" size={24} />
+          <ArrowLeft color={isDark ? "#cbd5e1" : "#1e293b"} size={24} />
         </TouchableOpacity>
 
         <View className="mb-10">
-          <Text className="text-3xl font-black text-slate-900">
+          <Text className="text-3xl font-black text-slate-900 dark:text-white">
             Forgot Password? 🔑
           </Text>
-          <Text className="mt-2 text-slate-500 font-medium leading-6">
+          <Text className="mt-2 text-slate-500 dark:text-slate-400 font-medium leading-6">
             Enter your email and we'll send you a link to reset your password.
           </Text>
         </View>
 
         <View className="space-y-6">
           <View>
-            <Text className="text-sm font-bold text-slate-700 mb-2 ml-1">
+            <Text className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 ml-1">
               Email Address
             </Text>
             <View
-              className={`flex-row items-center bg-slate-50 border-2 ${errors.email ? "border-red-400" : "border-slate-100"} rounded-2xl px-4 py-4`}
+              className={`flex-row items-center bg-slate-50 dark:bg-slate-900 border-2 ${errors.email ? "border-red-400 dark:border-red-500" : "border-slate-100 dark:border-slate-800"} rounded-2xl px-4 py-4`}
             >
-              <Mail color="#94a3b8" size={20} />
+              <Mail color={isDark ? "#64748b" : "#94a3b8"} size={20} />
               <Controller
                 control={control}
                 name="email"
                 render={({ field: { onChange, onBlur, value } }) => (
                   <TextInput
-                    className="flex-1 ml-3 text-slate-900 font-medium"
+                    className="flex-1 ml-3 text-slate-900 dark:text-white font-medium"
                     placeholder="name@example.com"
+                    placeholderTextColor={isDark ? "#475569" : "#cbd5e1"}
                     onBlur={onBlur}
                     onChangeText={onChange}
                     value={value}
@@ -104,7 +108,7 @@ export default function ForgetPasswordScreen() {
           <TouchableOpacity
             onPress={handleSubmit(onSubmit)}
             disabled={forgetMutation.isPending}
-            className={`mt-6 h-16 rounded-2xl items-center justify-center bg-blue-600 ${forgetMutation.isPending ? "opacity-70" : ""}`}
+            className={`mt-6 h-16 rounded-2xl items-center justify-center bg-blue-600 dark:bg-indigo-600 ${forgetMutation.isPending ? "opacity-70" : ""}`}
           >
             {forgetMutation.isPending ? (
               <ActivityIndicator color="white" />

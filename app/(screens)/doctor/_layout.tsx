@@ -1,19 +1,24 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 import { Platform } from "react-native";
+import { useThemeLanguage } from "../../../store/ThemeLanguageContext";
 
 export default function DoctorTabsLayout() {
+  const { theme } = useThemeLanguage();
+  const isDark = theme === "dark";
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarShowLabel: false,
-        tabBarActiveTintColor: "#2563eb", 
+        tabBarActiveTintColor: isDark ? "#ffffff" : "#2563eb", 
+        tabBarInactiveTintColor: isDark ? "#475569" : "#8e8e8e",
         tabBarStyle: {
-          backgroundColor: "#ffffff",
+          backgroundColor: isDark ? "#0f172a" : "#ffffff",
           height: Platform.OS === "ios" ? 88 : 65,
           borderTopWidth: 0.5,
-          borderTopColor: "#dbdbdb",
+          borderTopColor: isDark ? "#1e293b" : "#dbdbdb",
           paddingBottom: Platform.OS === "ios" ? 30 : 10,
           paddingTop: 10,
         },

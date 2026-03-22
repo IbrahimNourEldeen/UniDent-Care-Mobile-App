@@ -34,10 +34,14 @@ import {
   PatientSignupValues,
 } from "../../features/auth/schemas/patientSignupSchema";
 import { authService } from "../../features/auth/services/authService";
+import { useThemeLanguage } from "../../store/ThemeLanguageContext";
 
 export default function PatientSignupScreen() {
   const router = useRouter();
+  const { theme } = useThemeLanguage();
   const [showPassword, setShowPassword] = useState(false);
+
+  const isDark = theme === "dark";
 
   const {
     control,
@@ -73,7 +77,7 @@ export default function PatientSignupScreen() {
   const onSubmit = (data: PatientSignupValues) => signupMutation.mutate(data);
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50">
+    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-950">
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
@@ -87,35 +91,36 @@ export default function PatientSignupScreen() {
             onPress={() => router.back()}
             className="flex-row items-center mb-6"
           >
-            <ChevronLeft color="#2563eb" size={24} />
-            <Text className="text-blue-600 font-bold text-lg ml-1">Back</Text>
+            <ChevronLeft color={isDark ? "#818cf8" : "#2563eb"} size={24} />
+            <Text className="text-blue-600 dark:text-indigo-400 font-bold text-lg ml-1">Back</Text>
           </TouchableOpacity>
 
           <View className="items-center mb-8">
-            <View className="w-16 h-16 bg-blue-600 rounded-2xl items-center justify-center shadow-lg shadow-blue-200">
+            <View className="w-16 h-16 bg-blue-600 dark:bg-indigo-600 rounded-2xl items-center justify-center shadow-lg shadow-blue-200 dark:shadow-indigo-900/50">
               <FontAwesome5 name="tooth" size={28} color="white" />
             </View>
-            <Text className="text-3xl font-black text-slate-900 mt-4 text-center">
+            <Text className="text-3xl font-black text-slate-900 dark:text-white mt-4 text-center">
               Patient Registration
             </Text>
           </View>
 
           <View className="space-y-4">
             <View>
-              <Text className="text-sm font-bold text-slate-700 mb-2 ml-1">
+              <Text className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 ml-1">
                 Full Name
               </Text>
               <View
-                className={`flex-row items-center bg-white border-2 ${errors.fullName ? "border-red-400" : "border-slate-100"} rounded-2xl px-4 py-3 shadow-sm`}
+                className={`flex-row items-center bg-white dark:bg-slate-900 border-2 ${errors.fullName ? "border-red-400 dark:border-red-500" : "border-slate-100 dark:border-slate-800"} rounded-2xl px-4 py-3 shadow-sm dark:shadow-none`}
               >
-                <User color="#94a3b8" size={20} />
+                <User color={isDark ? "#64748b" : "#94a3b8"} size={20} />
                 <Controller
                   control={control}
                   name="fullName"
                   render={({ field: { onChange, onBlur, value } }) => (
                     <TextInput
-                      className="flex-1 ml-3 text-slate-900 font-medium"
+                      className="flex-1 ml-3 text-slate-900 dark:text-white font-medium"
                       placeholder="Ahmed Salem"
+                      placeholderTextColor={isDark ? "#475569" : "#cbd5e1"}
                       onBlur={onBlur}
                       onChangeText={onChange}
                       value={value}
@@ -131,20 +136,21 @@ export default function PatientSignupScreen() {
             </View>
 
             <View className="mt-4">
-              <Text className="text-sm font-bold text-slate-700 mb-2 ml-1">
+              <Text className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 ml-1">
                 Phone Number
               </Text>
               <View
-                className={`flex-row items-center bg-white border-2 ${errors.phoneNumber ? "border-red-400" : "border-slate-100"} rounded-2xl px-4 py-3 shadow-sm`}
+                className={`flex-row items-center bg-white dark:bg-slate-900 border-2 ${errors.phoneNumber ? "border-red-400 dark:border-red-500" : "border-slate-100 dark:border-slate-800"} rounded-2xl px-4 py-3 shadow-sm dark:shadow-none`}
               >
-                <Phone color="#94a3b8" size={20} />
+                <Phone color={isDark ? "#64748b" : "#94a3b8"} size={20} />
                 <Controller
                   control={control}
                   name="phoneNumber"
                   render={({ field: { onChange, onBlur, value } }) => (
                     <TextInput
-                      className="flex-1 ml-3 text-slate-900 font-medium"
+                      className="flex-1 ml-3 text-slate-900 dark:text-white font-medium"
                       placeholder="01xxxxxxxxx"
+                      placeholderTextColor={isDark ? "#475569" : "#cbd5e1"}
                       keyboardType="phone-pad"
                       onBlur={onBlur}
                       onChangeText={onChange}
@@ -161,20 +167,21 @@ export default function PatientSignupScreen() {
             </View>
 
             <View className="mt-4">
-              <Text className="text-sm font-bold text-slate-700 mb-2 ml-1">
+              <Text className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 ml-1">
                 National ID
               </Text>
               <View
-                className={`flex-row items-center bg-white border-2 ${errors.nationalId ? "border-red-400" : "border-slate-100"} rounded-2xl px-4 py-3 shadow-sm`}
+                className={`flex-row items-center bg-white dark:bg-slate-900 border-2 ${errors.nationalId ? "border-red-400 dark:border-red-500" : "border-slate-100 dark:border-slate-800"} rounded-2xl px-4 py-3 shadow-sm dark:shadow-none`}
               >
-                <Fingerprint color="#94a3b8" size={20} />
+                <Fingerprint color={isDark ? "#64748b" : "#94a3b8"} size={20} />
                 <Controller
                   control={control}
                   name="nationalId"
                   render={({ field: { onChange, onBlur, value } }) => (
                     <TextInput
-                      className="flex-1 ml-3 text-slate-900 font-medium"
+                      className="flex-1 ml-3 text-slate-900 dark:text-white font-medium"
                       placeholder="14-digit national ID"
+                      placeholderTextColor={isDark ? "#475569" : "#cbd5e1"}
                       keyboardType="numeric"
                       maxLength={14}
                       onBlur={onBlur}
@@ -192,20 +199,21 @@ export default function PatientSignupScreen() {
             </View>
 
             <View className="mt-4">
-              <Text className="text-sm font-bold text-slate-700 mb-2 ml-1">
+              <Text className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 ml-1">
                 Date of Birth
               </Text>
               <View
-                className={`flex-row items-center bg-white border-2 ${errors.birthDate ? "border-red-400" : "border-slate-100"} rounded-2xl px-4 py-3 shadow-sm`}
+                className={`flex-row items-center bg-white dark:bg-slate-900 border-2 ${errors.birthDate ? "border-red-400 dark:border-red-500" : "border-slate-100 dark:border-slate-800"} rounded-2xl px-4 py-3 shadow-sm dark:shadow-none`}
               >
-                <Calendar color="#94a3b8" size={20} />
+                <Calendar color={isDark ? "#64748b" : "#94a3b8"} size={20} />
                 <Controller
                   control={control}
                   name="birthDate"
                   render={({ field: { onChange, onBlur, value } }) => (
                     <TextInput
-                      className="flex-1 ml-3 text-slate-900 font-medium"
+                      className="flex-1 ml-3 text-slate-900 dark:text-white font-medium"
                       placeholder="YYYY-MM-DD"
+                      placeholderTextColor={isDark ? "#475569" : "#cbd5e1"}
                       onBlur={onBlur}
                       onChangeText={onChange}
                       value={value}
@@ -217,20 +225,21 @@ export default function PatientSignupScreen() {
 
             <View className="flex-row space-x-3 mt-4">
               <View className="flex-1">
-                <Text className="text-sm font-bold text-slate-700 mb-2 ml-1">
+                <Text className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 ml-1">
                   City ID
                 </Text>
                 <View
-                  className={`flex-row items-center bg-white border-2 border-slate-100 rounded-2xl px-4 py-3 shadow-sm`}
+                  className={`flex-row items-center bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-2xl px-4 py-3 shadow-sm dark:shadow-none`}
                 >
-                  <MapPin color="#94a3b8" size={18} />
+                  <MapPin color={isDark ? "#64748b" : "#94a3b8"} size={18} />
                   <Controller
                     control={control}
                     name="city"
                     render={({ field: { onChange, value } }) => (
                       <TextInput
-                        className="flex-1 ml-2 text-slate-900 font-medium"
+                        className="flex-1 ml-2 text-slate-900 dark:text-white font-medium"
                         placeholder="0"
+                        placeholderTextColor={isDark ? "#475569" : "#cbd5e1"}
                         keyboardType="numeric"
                         onChangeText={(val) => onChange(Number(val))}
                         value={value.toString()}
@@ -241,30 +250,30 @@ export default function PatientSignupScreen() {
               </View>
 
               <View className="flex-1">
-                <Text className="text-sm font-bold text-slate-700 mb-2 ml-1">
+                <Text className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 ml-1">
                   Gender
                 </Text>
                 <Controller
                   control={control}
                   name="gender"
                   render={({ field: { onChange, value } }) => (
-                    <View className="flex-row bg-slate-100 p-1 rounded-2xl">
+                    <View className="flex-row bg-slate-100 dark:bg-slate-800 p-1 rounded-2xl">
                       <TouchableOpacity
                         onPress={() => onChange(0)}
-                        className={`flex-1 py-2 rounded-xl items-center ${value === 0 ? "bg-white shadow-sm" : ""}`}
+                        className={`flex-1 py-2 rounded-xl items-center ${value === 0 ? "bg-white dark:bg-slate-700 shadow-sm dark:shadow-none" : ""}`}
                       >
                         <Text
-                          className={`font-bold ${value === 0 ? "text-blue-600" : "text-slate-400"}`}
+                          className={`font-bold ${value === 0 ? "text-blue-600 dark:text-indigo-400" : "text-slate-400 dark:text-slate-500"}`}
                         >
                           M
                         </Text>
                       </TouchableOpacity>
                       <TouchableOpacity
                         onPress={() => onChange(1)}
-                        className={`flex-1 py-2 rounded-xl items-center ${value === 1 ? "bg-white shadow-sm" : ""}`}
+                        className={`flex-1 py-2 rounded-xl items-center ${value === 1 ? "bg-white dark:bg-slate-700 shadow-sm dark:shadow-none" : ""}`}
                       >
                         <Text
-                          className={`font-bold ${value === 1 ? "text-blue-600" : "text-slate-400"}`}
+                          className={`font-bold ${value === 1 ? "text-blue-600 dark:text-indigo-400" : "text-slate-400 dark:text-slate-500"}`}
                         >
                           F
                         </Text>
@@ -276,20 +285,21 @@ export default function PatientSignupScreen() {
             </View>
 
             <View className="mt-4">
-              <Text className="text-sm font-bold text-slate-700 mb-2 ml-1">
+              <Text className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 ml-1">
                 Password
               </Text>
               <View
-                className={`flex-row items-center bg-white border-2 ${errors.password ? "border-red-400" : "border-slate-100"} rounded-2xl px-4 py-3 shadow-sm`}
+                className={`flex-row items-center bg-white dark:bg-slate-900 border-2 ${errors.password ? "border-red-400 dark:border-red-500" : "border-slate-100 dark:border-slate-800"} rounded-2xl px-4 py-3 shadow-sm dark:shadow-none`}
               >
-                <Lock color="#94a3b8" size={20} />
+                <Lock color={isDark ? "#64748b" : "#94a3b8"} size={20} />
                 <Controller
                   control={control}
                   name="password"
                   render={({ field: { onChange, value } }) => (
                     <TextInput
-                      className="flex-1 ml-3 text-slate-900 font-medium"
+                      className="flex-1 ml-3 text-slate-900 dark:text-white font-medium"
                       placeholder="••••••••"
+                      placeholderTextColor={isDark ? "#475569" : "#cbd5e1"}
                       secureTextEntry={!showPassword}
                       onChangeText={onChange}
                       value={value}
@@ -300,9 +310,9 @@ export default function PatientSignupScreen() {
                   onPress={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? (
-                    <EyeOff color="#94a3b8" size={20} />
+                    <EyeOff color={isDark ? "#64748b" : "#94a3b8"} size={20} />
                   ) : (
-                    <Eye color="#94a3b8" size={20} />
+                    <Eye color={isDark ? "#64748b" : "#94a3b8"} size={20} />
                   )}
                 </TouchableOpacity>
               </View>
@@ -317,7 +327,7 @@ export default function PatientSignupScreen() {
               onPress={handleSubmit(onSubmit)}
               disabled={signupMutation.isPending}
               activeOpacity={0.8}
-              className={`mt-10 bg-slate-900 h-16 rounded-3xl flex-row items-center justify-center shadow-xl ${signupMutation.isPending ? "opacity-70" : ""}`}
+              className={`mt-10 ${isDark ? "bg-indigo-600" : "bg-slate-900"} h-16 rounded-3xl flex-row items-center justify-center shadow-xl dark:shadow-none ${signupMutation.isPending ? "opacity-70" : ""}`}
             >
               {signupMutation.isPending ? (
                 <ActivityIndicator color="white" />
@@ -329,6 +339,15 @@ export default function PatientSignupScreen() {
                   <ArrowRight color="white" size={20} />
                 </>
               )}
+            </TouchableOpacity>
+          </View>
+
+          <View className="mt-6 mb-10 flex-row justify-center">
+            <Text className="text-slate-500 dark:text-slate-400 font-medium">
+              Already have an account?{" "}
+            </Text>
+            <TouchableOpacity onPress={() => router.push("/(auth)/login")}>
+              <Text className="text-blue-600 dark:text-indigo-400 font-bold">Log in here</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>

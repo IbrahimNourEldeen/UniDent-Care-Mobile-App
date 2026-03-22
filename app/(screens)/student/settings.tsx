@@ -1,5 +1,5 @@
-import SettingsPage from "@/components/common/settingPage";
+import SettingsScreen from '../../../features/settings/SettingsScreen';
 
-export default function SettingsScreen() {
-  return <SettingsPage />;
+export default function StudentSettings() {
+  return <SettingsScreen />;
 }

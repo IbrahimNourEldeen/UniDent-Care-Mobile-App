@@ -1,4 +1,5 @@
-import { Text } from "react-native";
-export default function myProfile() {
-  return <Text>myProfile</Text>;
+import ProfileScreen from '../../../features/settings/ProfileScreen';
+
+export default function StudentProfile() {
+  return <ProfileScreen />;
 }

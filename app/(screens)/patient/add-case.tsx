@@ -33,10 +33,15 @@ import {
 import { getCaseTypes } from "@/features/cases/server/caseTypes.action";
 import { createCase } from "@/features/cases/services/caseService";
 import { RootState } from "@/store/store";
+import { useThemeLanguage } from "@/store/ThemeLanguageContext";
+
 export default function AddCaseScreen() {
   const patientId = useSelector(
     (state: RootState) => (state?.auth.user as any)?.publicId,
   );
+  const { theme } = useThemeLanguage();
+  const isDark = theme === "dark";
+
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [caseTypes, setCaseTypes] = useState<any[]>([]);
@@ -116,7 +121,7 @@ export default function AddCaseScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView className="flex-1 bg-white dark:bg-slate-950">
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
@@ -126,33 +131,34 @@ export default function AddCaseScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View className="items-center mt-6 mb-8">
-            <View className="w-14 h-14 bg-indigo-600 rounded-2xl items-center justify-center shadow-lg shadow-indigo-200">
+            <View className="w-14 h-14 bg-indigo-600 dark:bg-indigo-500 rounded-2xl items-center justify-center shadow-lg shadow-indigo-200 dark:shadow-none">
               <ClipboardPlus size={28} color="white" />
             </View>
-            <Text className="text-2xl font-black text-slate-800 mt-4">
+            <Text className="text-2xl font-black text-slate-800 dark:text-white mt-4">
               Create Case
             </Text>
-            <Text className="text-slate-400 text-sm">
+            <Text className="text-slate-400 dark:text-slate-500 text-sm">
               Fill in the medical details
             </Text>
           </View>
 
           {/* Case Subject */}
           <View className="mb-5">
-            <Text className="text-[12px] font-black text-slate-500 uppercase ml-1 mb-2">
+            <Text className="text-[12px] font-black text-slate-500 dark:text-slate-400 uppercase ml-1 mb-2">
               Subject
             </Text>
             <View
-              className={`bg-slate-50 border-2 ${errors.Title ? "border-red-200" : "border-slate-50"} rounded-2xl px-4 py-3 flex-row items-center`}
+              className={`bg-slate-50 dark:bg-slate-900 border-2 ${errors.Title ? "border-red-200 dark:border-red-500" : "border-slate-50 dark:border-slate-800"} rounded-2xl px-4 py-3 flex-row items-center`}
             >
-              <FileText size={18} color="#64748b" />
+              <FileText size={18} color={isDark ? "#64748b" : "#64748b"} />
               <Controller
                 control={control}
                 name="Title"
                 render={({ field: { onChange, value } }) => (
                   <TextInput
-                    className="flex-1 ml-3 font-bold text-slate-800"
+                    className="flex-1 ml-3 font-bold text-slate-800 dark:text-white"
                     placeholder="Brief condition name"
+                    placeholderTextColor={isDark ? "#475569" : "#cbd5e1"}
                     onChangeText={onChange}
                     value={value}
                   />
@@ -168,34 +174,35 @@ export default function AddCaseScreen() {
 
           {/* Specialty Dropdown */}
           <View className="mb-5" style={{ zIndex: 1000 }}>
-            <Text className="text-[12px] font-black text-slate-500 uppercase ml-1 mb-2">
+            <Text className="text-[12px] font-black text-slate-500 dark:text-slate-400 uppercase ml-1 mb-2">
               Specialty
             </Text>
             <TouchableOpacity
               onPress={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="bg-slate-50 border-2 border-slate-50 rounded-2xl px-4 py-4 flex-row justify-between items-center"
+              className="bg-slate-50 dark:bg-slate-900 border-2 border-slate-50 dark:border-slate-800 rounded-2xl px-4 py-4 flex-row justify-between items-center"
             >
               <View className="flex-row items-center">
-                <Stethoscope size={18} color="#4f46e5" />
+                <Stethoscope size={18} color={isDark ? "#818cf8" : "#4f46e5"} />
                 <Text
-                  className={`ml-3 font-bold ${selectedTypeName ? "text-slate-800" : "text-slate-400"}`}
+                  className={`ml-3 font-bold ${selectedTypeName ? "text-slate-800 dark:text-white" : "text-slate-400 dark:text-slate-500"}`}
                 >
                   {selectedTypeName || "Select Specialty"}
                 </Text>
               </View>
-              <ChevronDown size={18} color="#94a3b8" />
+              <ChevronDown size={18} color={isDark ? "#64748b" : "#94a3b8"} />
             </TouchableOpacity>
 
             {isDropdownOpen && (
-              <View className="bg-white border border-slate-100 rounded-2xl mt-2 shadow-xl p-3 max-h-60">
+              <View className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl mt-2 shadow-xl dark:shadow-none p-3 max-h-60">
                 <TextInput
                   placeholder="Search..."
-                  className="bg-slate-50 rounded-xl px-4 py-2 mb-2 font-bold"
+                  placeholderTextColor={isDark ? "#475569" : "#94a3b8"}
+                  className="bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl px-4 py-2 mb-2 font-bold"
                   onChangeText={setSearch}
                 />
                 <ScrollView nestedScrollEnabled>
                   {isLoadingTypes ? (
-                    <ActivityIndicator size="small" color="#4f46e5" />
+                    <ActivityIndicator size="small" color={isDark ? "#818cf8" : "#4f46e5"} />
                   ) : (
                     caseTypes.map((type) => (
                       <TouchableOpacity
@@ -205,13 +212,13 @@ export default function AddCaseScreen() {
                           setSelectedTypeName(type.name);
                           setIsDropdownOpen(false);
                         }}
-                        className="py-3 px-2 border-b border-slate-50 flex-row justify-between"
+                        className="py-3 px-2 border-b border-slate-50 dark:border-slate-800 flex-row justify-between"
                       >
-                        <Text className="font-bold text-slate-700">
+                        <Text className="font-bold text-slate-700 dark:text-slate-300">
                           {type.name}
                         </Text>
                         {selectedTypeName === type.name && (
-                          <Check size={16} color="#4f46e5" />
+                          <Check size={16} color={isDark ? "#818cf8" : "#4f46e5"} />
                         )}
                       </TouchableOpacity>
                     ))
@@ -228,11 +235,11 @@ export default function AddCaseScreen() {
 
           {/* Symptom Details */}
           <View className="mb-5">
-            <Text className="text-[12px] font-black text-slate-500 uppercase ml-1 mb-2">
+            <Text className="text-[12px] font-black text-slate-500 dark:text-slate-400 uppercase ml-1 mb-2">
               Details
             </Text>
             <View
-              className={`bg-slate-50 border-2 ${errors.Description ? "border-red-200" : "border-slate-50"} rounded-2xl px-4 py-4`}
+              className={`bg-slate-50 dark:bg-slate-900 border-2 ${errors.Description ? "border-red-200 dark:border-red-500" : "border-slate-50 dark:border-slate-800"} rounded-2xl px-4 py-4`}
             >
               <Controller
                 control={control}
@@ -243,7 +250,8 @@ export default function AddCaseScreen() {
                     numberOfLines={4}
                     textAlignVertical="top"
                     placeholder="Describe your pain..."
-                    className="font-bold text-slate-800 h-32"
+                    placeholderTextColor={isDark ? "#475569" : "#cbd5e1"}
+                    className="font-bold text-slate-800 dark:text-white h-32"
                     onChangeText={onChange}
                     value={value}
                   />
@@ -254,18 +262,18 @@ export default function AddCaseScreen() {
 
           {/* Image Upload */}
           <View className="mb-8">
-            <Text className="text-[12px] font-black text-slate-500 uppercase ml-1 mb-2">
+            <Text className="text-[12px] font-black text-slate-500 dark:text-slate-400 uppercase ml-1 mb-2">
               Case Images
             </Text>
             <TouchableOpacity
               onPress={pickImage}
-              className="border-2 border-dashed border-slate-200 bg-slate-50 rounded-2xl p-6 items-center"
+              className="border-2 border-dashed border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 rounded-2xl p-6 items-center"
             >
-              <ImageIcon size={32} color="#4f46e5" />
-              <Text className="text-slate-600 font-bold mt-2">
+              <ImageIcon size={32} color={isDark ? "#818cf8" : "#4f46e5"} />
+              <Text className="text-slate-600 dark:text-slate-300 font-bold mt-2">
                 Upload Medical Photos
               </Text>
-              <Text className="text-slate-400 text-xs mt-1">
+              <Text className="text-slate-400 dark:text-slate-500 text-xs mt-1">
                 Select from gallery
               </Text>
             </TouchableOpacity>
@@ -275,11 +283,11 @@ export default function AddCaseScreen() {
                 <View key={idx} className="relative">
                   <Image
                     source={{ uri: img.uri }}
-                    className="w-20 h-20 rounded-xl bg-slate-100"
+                    className="w-20 h-20 rounded-xl bg-slate-100 dark:bg-slate-800"
                   />
                   <TouchableOpacity
                     onPress={() => removeImage(idx)}
-                    className="absolute -top-2 -right-2 bg-red-500 rounded-full p-1"
+                    className="absolute -top-2 -right-2 bg-red-500 rounded-full p-1 shadow-sm"
                   >
                     <X size={12} color="white" />
                   </TouchableOpacity>
@@ -291,7 +299,7 @@ export default function AddCaseScreen() {
           <TouchableOpacity
             onPress={handleSubmit(onSubmit)}
             disabled={isSubmitting}
-            className={`bg-slate-900 h-16 rounded-2xl items-center justify-center mb-10 shadow-lg ${isSubmitting ? "opacity-50" : ""}`}
+            className={`bg-slate-900 dark:bg-indigo-600 h-16 rounded-2xl items-center justify-center mb-10 shadow-lg dark:shadow-none ${isSubmitting ? "opacity-50" : ""}`}
           >
             {isSubmitting ? (
               <ActivityIndicator color="white" />

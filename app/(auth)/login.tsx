@@ -32,12 +32,16 @@ import {
 import { authService } from "../../features/auth/services/authService";
 
 import * as SecureStore from "expo-secure-store";
+import { useThemeLanguage } from "../../store/ThemeLanguageContext";
 
 export default function LoginScreen() {
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const { theme } = useThemeLanguage();
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const isDark = theme === "dark";
 
   const {
     control,
@@ -69,65 +73,65 @@ export default function LoginScreen() {
   const onSubmit = (data: LoginFormValues) => loginMutation.mutate(data);
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50">
+    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-950">
       <ScrollView
         contentContainerStyle={{ flexGrow: 1 }}
         keyboardShouldPersistTaps="handled"
       >
-        <TouchableOpacity onPress={() => router.replace("/")} className="absolute">
+        <TouchableOpacity onPress={() => router.replace("/")} className="absolute z-10">
           <View className="flex-row items-center mb-6 self-start p-2 -ml-2">
-            <ChevronLeft color="#4f46e5" size={24} />
-            <Text className="text-blue-600 font-bold text-lg ml-1">Home</Text>
+            <ChevronLeft color={isDark ? "#818cf8" : "#4f46e5"} size={24} />
+            <Text className="text-blue-600 dark:text-indigo-400 font-bold text-lg ml-1">Home</Text>
           </View>
         </TouchableOpacity>
 
         <View className="flex-1 justify-center px-6 py-10">
           <View className="items-center mb-10">
-            <View className="w-20 h-20 bg-blue-600 rounded-3xl items-center justify-center shadow-xl shadow-blue-500/50">
+            <View className="w-20 h-20 bg-blue-600 dark:bg-indigo-600 rounded-3xl items-center justify-center shadow-xl shadow-blue-500/50 dark:shadow-indigo-900/50">
               <ShieldCheck color="white" size={40} />
             </View>
-            <Text className="text-3xl font-black text-slate-900 mt-4">
-              UniDent <Text className="text-blue-600">Care</Text>
+            <Text className="text-3xl font-black text-slate-900 dark:text-white mt-4">
+              UniDent <Text className="text-blue-600 dark:text-indigo-400">Care</Text>
             </Text>
-            <Text className="text-slate-500 font-medium italic mt-1">
+            <Text className="text-slate-500 dark:text-slate-400 font-medium italic mt-1">
               Your Smile, Our Passion
             </Text>
           </View>
 
           {errorMessage && (
-            <View className="mb-6 flex-row items-center bg-red-50 border border-red-200 p-4 rounded-2xl shadow-sm">
+            <View className="mb-6 flex-row items-center bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/50 p-4 rounded-2xl shadow-sm">
               <AlertCircle color="#ef4444" size={20} />
-              <Text className="flex-1 ml-3 text-red-600 font-bold text-sm">
+              <Text className="flex-1 ml-3 text-red-600 dark:text-red-400 font-bold text-sm">
                 {errorMessage}
               </Text>
               <TouchableOpacity onPress={() => setErrorMessage(null)}>
-                <XCircle color="#fca5a5" size={18} />
+                <XCircle color={isDark ? "#f87171" : "#fca5a5"} size={18} />
               </TouchableOpacity>
             </View>
           )}
 
           <View className="space-y-4">
             <View>
-              <Text className="text-sm font-bold text-slate-700 mb-2 ml-1">
+              <Text className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 ml-1">
                 Email Address
               </Text>
               <View
-                className={`flex-row items-center bg-white border-2 ${errors.email ? "border-red-400" : "border-slate-100"} rounded-2xl px-4 py-3 shadow-sm`}
+                className={`flex-row items-center bg-white dark:bg-slate-900 border-2 ${errors.email ? "border-red-400" : "border-slate-100 dark:border-slate-800"} rounded-2xl px-4 py-3 shadow-sm`}
               >
-                <Mail color="#94a3b8" size={20} />
+                <Mail color={isDark ? "#64748b" : "#94a3b8"} size={20} />
                 <Controller
                   control={control}
                   name="email"
                   render={({ field: { onChange, onBlur, value } }) => (
                     <TextInput
-                      className="flex-1 ml-3 text-slate-900 font-medium"
+                      className="flex-1 ml-3 text-slate-900 dark:text-white font-medium"
                       placeholder="Email or Phone number"
                       onBlur={onBlur}
                       onChangeText={onChange}
                       value={value}
                       keyboardType="default"
                       autoCapitalize="none"
-                      placeholderTextColor="#cbd5e1"
+                      placeholderTextColor={isDark ? "#475569" : "#cbd5e1"}
                     />
                   )}
                 />
@@ -141,34 +145,34 @@ export default function LoginScreen() {
 
             <View className="mt-4">
               <View className="flex-row justify-between items-center mb-2 ml-1">
-                <Text className="text-sm font-bold text-slate-700">
+                <Text className="text-sm font-bold text-slate-700 dark:text-slate-300">
                   Password
                 </Text>
                 <TouchableOpacity
                   activeOpacity={0.7}
                   onPress={() => router.push("/(auth)/forget-password")}
                 >
-                  <Text className="text-xs font-bold text-blue-600">
+                  <Text className="text-xs font-bold text-blue-600 dark:text-indigo-400">
                     Forgot?
                   </Text>
                 </TouchableOpacity>
               </View>
               <View
-                className={`flex-row items-center bg-white border-2 ${errors.password ? "border-red-400" : "border-slate-100"} rounded-2xl px-4 py-3 shadow-sm`}
+                className={`flex-row items-center bg-white dark:bg-slate-900 border-2 ${errors.password ? "border-red-400" : "border-slate-100 dark:border-slate-800"} rounded-2xl px-4 py-3 shadow-sm`}
               >
-                <Lock color="#94a3b8" size={20} />
+                <Lock color={isDark ? "#64748b" : "#94a3b8"} size={20} />
                 <Controller
                   control={control}
                   name="password"
                   render={({ field: { onChange, onBlur, value } }) => (
                     <TextInput
-                      className="flex-1 ml-3 text-slate-900 font-medium"
+                      className="flex-1 ml-3 text-slate-900 dark:text-white font-medium"
                       placeholder="••••••••"
                       onBlur={onBlur}
                       onChangeText={onChange}
                       value={value}
                       secureTextEntry={!showPassword}
-                      placeholderTextColor="#cbd5e1"
+                      placeholderTextColor={isDark ? "#475569" : "#cbd5e1"}
                     />
                   )}
                 />
@@ -177,9 +181,9 @@ export default function LoginScreen() {
                   className="p-1"
                 >
                   {showPassword ? (
-                    <EyeOff color="#94a3b8" size={20} />
+                    <EyeOff color={isDark ? "#64748b" : "#94a3b8"} size={20} />
                   ) : (
-                    <Eye color="#94a3b8" size={20} />
+                    <Eye color={isDark ? "#64748b" : "#94a3b8"} size={20} />
                   )}
                 </TouchableOpacity>
               </View>
@@ -195,7 +199,7 @@ export default function LoginScreen() {
               onPress={handleSubmit(onSubmit)}
               disabled={loginMutation.isPending}
               activeOpacity={0.8}
-              className={`mt-8 bg-slate-900 h-16 rounded-2xl flex-row items-center justify-center shadow-lg shadow-slate-300 ${loginMutation.isPending ? "opacity-70" : ""}`}
+              className={`mt-8 ${isDark ? "bg-indigo-600" : "bg-slate-900"} h-16 rounded-2xl flex-row items-center justify-center shadow-lg shadow-slate-300 dark:shadow-none ${loginMutation.isPending ? "opacity-70" : ""}`}
             >
               {loginMutation.isPending ? (
                 <ActivityIndicator color="white" />
@@ -212,11 +216,11 @@ export default function LoginScreen() {
 
           {/* Footer */}
           <View className="mt-10 flex-row justify-center">
-            <Text className="text-slate-500 font-medium">
+            <Text className="text-slate-500 dark:text-slate-400 font-medium">
               Don't have an account?{" "}
             </Text>
             <TouchableOpacity onPress={() => router.push("/patient-signup")}>
-              <Text className="text-blue-600 font-bold">Create one</Text>
+              <Text className="text-blue-600 dark:text-indigo-400 font-bold">Create one</Text>
             </TouchableOpacity>
           </View>
         </View>

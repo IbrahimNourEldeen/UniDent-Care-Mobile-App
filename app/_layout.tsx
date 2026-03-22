@@ -10,6 +10,8 @@ import { setUserFromReload } from "@/store/slices/authSlice";
 import { getDecodedToken } from "@/utils/decodeToken";
 import { getProfileByRole } from "../features/auth/services/authService";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
+import { ThemeLanguageProvider } from '../store/ThemeLanguageContext';
+import { useThemeLanguage } from '../store/ThemeLanguageContext';
 
 const queryClient = new QueryClient();
 
@@ -19,6 +21,7 @@ function InitialRootNavigation() {
   const segments = useSegments();
   const { isAuthenticated } = useAppSelector((state) => state.auth);
   const [isReady, setIsReady] = useState(false);
+  const { theme } = useThemeLanguage();
 
   useEffect(() => {
     const initializeAuth = async () => {
@@ -60,14 +63,14 @@ function InitialRootNavigation() {
 
   if (!isReady) {
     return (
-      <View className="flex-1 justify-center items-center bg-white">
-        <ActivityIndicator size="large" color="#2563eb" />
+      <View className="flex-1 justify-center items-center bg-white dark:bg-slate-950">
+        <ActivityIndicator size="large" color={theme === "dark" ? "#60a5fa" : "#2563eb"} />
       </View>
     );
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
+    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: theme === "dark" ? "#020617" : "#ffffff" } }}>
       <Stack.Screen name="index" />
     </Stack>
   );
@@ -77,7 +80,9 @@ export default function RootLayout() {
   return (
     <Provider store={store}>
       <QueryClientProvider client={queryClient}>
-        <InitialRootNavigation />
+        <ThemeLanguageProvider>
+          <InitialRootNavigation />
+        </ThemeLanguageProvider>
       </QueryClientProvider>
     </Provider>
   );

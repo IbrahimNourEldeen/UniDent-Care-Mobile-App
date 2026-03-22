@@ -30,9 +30,13 @@ import {
   ResetPasswordValues,
 } from "../../features/auth/schemas/resetPasswordSchema";
 import { authService } from "../../features/auth/services/authService";
+import { useThemeLanguage } from "../../store/ThemeLanguageContext";
 
 export default function ResetPasswordScreen() {
   const router = useRouter();
+  const { theme } = useThemeLanguage();
+  const isDark = theme === "dark";
+
   const { token, email } = useLocalSearchParams<{
     token: string;
     email: string;
@@ -84,7 +88,7 @@ export default function ResetPasswordScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50">
+    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-950">
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
@@ -98,38 +102,39 @@ export default function ResetPasswordScreen() {
             onPress={() => router.back()}
             className="flex-row items-center mb-10"
           >
-            <ChevronLeft color="#2563eb" size={24} />
-            <Text className="text-blue-600 font-bold text-lg ml-1">Back</Text>
+            <ChevronLeft color={isDark ? "#818cf8" : "#2563eb"} size={24} />
+            <Text className="text-blue-600 dark:text-indigo-400 font-bold text-lg ml-1">Back</Text>
           </TouchableOpacity>
 
           <View className="items-center mb-12">
-            <View className="w-20 h-20 bg-blue-100 rounded-full items-center justify-center mb-4">
-              <ShieldCheck color="#2563eb" size={45} />
+            <View className="w-20 h-20 bg-blue-100 dark:bg-indigo-900/40 rounded-full items-center justify-center mb-4">
+              <ShieldCheck color={isDark ? "#818cf8" : "#2563eb"} size={45} />
             </View>
-            <Text className="text-3xl font-black text-slate-900">
+            <Text className="text-3xl font-black text-slate-900 dark:text-white">
               New Password
             </Text>
-            <Text className="text-slate-500 font-medium text-center mt-2 px-4">
+            <Text className="text-slate-500 dark:text-slate-400 font-medium text-center mt-2 px-4">
               Enter your new password below to secure your account.
             </Text>
           </View>
 
           <View className="space-y-5">
             <View>
-              <Text className="text-sm font-bold text-slate-700 mb-2 ml-1">
+              <Text className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 ml-1">
                 New Password
               </Text>
               <View
-                className={`flex-row items-center bg-white border-2 ${errors.password ? "border-red-400" : "border-slate-100"} rounded-2xl px-4 py-4 shadow-sm shadow-slate-100`}
+                className={`flex-row items-center bg-white dark:bg-slate-900 border-2 ${errors.password ? "border-red-400 dark:border-red-500" : "border-slate-100 dark:border-slate-800"} rounded-2xl px-4 py-4 shadow-sm shadow-slate-100 dark:shadow-none`}
               >
-                <Lock color="#94a3b8" size={20} />
+                <Lock color={isDark ? "#64748b" : "#94a3b8"} size={20} />
                 <Controller
                   control={control}
                   name="password"
                   render={({ field: { onChange, onBlur, value } }) => (
                     <TextInput
-                      className="flex-1 ml-3 text-slate-900 font-semibold"
+                      className="flex-1 ml-3 text-slate-900 dark:text-white font-semibold"
                       placeholder="••••••••"
+                      placeholderTextColor={isDark ? "#475569" : "#cbd5e1"}
                       secureTextEntry={!showPassword}
                       onBlur={onBlur}
                       onChangeText={onChange}
@@ -141,9 +146,9 @@ export default function ResetPasswordScreen() {
                   onPress={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? (
-                    <EyeOff color="#94a3b8" size={20} />
+                    <EyeOff color={isDark ? "#64748b" : "#94a3b8"} size={20} />
                   ) : (
-                    <Eye color="#94a3b8" size={20} />
+                    <Eye color={isDark ? "#64748b" : "#94a3b8"} size={20} />
                   )}
                 </TouchableOpacity>
               </View>
@@ -158,20 +163,21 @@ export default function ResetPasswordScreen() {
             </View>
 
             <View className="mt-4">
-              <Text className="text-sm font-bold text-slate-700 mb-2 ml-1">
+              <Text className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 ml-1">
                 Confirm New Password
               </Text>
               <View
-                className={`flex-row items-center bg-white border-2 ${errors.confirmPassword ? "border-red-400" : "border-slate-100"} rounded-2xl px-4 py-4 shadow-sm shadow-slate-100`}
+                className={`flex-row items-center bg-white dark:bg-slate-900 border-2 ${errors.confirmPassword ? "border-red-400 dark:border-red-500" : "border-slate-100 dark:border-slate-800"} rounded-2xl px-4 py-4 shadow-sm shadow-slate-100 dark:shadow-none`}
               >
-                <Lock color="#94a3b8" size={20} />
+                <Lock color={isDark ? "#64748b" : "#94a3b8"} size={20} />
                 <Controller
                   control={control}
                   name="confirmPassword"
                   render={({ field: { onChange, onBlur, value } }) => (
                     <TextInput
-                      className="flex-1 ml-3 text-slate-900 font-semibold"
+                      className="flex-1 ml-3 text-slate-900 dark:text-white font-semibold"
                       placeholder="••••••••"
+                      placeholderTextColor={isDark ? "#475569" : "#cbd5e1"}
                       secureTextEntry={!showConfirmPassword}
                       onBlur={onBlur}
                       onChangeText={onChange}
@@ -183,9 +189,9 @@ export default function ResetPasswordScreen() {
                   onPress={() => setShowConfirmPassword(!showConfirmPassword)}
                 >
                   {showConfirmPassword ? (
-                    <EyeOff color="#94a3b8" size={20} />
+                    <EyeOff color={isDark ? "#64748b" : "#94a3b8"} size={20} />
                   ) : (
-                    <Eye color="#94a3b8" size={20} />
+                    <Eye color={isDark ? "#64748b" : "#94a3b8"} size={20} />
                   )}
                 </TouchableOpacity>
               </View>
@@ -203,7 +209,7 @@ export default function ResetPasswordScreen() {
               onPress={handleSubmit(onSubmit)}
               disabled={resetMutation.isPending}
               activeOpacity={0.8}
-              className={`mt-10 bg-blue-600 h-16 rounded-2xl flex-row items-center justify-center shadow-lg shadow-blue-200 ${resetMutation.isPending ? "opacity-70" : ""}`}
+              className={`mt-10 bg-blue-600 dark:bg-indigo-600 h-16 rounded-2xl flex-row items-center justify-center shadow-lg shadow-blue-200 dark:shadow-none ${resetMutation.isPending ? "opacity-70" : ""}`}
             >
               {resetMutation.isPending ? (
                 <ActivityIndicator color="white" />

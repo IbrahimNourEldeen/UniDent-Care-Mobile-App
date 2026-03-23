@@ -68,6 +68,13 @@ export default function DoctorTabsLayout() {
           ),
         }}
       />
+
+      <Tabs.Screen
+        name="my-student/[id]"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }

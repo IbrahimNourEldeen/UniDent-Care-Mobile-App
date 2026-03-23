@@ -291,7 +291,7 @@ export default function SettingsPage() {
           </View>
         </Modal>
 
-        <View className="mt-8 border-t border-slate-100 pt-6">
+        <View className=" mt-8 border-t border-slate-100 pt-6 ">
           <LogoutButton />
         </View>
       </ScrollView>

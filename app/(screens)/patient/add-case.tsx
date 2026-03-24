@@ -312,7 +312,6 @@ export default function AddCaseScreen() {
               </View>
             )}
           </TouchableOpacity>
-          <Text className="mb-14"></Text>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

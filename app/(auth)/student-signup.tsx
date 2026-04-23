@@ -6,31 +6,67 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient"; 
-import { User, Mail, Lock, GraduationCap, Eye, EyeOff, ArrowRight, ChevronLeft, BookOpen, Phone, AtSign, Hash, Sparkles } from "lucide-react-native";
+import {
+  AlertCircle,
+  ArrowRight,
+  AtSign,
+  BookOpen,
+  CheckCircle2,
+  ChevronLeft,
+  Eye,
+  EyeOff,
+  GraduationCap,
+  Hash,
+  Lock,
+  Mail,
+  Phone,
+  Sparkles,
+  User,
+  XCircle,
+} from "lucide-react-native";
 
 import { studentSignupSchema, StudentSignupValues } from "../../features/auth/schemas/studentSignupSchema";
 import { authService } from "../../features/auth/services/authService";
 import { useThemeLanguage } from "../../store/ThemeLanguageContext";
+import { UniversityPicker } from "../../components/auth/UniversityPicker";
+import { UniversityLookup } from "@/types/types";
+import BrandLogo from "@/components/common/BrandLogo";
 
 export default function StudentSignupScreen() {
   const router = useRouter();
   const { theme } = useThemeLanguage();
   const [showPassword, setShowPassword] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const isDark = theme === "dark";
 
-  const { control, handleSubmit, formState: { errors } } = useForm<StudentSignupValues>({
+  const { control, handleSubmit, setValue, formState: { errors } } = useForm<StudentSignupValues>({
     resolver: zodResolver(studentSignupSchema),
     defaultValues: { fullName: "", username: "", email: "", phone: "", universityId: "", level: 1, password: "" },
   });
 
   const signupMutation = useMutation({
     mutationFn: authService.registerStudent,
-    onSuccess: () => {
-      Alert.alert("Success! 🎓", "Academic account created.");
-      router.push("/(auth)/login");
+    onSuccess: (res) => {
+      if (res.success) {
+        setErrorMessage(null);
+        setSuccessMessage(res.message || "Registration successful! Redirecting...");
+        setTimeout(() => {
+          router.push("/(auth)/login");
+        }, 2000);
+      } else {
+        setErrorMessage(res.message || "Registration failed. Please try again.");
+      }
     },
-    onError: (err: any) => Alert.alert("Error", err?.response?.data?.message || "Registration failed"),
+    onError: (err: any) => {
+      const serverErrors = err?.response?.data?.error?.errors;
+      const msg = Array.isArray(serverErrors)
+        ? serverErrors.join("\n")
+        : err?.response?.data?.message || "Registration failed. Please check your data.";
+      setErrorMessage(msg);
+      setTimeout(() => setErrorMessage(null), 5000);
+    },
   });
 
   return (
@@ -43,8 +79,9 @@ export default function StudentSignupScreen() {
             <TouchableOpacity onPress={() => router.back()} className="w-10 h-10 bg-white dark:bg-slate-900 rounded-full items-center justify-center shadow-sm dark:border dark:border-slate-800">
               <ChevronLeft color={isDark ? "#cbd5e1" : "#1e293b"} size={24} />
             </TouchableOpacity>
-            <View className="bg-indigo-100 dark:bg-indigo-900/40 px-4 py-1.5 rounded-full">
-              <Text className="text-indigo-600 dark:text-indigo-400 font-bold text-xs uppercase tracking-widest">Student Portal</Text>
+            <View className="flex-row items-center bg-white dark:bg-slate-900 px-4 py-2 rounded-full shadow-sm border border-slate-50 dark:border-slate-800">
+              <BrandLogo size={20} isDark={isDark} />
+              <Text className="ml-2 text-indigo-600 dark:text-indigo-400 font-bold text-xs uppercase tracking-widest">Student Portal</Text>
             </View>
           </View>
 
@@ -52,6 +89,44 @@ export default function StudentSignupScreen() {
             <Text className="text-3xl font-black text-slate-900 dark:text-white leading-tight">Create your{"\n"}Academic Account</Text>
             <View className="h-1.5 w-12 bg-indigo-600 dark:bg-indigo-500 rounded-full mt-3" />
           </View>
+
+          {errorMessage && (
+            <View className="mb-6 flex-row items-center bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/50 p-4 rounded-2xl shadow-sm">
+              <AlertCircle color="#ef4444" size={20} />
+              <Text className="flex-1 ml-3 text-red-600 dark:text-red-400 font-bold text-sm">
+                {errorMessage}
+              </Text>
+              <TouchableOpacity onPress={() => setErrorMessage(null)}>
+                <XCircle color={isDark ? "#f87171" : "#fca5a5"} size={18} />
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {successMessage && (
+            <View className="mb-6 flex-row items-center bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-900/50 p-4 rounded-2xl shadow-sm">
+              <CheckCircle2 color="#10b981" size={20} />
+              <Text className="flex-1 ml-3 text-emerald-600 dark:text-emerald-400 font-bold text-sm">
+                {successMessage}
+              </Text>
+              <TouchableOpacity onPress={() => setSuccessMessage(null)}>
+                <XCircle color={isDark ? "#34d399" : "#6ee7b7"} size={18} />
+              </TouchableOpacity>
+            </View>
+          )}
+
+          <Controller
+            control={control}
+            name="universityId"
+            render={({ field: { value, onChange } }) => (
+              <UniversityPicker 
+                value={value}
+                error={errors.universityId?.message}
+                onSelect={(uni: UniversityLookup) => {
+                  onChange(uni.id);
+                }} 
+              />
+            )}
+          />
 
           {/* Form Card 1: Personal Info */}
           <View className="bg-white dark:bg-slate-900 rounded-[32px] p-6 shadow-xl shadow-slate-200 dark:shadow-none mb-5 border border-slate-50 dark:border-slate-800">
@@ -108,12 +183,6 @@ export default function StudentSignupScreen() {
 
             <View className="space-y-4">
               <View className="flex-row gap-3">
-                <View className="flex-[2] bg-slate-50 dark:bg-slate-950 rounded-2xl px-4 py-3 border border-slate-100 dark:border-slate-800">
-                  <Text className="text-[10px] font-bold text-slate-400 py-1 uppercase mb-1">University ID</Text>
-                  <Controller control={control} name="universityId" render={({ field: { onChange, value } }) => (
-                    <TextInput className="text-slate-900 dark:text-white font-bold text-xs" placeholder="UUID Code" placeholderTextColor={isDark ? "#475569" : "#cbd5e1"} onChangeText={onChange} value={value} />
-                  )} />
-                </View>
                 <View className="flex-1 bg-slate-50 dark:bg-slate-950 rounded-2xl px-4 py-3 border border-slate-100 dark:border-slate-800">
                   <Text className="text-[10px] font-bold text-slate-400 py-1 uppercase mb-1">Level</Text>
                   <Controller control={control} name="level" render={({ field: { onChange, value } }) => (

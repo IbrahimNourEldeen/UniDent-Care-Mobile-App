@@ -1,8 +1,8 @@
-import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
-import { useTranslation } from 'react-i18next';
-import { Calendar, ChevronRight, Clock } from 'lucide-react-native';
 import { useThemeLanguage } from '@/store/ThemeLanguageContext';
+import { ChevronRight, Clock } from 'lucide-react-native';
+import React from 'react';
+import { useTranslation } from 'react-i18next';
+import { Text, TouchableOpacity, View } from 'react-native';
 import { UpcomingSession } from '../../hooks/useStudentStats';
 
 interface UpcomingSessionsProps {

@@ -19,15 +19,19 @@ const authSlice = createSlice({
     initialState,
     reducers: {
         login: (state, action: PayloadAction<AuthData>) => {
-            state.user = action.payload.user;
+            state.user = action.payload.user || null;
             state.token = action.payload.token;
             state.role = action.payload.roles[0];
             state.isAuthenticated = true;
         },
-        setUserFromReload: (state, action: PayloadAction<{ user: User; role: string }>) => {
+        setUserFromReload: (state, action: PayloadAction<{ user: User; role: string; token: string }>) => {
             state.user = action.payload.user;
             state.role = action.payload.role;
-            state.isAuthenticated = !!action.payload.user;;
+            state.token = action.payload.token;
+            state.isAuthenticated = !!action.payload.user;
+        }, updateUser: (state, action: PayloadAction<User>) => {
+            state.user = action.payload;
+            state.isAuthenticated = !!action.payload;
         }, logout: (state) => {
             state.user = null;
             state.token = null;
@@ -38,6 +42,7 @@ const authSlice = createSlice({
 });
 export const { login,
     setUserFromReload,
+    updateUser,
     logout
 } = authSlice.actions;
 export default authSlice.reducer;

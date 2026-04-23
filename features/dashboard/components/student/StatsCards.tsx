@@ -1,10 +1,10 @@
-import React from 'react';
-import { View } from 'react-native';
-import { FileText, Clock, CheckCircle2, Calendar, Briefcase } from 'lucide-react-native';
-import { useTranslation } from 'react-i18next';
 import { StatCard } from '@/components/common/StatCard';
 import { useStudentStats } from '@/features/dashboard/hooks/useStudentStats';
 import { useThemeLanguage } from '@/store/ThemeLanguageContext';
+import { Briefcase, Calendar, CheckCircle2, Clock, FileText } from 'lucide-react-native';
+import React from 'react';
+import { useTranslation } from 'react-i18next';
+import { View } from 'react-native';
 
 export default function StatsCards() {
   const { t } = useTranslation();

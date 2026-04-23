@@ -75,6 +75,13 @@ export default function DoctorTabsLayout() {
           href: null,
         }}
       />
+
+      <Tabs.Screen
+        name="cases"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }

@@ -31,6 +31,7 @@ import {
 } from "../../features/auth/schemas/resetPasswordSchema";
 import { authService } from "../../features/auth/services/authService";
 import { useThemeLanguage } from "../../store/ThemeLanguageContext";
+import BrandLogo from "@/components/common/BrandLogo";
 
 export default function ResetPasswordScreen() {
   const router = useRouter();
@@ -107,8 +108,8 @@ export default function ResetPasswordScreen() {
           </TouchableOpacity>
 
           <View className="items-center mb-12">
-            <View className="w-20 h-20 bg-blue-100 dark:bg-indigo-900/40 rounded-full items-center justify-center mb-4">
-              <ShieldCheck color={isDark ? "#818cf8" : "#2563eb"} size={45} />
+            <View className="w-24 h-24 bg-blue-100 dark:bg-indigo-900/40 rounded-full items-center justify-center mb-4">
+              <BrandLogo size={56} isDark={isDark} />
             </View>
             <Text className="text-3xl font-black text-slate-900 dark:text-white">
               New Password

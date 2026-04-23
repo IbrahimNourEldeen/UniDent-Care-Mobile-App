@@ -1,30 +1,30 @@
-import React, { useState } from "react";
-import { View, Text, TouchableOpacity, ScrollView, TextInput, Modal, Alert, ActivityIndicator } from "react-native";
-import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useAppSelector, useAppDispatch } from "../../store/hooks";
 import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
-import { z } from "zod";
-import { useTranslation } from "react-i18next";
-import { useThemeLanguage } from "../../store/ThemeLanguageContext";
 import {
-  ShieldCheck,
-  Trash2,
-  Lock,
-  KeyRound,
-  Eye,
-  EyeOff,
-  AlertTriangle,
-  X,
-  Palette,
-  Monitor,
-  Moon,
-  Sun,
-  Globe,
-  LogOut,
+    AlertTriangle,
+    Eye,
+    EyeOff,
+    Globe,
+    KeyRound,
+    Lock,
+    LogOut,
+    Monitor,
+    Moon,
+    Palette,
+    ShieldCheck,
+    Sun,
+    Trash2,
+    X,
 } from "lucide-react-native";
+import React, { useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
+import { ActivityIndicator, Alert, Modal, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { z } from "zod";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { logout } from "../../store/slices/authSlice";
+import { useThemeLanguage } from "../../store/ThemeLanguageContext";
 import { changePassword, deleteAccount } from "./services/settingsService";
 
 const changePasswordSchema = z

@@ -21,6 +21,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useThemeLanguage } from "../store/ThemeLanguageContext";
+import BrandLogo from "@/components/common/BrandLogo";
 
 const { width } = Dimensions.get("window");
 
@@ -92,8 +93,8 @@ export default function LandingScreen() {
       <View className="px-5 pt-2 z-50 absolute top-12 left-0 right-0">
         <View className="flex-row items-center justify-between bg-white/90 dark:bg-slate-900/90 px-2 py-2 rounded-full shadow-xl shadow-slate-200 dark:shadow-none border border-slate-50 dark:border-slate-800">
           <View className="flex-row items-center pl-2">
-            <View className="w-9 h-9 bg-blue-600 dark:bg-indigo-600 rounded-full items-center justify-center">
-              <FontAwesome5 name="tooth" size={16} color="white" />
+            <View className="w-10 h-10 bg-blue-600 dark:bg-indigo-600 rounded-full items-center justify-center">
+              <BrandLogo size={22} isDark={true} />
             </View>
             <Text className="ml-3 text-lg font-black text-slate-900 dark:text-white tracking-tight">
               UniDent<Text className="text-blue-600 dark:text-indigo-400">Care</Text>
@@ -144,7 +145,7 @@ export default function LandingScreen() {
         </View>
 
         <View className="px-5">
-          <Text className="ml-2 text-sm font-black text-slate-400 dark:text-slate-500 mb-5 uppercase tracking-[2px]">
+          <Text style={{ letterSpacing: 2 }} className="ml-2 text-sm font-black text-slate-400 dark:text-slate-500 mb-5 uppercase">
             Choose Your Portal
           </Text>
 
@@ -189,8 +190,8 @@ export default function LandingScreen() {
         </View>
 
         <View className="mt-12 items-center px-6 opacity-30">
-          <FontAwesome5 name="tooth" size={16} color={isDark ? "#475569" : "#94a3b8"} />
-          <Text className="mt-2 font-black text-slate-900 dark:text-slate-400 tracking-[3px] uppercase text-[10px]">
+          <BrandLogo size={24} isDark={isDark} />
+          <Text style={{ letterSpacing: 3 }} className="mt-2 font-black text-slate-900 dark:text-slate-400 uppercase text-[10px]">
              UniDent Care
           </Text>
         </View>

@@ -6,12 +6,13 @@ import { ActivityIndicator, View } from "react-native";
 import { Provider } from "react-redux";
 import { store } from "../store/store";
 
-import { setUserFromReload } from "@/store/slices/authSlice";
+import { logout, setUserFromReload } from "@/store/slices/authSlice";
 import { getDecodedToken } from "@/utils/decodeToken";
 import { getProfileByRole } from "../features/auth/services/authService";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
-import { ThemeLanguageProvider } from '../store/ThemeLanguageContext';
-import { useThemeLanguage } from '../store/ThemeLanguageContext';
+import { ThemeLanguageProvider, useThemeLanguage } from '../store/ThemeLanguageContext';
+import Toast from "@/components/common/Toast";
+
 
 const queryClient = new QueryClient();
 
@@ -27,11 +28,42 @@ function InitialRootNavigation() {
     const initializeAuth = async () => {
       try {
         const token = await SecureStore.getItemAsync("token");
+        const storedPublicId = await SecureStore.getItemAsync("publicId");
+        const storedRole = await SecureStore.getItemAsync("role");
+
         if (token) {
-          const decoded = getDecodedToken(token);
-          if (decoded) {
-            const user = await getProfileByRole(decoded.role, decoded.publicId);
-            dispatch(setUserFromReload({ user, role: decoded.role }));
+          let publicId = storedPublicId;
+          let role = storedRole;
+
+          if (!publicId || !role) {
+            const decoded = getDecodedToken(token);
+            if (decoded) {
+              publicId = publicId || decoded.publicId;
+              role = role || decoded.role;
+            }
+          }
+
+          if (publicId && role) {
+            try {
+              const user = await getProfileByRole(role, publicId);
+              if (user) {
+                dispatch(setUserFromReload({ user, role, token }));
+              } else {
+                throw new Error("User profile not found");
+              }
+            } catch (apiError) {
+              console.error("Failed to fetch profile during restoration:", apiError);
+              await SecureStore.deleteItemAsync("token");
+              await SecureStore.deleteItemAsync("publicId");
+              await SecureStore.deleteItemAsync("role");
+              dispatch(logout());
+            }
+          } else {
+            console.warn("Could not determine publicId or role, clearing session");
+            await SecureStore.deleteItemAsync("token");
+            await SecureStore.deleteItemAsync("publicId");
+            await SecureStore.deleteItemAsync("role");
+            dispatch(logout());
           }
         }
       } catch (error) {
@@ -81,8 +113,10 @@ export default function RootLayout() {
     <Provider store={store}>
       <QueryClientProvider client={queryClient}>
         <ThemeLanguageProvider>
+          <Toast />
           <InitialRootNavigation />
         </ThemeLanguageProvider>
+
       </QueryClientProvider>
     </Provider>
   );

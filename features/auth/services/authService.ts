@@ -1,8 +1,9 @@
+import axios from "axios";
 import api from "../../../utils/api";
 import { PatientSignupValues } from "../schemas/patientSignupSchema";
 import { DoctorSignupValues } from "../schemas/doctorSignupSchema";
 import { StudentSignupValues } from "../schemas/studentSignupSchema";
-import { ApiResponse, LoginRequest, LoginResponse } from "@/types/types";
+import { ApiResponse, LoginRequest, LoginResponse, UniversityMembersResponse, UniversityLookupResponse, City } from "@/types/types";
 
 export const authService = {
     login: async (credentials: LoginRequest): Promise<LoginResponse> => {
@@ -31,6 +32,18 @@ export const authService = {
     registerStudent: async (data: StudentSignupValues): Promise<ApiResponse<any>> => {
         const response = await api.post<ApiResponse<any>>("/Students", data);
         return response.data;
+    },
+    getUniversityMembers: async (params?: { name?: string; role?: string }): Promise<UniversityMembersResponse> => {
+        const response = await api.get<UniversityMembersResponse>("/UniversityMembers", { params });
+        return response.data;
+    },
+    getUniversitiesLookup: async (): Promise<UniversityLookupResponse> => {
+        const response = await api.get<UniversityLookupResponse>("/Universities/lookup");
+        return response.data;
+    },
+    getCitiesLookup: async (): Promise<City[]> => {
+        const response = await axios.get("https://raw.githubusercontent.com/Tech-Labs/egypt-governorates-and-cities-db/master/cities.json");
+        return response.data[2].data;
     },
 };
 

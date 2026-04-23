@@ -1,34 +1,20 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  Modal,
-  ScrollView,
-  TextInput,
-  Pressable,
-  ActivityIndicator,
-} from 'react-native';
-import {
-  User,
-  Briefcase,
-  Calendar,
-  Clock,
-  X,
-  ChevronRight,
-  CheckCircle2,
-  Send,
-  Stethoscope,
-} from 'lucide-react-native';
+import { View, Text, TouchableOpacity, Modal, ScrollView, TextInput, Pressable, ActivityIndicator, Dimensions } from 'react-native';
+import { User, Briefcase, Calendar, Clock, X, ChevronRight, CheckCircle2, Send, Stethoscope, AlertCircle, MessageSquare } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { useThemeLanguage } from '@/store/ThemeLanguageContext';
 import { useAppSelector } from '@/store/hooks';
 import { CaseItem } from '@/features/cases/types/caseTypes';
 import api from '@/utils/api';
+import { DoctorPicker } from '@/components/auth/DoctorPicker';
+import { DoctorListDto } from '@/features/dashboard/services/doctorDashboardService';
+
+const { width } = Dimensions.get('window');
 
 interface CaseCardProps {
   caseItem: CaseItem;
   onRequestSent?: () => void;
+  onViewDetails?: () => void;
 }
 
 function SendRequestModal({
@@ -45,12 +31,17 @@ function SendRequestModal({
   const isDark = theme === 'dark';
   const student = useAppSelector((s) => s.auth.user);
   const [description, setDescription] = useState('');
+  const [doctorUsername, setDoctorUsername] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
   const handleSubmit = async () => {
     if (!description.trim()) {
       setError(t('error_short_desc'));
+      return;
+    }
+    if (!doctorUsername) {
+      setError(t('error_doctor_required'));
       return;
     }
     if (!student?.publicId) {
@@ -62,6 +53,7 @@ function SendRequestModal({
       await api.post('/CaseRequests', {
         patientCasePublicId: caseItem.id,
         studentPublicId: student.publicId,
+        doctorUsername: doctorUsername,
         description: description.trim(),
       });
       onSuccess();
@@ -75,133 +67,185 @@ function SendRequestModal({
 
   return (
     <Modal visible animationType="slide" transparent>
-      <Pressable className="flex-1 bg-black/50 justify-end" onPress={onClose}>
-        <Pressable onPress={(e) => e.stopPropagation()}>
-          <View className="bg-white dark:bg-slate-900 rounded-t-3xl p-6 pb-10">
+      <Pressable className="flex-1 bg-black/60 justify-end" onPress={onClose}>
+        <Pressable onPress={(e) => e.stopPropagation()} className={`rounded-t-[40px] ${isDark ? 'bg-slate-900' : 'bg-white'} p-6 pb-12`}>
             {/* Handle */}
-            <View className="w-10 h-1 bg-slate-200 dark:bg-slate-700 rounded-full self-center mb-5" />
-            <Text className="text-xl font-black text-slate-900 dark:text-white mb-1">
-              {t('request_case_title')}
-            </Text>
-            <Text className="text-sm text-slate-500 dark:text-slate-400 mb-5">
-              {caseItem.patientName} • {caseItem.caseType?.name ?? 'General'}
-            </Text>
-            <Text className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
-              {t('motivation_label')}
-            </Text>
-            <TextInput
-              className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 text-slate-900 dark:text-white text-sm min-h-24 text-left"
-              placeholder={t('motivation_placeholder')}
-              placeholderTextColor={isDark ? '#475569' : '#94a3b8'}
-              value={description}
-              onChangeText={(t_val) => { setDescription(t_val); setError(''); }}
-              multiline
-              textAlignVertical="top"
+            <View className={`w-12 h-1.5 self-center rounded-full mb-8 ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`} />
+            
+            <View className="mb-6 flex-row items-center gap-4">
+                <View className={`w-14 h-14 rounded-2xl items-center justify-center ${isDark ? 'bg-indigo-500/20' : 'bg-indigo-50'}`}>
+                    <MessageSquare size={28} color={isDark ? '#818cf8' : '#4f46e5'} />
+                </View>
+                <View className="flex-1">
+                    <Text className={`text-2xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                        {t('request_case_title')}
+                    </Text>
+                    <Text className={`text-xs font-medium ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                        Tell the patient why you are the best fit
+                    </Text>
+                </View>
+            </View>
+
+            <View className={`mb-6 p-4 rounded-3xl border ${isDark ? 'bg-slate-800/50 border-slate-800' : 'bg-slate-50 border-slate-100'}`}>
+                <View className="flex-row items-center gap-3">
+                    <View className={`px-3 py-1 rounded-lg ${isDark ? 'bg-indigo-500/20' : 'bg-indigo-600'}`}>
+                        <Text className="text-[10px] font-black text-white uppercase tracking-tighter">Case Reference</Text>
+                    </View>
+                    <Text className={`flex-1 text-sm font-black ${isDark ? 'text-slate-200' : 'text-slate-800'}`} numberOfLines={1}>{caseItem.patientName}</Text>
+                </View>
+            </View>
+
+            <DoctorPicker 
+                value={doctorUsername} 
+                onSelect={(d: DoctorListDto) => {
+                    setDoctorUsername(d.username);
+                    setError('');
+                }}
+                error={error.includes('doctor') ? error : undefined}
             />
-            {error ? (
-              <Text className="text-red-500 text-xs font-bold mt-2">{error}</Text>
-            ) : null}
-            <View className="flex-row gap-3 mt-5">
+
+            <View className="mb-6">
+                <Text className={`text-xs font-black uppercase tracking-widest mb-3 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                   Your Motivation
+                </Text>
+                <TextInput
+                  className={`border rounded-[28px] p-5 text-sm min-h-[140px] text-left leading-5 ${isDark ? 'bg-slate-950/60 border-slate-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'}`}
+                  placeholder={t('motivation_placeholder')}
+                  placeholderTextColor={isDark ? '#475569' : '#cbd5e1'}
+                  value={description}
+                  onChangeText={(val) => { setDescription(val); setError(''); }}
+                  multiline
+                  textAlignVertical="top"
+                  selectionColor="#4f46e5"
+                />
+                {error ? (
+                  <View className="flex-row items-center gap-1.5 mt-3 px-2">
+                    <AlertCircle size={14} color="#f87171" />
+                    <Text className="text-red-400 text-xs font-bold">{error}</Text>
+                  </View>
+                ) : null}
+            </View>
+
+            <View className="flex-row gap-4">
               <TouchableOpacity
                 onPress={onClose}
-                className="flex-1 py-3.5 rounded-2xl border border-slate-200 dark:border-slate-700 items-center"
+                activeOpacity={0.7}
+                className={`flex-1 py-4 rounded-[20px] items-center border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'}`}
               >
-                <Text className="font-bold text-slate-700 dark:text-slate-300">{t('cancel')}</Text>
+                <Text className={`font-black text-sm ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{t('cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={handleSubmit}
                 disabled={submitting}
-                className="flex-1 py-3.5 rounded-2xl bg-blue-600 dark:bg-indigo-600 items-center flex-row justify-center gap-2"
+                activeOpacity={0.8}
+                className={`flex-[1.5] py-4 rounded-[20px] bg-indigo-600 items-center flex-row justify-center gap-2 shadow-lg shadow-indigo-600/30`}
               >
                 {submitting ? (
                   <ActivityIndicator size="small" color="white" />
                 ) : (
                   <>
-                    <Send size={16} color="white" />
-                    <Text className="font-bold text-white ml-2">{t('send_request')}</Text>
+                    <Send size={16} color="white" strokeWidth={2.5} />
+                    <Text className="font-black text-white text-sm">{t('send_request')}</Text>
                   </>
                 )}
               </TouchableOpacity>
             </View>
-          </View>
         </Pressable>
       </Pressable>
     </Modal>
   );
 }
 
-export default function CaseCard({ caseItem, onRequestSent }: CaseCardProps) {
+export default function CaseCard({ caseItem, onRequestSent, onViewDetails }: CaseCardProps) {
   const { t } = useTranslation();
   const { theme } = useThemeLanguage();
   const isDark = theme === 'dark';
   const [showModal, setShowModal] = useState(false);
 
   const statusStyles = caseItem.status === 'Available'
-    ? { bg: 'bg-emerald-50 dark:bg-emerald-900/30', text: 'text-emerald-700 dark:text-emerald-400' }
-    : { bg: 'bg-blue-50 dark:bg-blue-900/30', text: 'text-blue-700 dark:text-blue-400' };
+    ? { bg: isDark ? 'bg-emerald-500/20' : 'bg-emerald-50 border border-emerald-100', text: isDark ? 'text-emerald-400' : 'text-emerald-700', dot: '#10b981' }
+    : { bg: isDark ? 'bg-blue-500/20' : 'bg-blue-50 border border-blue-100', text: isDark ? 'text-blue-400' : 'text-blue-700', dot: '#3b82f6' };
+
+  const initials = caseItem.patientName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 
   return (
     <>
-      <View className="bg-white dark:bg-slate-900 rounded-3xl p-5 mb-4 border border-slate-100 dark:border-slate-800 shadow-sm dark:shadow-none">
-        {/* Top Row: Status + Sessions */}
-        <View className="flex-row items-center justify-between mb-4">
-          <View className={`px-3 py-1 rounded-full flex-row items-center gap-1.5 ${statusStyles.bg}`}>
-            <CheckCircle2 size={12} color={caseItem.status === 'Available' ? (isDark ? '#4ade80' : '#16a34a') : (isDark ? '#60a5fa' : '#2563eb')} />
-            <Text className={`text-[11px] font-black uppercase tracking-wide ${statusStyles.text}`}>
+      <TouchableOpacity
+        activeOpacity={0.85}
+        onPress={onViewDetails}
+        className={`rounded-[32px] p-6 mb-5 border shadow-xl ${isDark ? 'bg-slate-900 border-slate-800 shadow-black/50' : 'bg-white border-slate-100 shadow-indigo-900/5'}`}
+      >
+        {/* Header: Status + Sessions */}
+        <View className="flex-row items-center justify-between mb-5">
+          <View className={`px-4 py-1.5 rounded-full flex-row items-center gap-2 ${statusStyles.bg}`}>
+            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: statusStyles.dot }} />
+            <Text className={`text-[10px] font-black uppercase tracking-widest ${statusStyles.text}`}>
               {caseItem.status}
             </Text>
           </View>
-          <View className="flex-row items-center gap-1">
-            <Calendar size={12} color={isDark ? '#64748b' : '#94a3b8'} />
-            <Text className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+          <View className={`px-3 py-1.5 rounded-xl flex-row items-center gap-2 ${isDark ? 'bg-slate-800' : 'bg-slate-50 border border-slate-100'}`}>
+            <Calendar size={12} color={isDark ? '#6366f1' : '#4f46e5'} />
+            <Text className={`text-[10px] font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
               {t('sessions_count', { count: caseItem.totalSessions })}
             </Text>
           </View>
         </View>
 
-        {/* Patient Info */}
-        <View className="flex-row items-center mb-4">
-          <View className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-900/40 items-center justify-center mr-3">
-            <User size={22} color={isDark ? '#60a5fa' : '#2563eb'} />
+        {/* Patient Hero */}
+        <View className="flex-row items-center mb-6">
+          <View className={`w-14 h-14 rounded-[22px] items-center justify-center ${isDark ? 'bg-indigo-600/20' : 'bg-indigo-50 border border-indigo-100'}`}>
+            <Text className={`text-lg font-black ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`}>{initials}</Text>
           </View>
-          <View className="flex-1 text-left">
-            <Text className="text-base font-black text-slate-900 dark:text-white leading-5 text-left">
+          <View className="flex-1 ml-4 items-start">
+            <Text className={`text-lg font-black tracking-tight leading-6 ${isDark ? 'text-white' : 'text-slate-900'}`} numberOfLines={1}>
               {caseItem.patientName}
             </Text>
-            <Text className="text-sm text-slate-500 dark:text-slate-400 text-left">
-              {t('age_label', { age: caseItem.patientAge })}
-            </Text>
+            <View className="flex-row items-center gap-2 mt-1">
+                <View className={`px-2 py-0.5 rounded-md ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
+                    <Text className={`text-[10px] font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{t('age_label', { age: caseItem.patientAge })}</Text>
+                </View>
+                <View className="w-1 h-1 rounded-full bg-slate-400 opacity-30" />
+                <Text className={`text-xs font-medium ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`}>{caseItem.caseType?.name || 'General'}</Text>
+            </View>
           </View>
         </View>
 
-        {/* Case Type */}
-        <View className="flex-row items-center bg-slate-50 dark:bg-slate-800 rounded-xl px-3 py-2.5 mb-4">
-          <Stethoscope size={14} color={isDark ? '#818cf8' : '#4f46e5'} />
-          <Text className="ml-2 text-sm font-bold text-slate-700 dark:text-slate-300 flex-1 text-left" numberOfLines={1}>
-            {caseItem.caseType?.name ?? 'General Case'}
-          </Text>
-          <View className="flex-row items-center">
-            <Clock size={12} color={isDark ? '#64748b' : '#94a3b8'} />
-            <Text className="text-[11px] text-slate-400 dark:text-slate-500 ml-1">
-              {t('requests_count', { count: caseItem.pendingRequests })}
-            </Text>
-          </View>
+        {/* Infobar */}
+        <View className={`flex-row items-center p-4 rounded-[24px] mb-6 ${isDark ? 'bg-slate-800/50' : 'bg-slate-50 border border-slate-100/50'}`}>
+            <View className="flex-1 border-r border-slate-200/20 dark:border-slate-700 items-center">
+                <Text className={`text-[9px] font-black uppercase tracking-tight mb-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Requests</Text>
+                <View className="flex-row items-center gap-1.5">
+                    <Clock size={12} color={isDark ? '#4ade80' : '#10b981'} />
+                    <Text className={`text-sm font-black ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{caseItem.pendingRequests}</Text>
+                </View>
+            </View>
+            <View className="flex-1 items-center">
+                <Text className={`text-[9px] font-black uppercase tracking-tight mb-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Posted On</Text>
+                <Text className={`text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+                    {new Date(caseItem.createAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
+                </Text>
+            </View>
         </View>
 
-        {/* Date + Action Row */}
-        <View className="flex-row items-center justify-between">
-          <Text className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
-            {t('added_on', { date: new Date(caseItem.createAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) })}
-          </Text>
+        {/* Action Buttons */}
+        <View className="flex-row gap-3">
+          <TouchableOpacity
+            onPress={onViewDetails}
+            activeOpacity={0.7}
+            className={`flex-1 py-3.5 rounded-2xl items-center border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}
+          >
+            <Text className={`font-black text-xs ${isDark ? 'text-slate-300' : 'text-indigo-600'}`}>View Details</Text>
+          </TouchableOpacity>
           <TouchableOpacity
             onPress={() => setShowModal(true)}
-            className="bg-blue-600 dark:bg-indigo-600 px-4 py-2 rounded-xl flex-row items-center gap-2"
+            activeOpacity={0.8}
+            className="flex-[1.5] bg-indigo-600 py-3.5 rounded-2xl flex-row items-center justify-center gap-2 shadow-lg shadow-indigo-600/20"
           >
-            <Send size={13} color="white" />
-            <Text className="text-white text-xs font-black ml-1">{t('request_action')}</Text>
+            <Send size={14} color="white" strokeWidth={2.5} />
+            <Text className="text-white text-xs font-black">{t('request_action')}</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </TouchableOpacity>
 
       {showModal && (
         <SendRequestModal
@@ -213,3 +257,4 @@ export default function CaseCard({ caseItem, onRequestSent }: CaseCardProps) {
     </>
   );
 }
+

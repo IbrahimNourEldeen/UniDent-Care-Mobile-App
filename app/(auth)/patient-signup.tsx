@@ -1,10 +1,13 @@
 import { FontAwesome5 } from "@expo/vector-icons";
+import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import {
+  AlertCircle,
   ArrowRight,
   Calendar,
+  CheckCircle2,
   ChevronLeft,
   Eye,
   EyeOff,
@@ -13,6 +16,7 @@ import {
   MapPin,
   Phone,
   User,
+  XCircle,
 } from "lucide-react-native";
 import React, { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
@@ -35,17 +39,25 @@ import {
 } from "../../features/auth/schemas/patientSignupSchema";
 import { authService } from "../../features/auth/services/authService";
 import { useThemeLanguage } from "../../store/ThemeLanguageContext";
+import { CityPicker } from "../../components/auth/CityPicker";
+import { City } from "@/types/types";
+import BrandLogo from "@/components/common/BrandLogo";
 
 export default function PatientSignupScreen() {
   const router = useRouter();
   const { theme } = useThemeLanguage();
   const [showPassword, setShowPassword] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   const isDark = theme === "dark";
 
   const {
     control,
     handleSubmit,
+    setValue,
+    watch,
     formState: { errors },
   } = useForm<PatientSignupValues>({
     resolver: zodResolver(patientSignupSchema),
@@ -60,17 +72,39 @@ export default function PatientSignupScreen() {
     },
   });
 
+  const birthDateValue = watch("birthDate");
+  const selectedDate = new Date(birthDateValue);
+
+  const onDateChange = (event: DateTimePickerEvent, date?: Date) => {
+    if (Platform.OS === "android") {
+      setShowDatePicker(false);
+    }
+    
+    if (date) {
+      setValue("birthDate", date.toISOString(), { shouldValidate: true });
+    }
+  };
+
   const signupMutation = useMutation({
     mutationFn: authService.registerPatient,
     onSuccess: (res) => {
       if (res.success) {
-        Alert.alert("Welcome! 🎉", "Your account is ready.");
-        router.push("/(auth)/login");
+        setErrorMessage(null);
+        setSuccessMessage(res.message || "Registration successful! Redirecting...");
+        setTimeout(() => {
+          router.push("/(auth)/login");
+        }, 2000);
+      } else {
+        setErrorMessage(res.message || "Registration failed. Please try again.");
       }
     },
     onError: (err: any) => {
-      const errorMsg = err?.response?.data?.message || "Registration failed";
-      Alert.alert("Signup Failed", errorMsg);
+      const serverErrors = err?.response?.data?.error?.errors;
+      const msg = Array.isArray(serverErrors)
+        ? serverErrors.join("\n")
+        : err?.response?.data?.message || "Registration failed. Please check your data.";
+      setErrorMessage(msg);
+      setTimeout(() => setErrorMessage(null), 5000);
     },
   });
 
@@ -95,14 +129,38 @@ export default function PatientSignupScreen() {
             <Text className="text-blue-600 dark:text-indigo-400 font-bold text-lg ml-1">Back</Text>
           </TouchableOpacity>
 
-          <View className="items-center mb-8">
-            <View className="w-16 h-16 bg-blue-600 dark:bg-indigo-600 rounded-2xl items-center justify-center shadow-lg shadow-blue-200 dark:shadow-indigo-900/50">
-              <FontAwesome5 name="tooth" size={28} color="white" />
-            </View>
+            <View className="items-center mb-8">
+              <View className="w-20 h-20 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl items-center justify-center shadow-lg shadow-slate-200 dark:shadow-none">
+                <BrandLogo size={44} isDark={isDark} />
+              </View>
             <Text className="text-3xl font-black text-slate-900 dark:text-white mt-4 text-center">
               Patient Registration
             </Text>
           </View>
+
+          {errorMessage && (
+            <View className="mb-6 flex-row items-center bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/50 p-4 rounded-2xl shadow-sm">
+              <AlertCircle color="#ef4444" size={20} />
+              <Text className="flex-1 ml-3 text-red-600 dark:text-red-400 font-bold text-sm">
+                {errorMessage}
+              </Text>
+              <TouchableOpacity onPress={() => setErrorMessage(null)}>
+                <XCircle color={isDark ? "#f87171" : "#fca5a5"} size={18} />
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {successMessage && (
+            <View className="mb-6 flex-row items-center bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-900/50 p-4 rounded-2xl shadow-sm">
+              <CheckCircle2 color="#10b981" size={20} />
+              <Text className="flex-1 ml-3 text-emerald-600 dark:text-emerald-400 font-bold text-sm">
+                {successMessage}
+              </Text>
+              <TouchableOpacity onPress={() => setSuccessMessage(null)}>
+                <XCircle color={isDark ? "#34d399" : "#6ee7b7"} size={18} />
+              </TouchableOpacity>
+            </View>
+          )}
 
           <View className="space-y-4">
             <View>
@@ -202,54 +260,70 @@ export default function PatientSignupScreen() {
               <Text className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 ml-1">
                 Date of Birth
               </Text>
-              <View
-                className={`flex-row items-center bg-white dark:bg-slate-900 border-2 ${errors.birthDate ? "border-red-400 dark:border-red-500" : "border-slate-100 dark:border-slate-800"} rounded-2xl px-4 py-3 shadow-sm dark:shadow-none`}
-              >
-                <Calendar color={isDark ? "#64748b" : "#94a3b8"} size={20} />
-                <Controller
-                  control={control}
-                  name="birthDate"
-                  render={({ field: { onChange, onBlur, value } }) => (
-                    <TextInput
-                      className="flex-1 ml-3 text-slate-900 dark:text-white font-medium"
-                      placeholder="YYYY-MM-DD"
-                      placeholderTextColor={isDark ? "#475569" : "#cbd5e1"}
-                      onBlur={onBlur}
-                      onChangeText={onChange}
-                      value={value}
-                    />
-                  )}
-                />
-              </View>
+              <Controller
+                control={control}
+                name="birthDate"
+                render={({ field: { value } }) => (
+                  <>
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      onPress={() => setShowDatePicker(true)}
+                      className={`flex-row items-center bg-white dark:bg-slate-900 border-2 ${errors.birthDate ? "border-red-400 dark:border-red-500" : "border-slate-100 dark:border-slate-800"} rounded-2xl px-4 py-3 shadow-sm dark:shadow-none`}
+                    >
+                      <Calendar color={isDark ? "#64748b" : "#94a3b8"} size={20} />
+                      <Text className={`flex-1 ml-3 font-medium ${value ? "text-slate-900 dark:text-white" : "text-slate-400 dark:text-slate-500"}`}>
+                        {value ? new Date(value).toLocaleDateString(undefined, {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                        }) : "Select birth date"}
+                      </Text>
+                    </TouchableOpacity>
+
+                    {showDatePicker && (
+                      <DateTimePicker
+                        value={selectedDate}
+                        mode="date"
+                        display={Platform.OS === "ios" ? "spinner" : "default"}
+                        onChange={onDateChange}
+                        maximumDate={new Date()}
+                      />
+                    )}
+                    
+                    {Platform.OS === "ios" && showDatePicker && (
+                      <TouchableOpacity 
+                        onPress={() => setShowDatePicker(false)}
+                        className="mt-2 items-end px-2"
+                      >
+                        <Text className="text-blue-600 dark:text-indigo-400 font-bold">Done</Text>
+                      </TouchableOpacity>
+                    )}
+                  </>
+                )}
+              />
+              {errors.birthDate && (
+                <Text className="text-xs text-red-500 font-bold mt-1 ml-1">
+                  {errors.birthDate.message}
+                </Text>
+              )}
             </View>
 
             <View className="flex-row space-x-3 mt-4">
               <View className="flex-1">
-                <Text className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 ml-1">
-                  City ID
-                </Text>
-                <View
-                  className={`flex-row items-center bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-2xl px-4 py-3 shadow-sm dark:shadow-none`}
-                >
-                  <MapPin color={isDark ? "#64748b" : "#94a3b8"} size={18} />
-                  <Controller
-                    control={control}
-                    name="city"
-                    render={({ field: { onChange, value } }) => (
-                      <TextInput
-                        className="flex-1 ml-2 text-slate-900 dark:text-white font-medium"
-                        placeholder="0"
-                        placeholderTextColor={isDark ? "#475569" : "#cbd5e1"}
-                        keyboardType="numeric"
-                        onChangeText={(val) => onChange(Number(val))}
-                        value={value.toString()}
-                      />
-                    )}
-                  />
-                </View>
+                <Controller
+                  control={control}
+                  name="city"
+                  render={({ field: { onChange, value } }) => (
+                    <CityPicker 
+                      value={value}
+                      error={errors.city?.message}
+                      onSelect={(city: City) => onChange(Number(city.id))}
+                    />
+                  )}
+                />
               </View>
 
-              <View className="flex-1">
+              <View className="flex-[0.4]">
                 <Text className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 ml-1">
                   Gender
                 </Text>
@@ -257,10 +331,10 @@ export default function PatientSignupScreen() {
                   control={control}
                   name="gender"
                   render={({ field: { onChange, value } }) => (
-                    <View className="flex-row bg-slate-100 dark:bg-slate-800 p-1 rounded-2xl">
+                    <View className="flex-row bg-slate-100 dark:bg-slate-800 p-1 rounded-2xl h-[56px] items-center">
                       <TouchableOpacity
                         onPress={() => onChange(0)}
-                        className={`flex-1 py-2 rounded-xl items-center ${value === 0 ? "bg-white dark:bg-slate-700 shadow-sm dark:shadow-none" : ""}`}
+                        className={`flex-1 py-3 rounded-xl items-center ${value === 0 ? "bg-white dark:bg-slate-700 shadow-sm dark:shadow-none" : ""}`}
                       >
                         <Text
                           className={`font-bold ${value === 0 ? "text-blue-600 dark:text-indigo-400" : "text-slate-400 dark:text-slate-500"}`}
@@ -270,7 +344,7 @@ export default function PatientSignupScreen() {
                       </TouchableOpacity>
                       <TouchableOpacity
                         onPress={() => onChange(1)}
-                        className={`flex-1 py-2 rounded-xl items-center ${value === 1 ? "bg-white dark:bg-slate-700 shadow-sm dark:shadow-none" : ""}`}
+                        className={`flex-1 py-3 rounded-xl items-center ${value === 1 ? "bg-white dark:bg-slate-700 shadow-sm dark:shadow-none" : ""}`}
                       >
                         <Text
                           className={`font-bold ${value === 1 ? "text-blue-600 dark:text-indigo-400" : "text-slate-400 dark:text-slate-500"}`}

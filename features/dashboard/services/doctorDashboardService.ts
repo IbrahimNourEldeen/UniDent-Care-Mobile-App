@@ -37,6 +37,87 @@ export interface PaginatedRequests {
   hasNextPage: boolean;
 }
 
+export interface PagedResult<T> {
+  items: T[];
+  totalCount: number;
+  currentPage: number;
+  totalPages: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
+}
+
+export interface CaseTypeDto {
+  publicId: string;
+  name: string;
+  description?: string;
+}
+
+export interface DiagnosisDto {
+  id: string;
+  patientCaseId: string;
+  stage: number; // 0=Initial 1=Intermediate 2=Final
+  caseTypeId: string;
+  caseTypeName: string;
+  notes: string;
+  createdById?: string;
+  role: string;
+  isAccepted: boolean | null;
+  teethNumbers: number[];
+}
+
+export interface SessionDto {
+  id: string;
+  caseId: string;
+  treatmentType: string;
+  patientId: string;
+  patientName: string;
+  studentId: string;
+  studentName: string;
+  scheduledAt: string;
+  endAt: string;
+  status: string;
+  totalNotes: number;
+  totalMedia: number;
+  createAt: string;
+}
+
+export interface PatientCaseDto {
+  id: string;
+  patientId: string;
+  patientName: string;
+  patientAge: number;
+  status: string;
+  processStatus?: string;
+  phone?: string;
+  city?: string;
+  nationalId?: string;
+  isPublic: boolean;
+  universityId?: string;
+  universityName?: string;
+  createAt: string;
+  totalSessions: number;
+  hasEvaluatedSession: boolean;
+  pendingRequests: number;
+  assignedStudentId?: string;
+  assignedDoctorId?: string;
+  diagnosisdto?: any;
+  imageUrls?: string[];
+  createdByRole?: string;
+  gender?: number;
+  caseType?: CaseTypeDto;
+  userFlags?: {
+    isOwner: boolean;
+    role: string;
+    isAssignedDoctor: boolean;
+    isAssignedStudent: boolean;
+    isAssignedToMe: boolean;
+    hasRequest: boolean;
+    requestId?: string;
+    requestStatus?: string;
+  };
+  availableActions?: string[];
+}
+
 // ─── Service ─────────────────────────────────────────────────────────────────
 
 export const doctorDashboardService = {
@@ -46,15 +127,25 @@ export const doctorDashboardService = {
     return res.data.data ?? res.data;
   },
 
-  /** Get paginated case requests assigned to a doctor (used for both general dashboard and pending cases) */
-  getDoctorRequests: async (
+  /** Update doctor profile */
+  updateDoctorProfile: async (
     doctorId: string,
+    data: { fullName?: string; specialty?: string; phone?: string },
+  ): Promise<boolean> => {
+    const res = await api.put(`/Doctors/${doctorId}`, data);
+    return res.data.data ?? res.data;
+  },
+
+  /** Get paginated case requests assigned to a doctor (token-based) */
+  getDoctorRequests: async (
+    _doctorId: string,
     page: number,
     pageSize: number,
-  ): Promise<PaginatedRequests> => {
+    status?: number,
+  ): Promise<PagedResult<CaseRequest>> => {
     try {
-      const res = await api.get(`/CaseRequests/doctor/${doctorId}`, {
-        params: { page, pageSize },
+      const res = await api.get('/Doctors/my-requests', {
+        params: { page, pageSize, ...(status !== undefined ? { status } : {}) },
       });
       const data = res.data.data ?? res.data;
       if (data && !Array.isArray(data)) {
@@ -67,16 +158,8 @@ export const doctorDashboardService = {
           hasNextPage: data.hasNextPage ?? false,
         };
       }
-      // handle flat array
       if (Array.isArray(data)) {
-        return {
-          items: data,
-          totalCount: data.length,
-          currentPage: page,
-          totalPages: 1,
-          hasPreviousPage: false,
-          hasNextPage: false,
-        };
+        return { items: data, totalCount: data.length, currentPage: page, totalPages: 1, hasPreviousPage: false, hasNextPage: false };
       }
       return { items: [], totalCount: 0, currentPage: 1, totalPages: 1, hasPreviousPage: false, hasNextPage: false };
     } catch (error) {
@@ -85,12 +168,8 @@ export const doctorDashboardService = {
     }
   },
 
-  /** Alias for getDoctorRequests to maintain backward compatibility with screens */
-  getCaseRequestsByDoctor: async (
-    doctorId: string,
-    page: number,
-    pageSize: number,
-  ): Promise<PaginatedRequests> => {
+  /** Alias maintained for backward compatibility */
+  getCaseRequestsByDoctor: async (doctorId: string, page: number, pageSize: number): Promise<PagedResult<CaseRequest>> => {
     return doctorDashboardService.getDoctorRequests(doctorId, page, pageSize);
   },
 
@@ -102,11 +181,150 @@ export const doctorDashboardService = {
 
   /** Approve a pending case request */
   approveRequest: async (requestId: string): Promise<void> => {
-    await api.put(`/CaseRequests/${requestId}/approve`);
+    await api.post(`/Doctors/requests/${requestId}/approve`);
   },
 
   /** Reject a pending case request */
   rejectRequest: async (requestId: string): Promise<void> => {
-    await api.put(`/CaseRequests/${requestId}/reject`);
+    await api.post(`/Doctors/requests/${requestId}/reject`);
+  },
+
+  // ─── Cases ────────────────────────────────────────────────────────────────
+
+  /** Browse all cases with filters + pagination */
+  getCases: async (params: {
+    PatientName?: string;
+    CaseType?: string;
+    Status?: string;
+    Gender?: number;
+    SortBy?: string;
+    SortDirection?: string;
+    Page?: number;
+    PageSize?: number;
+  }): Promise<PagedResult<PatientCaseDto>> => {
+    const res = await api.get('/Cases', { params });
+    const data = res.data.data ?? res.data;
+    if (data && !Array.isArray(data)) {
+      return {
+        items: data.items ?? [],
+        totalCount: data.totalCount ?? 0,
+        currentPage: data.currentPage ?? 1,
+        totalPages: data.totalPages ?? 1,
+        hasPreviousPage: data.hasPreviousPage ?? false,
+        hasNextPage: data.hasNextPage ?? false,
+      };
+    }
+    return { items: Array.isArray(data) ? data : [], totalCount: 0, currentPage: 1, totalPages: 1, hasPreviousPage: false, hasNextPage: false };
+  },
+
+  /** Get a single case by ID */
+  getCaseById: async (caseId: string): Promise<PatientCaseDto> => {
+    const res = await api.get(`/Cases/${caseId}`);
+    return res.data.data ?? res.data;
+  },
+
+  // ─── Diagnoses ────────────────────────────────────────────────────────────
+
+  /** Get paginated diagnoses for a case */
+  getDiagnosesForCase: async (caseId: string, page = 1, pageSize = 20): Promise<PagedResult<DiagnosisDto>> => {
+    const res = await api.get(`/Diagnoses/case/${caseId}`, { params: { page, pageSize } });
+    const data = res.data.data ?? res.data;
+    if (data && !Array.isArray(data)) {
+      return {
+        items: data.items ?? [],
+        totalCount: data.totalCount ?? 0,
+        currentPage: data.currentPage ?? 1,
+        totalPages: data.totalPages ?? 1,
+        hasPreviousPage: data.hasPreviousPage ?? false,
+        hasNextPage: data.hasNextPage ?? false,
+      };
+    }
+    return { items: Array.isArray(data) ? data : [], totalCount: 0, currentPage: 1, totalPages: 1, hasPreviousPage: false, hasNextPage: false };
+  },
+
+  /** Accept a diagnosis (doctor-only) */
+  acceptDiagnosis: async (diagnosisId: string): Promise<void> => {
+    await api.post(`/Diagnoses/${diagnosisId}/accept`);
+  },
+
+  // ─── Sessions ─────────────────────────────────────────────────────────────
+
+  /** Get paginated sessions for a case */
+  getSessionsForCase: async (caseId: string, page = 1, pageSize = 20): Promise<PagedResult<SessionDto>> => {
+    const res = await api.get(`/Sessions/case/${caseId}`, { params: { page, pageSize } });
+    const data = res.data.data ?? res.data;
+    if (data && !Array.isArray(data)) {
+      return {
+        items: data.items ?? [],
+        totalCount: data.totalCount ?? 0,
+        currentPage: data.currentPage ?? 1,
+        totalPages: data.totalPages ?? 1,
+        hasPreviousPage: data.hasPreviousPage ?? false,
+        hasNextPage: data.hasNextPage ?? false,
+      };
+    }
+    return { items: Array.isArray(data) ? data : [], totalCount: 0, currentPage: 1, totalPages: 1, hasPreviousPage: false, hasNextPage: false };
+  },
+
+  /** Create a new session */
+  createSession: async (payload: {
+    studentId: string;
+    patientCaseId: string;
+    sessionDate: string;
+    location?: string;
+  }): Promise<string> => {
+    const res = await api.post('/Sessions', payload);
+    return res.data.data ?? res.data;
+  },
+
+  /** Update session status */
+  updateSessionStatus: async (sessionId: string, status: string): Promise<boolean> => {
+    const res = await api.patch(`/Sessions/${sessionId}/status`, { status });
+    return res.data.data ?? res.data;
+  },
+
+  /** Add a note to a session */
+  addSessionNote: async (sessionId: string, note: string, isPrivate = false): Promise<string> => {
+    const res = await api.post(`/Sessions/${sessionId}/notes`, { sessionId, note, isPrivate });
+    return res.data.data ?? res.data;
+  },
+
+  /** Get notes for a session */
+  getSessionNotes: async (sessionId: string): Promise<any[]> => {
+    const res = await api.get(`/Sessions/${sessionId}/notes`);
+    const data = res.data.data ?? res.data;
+    return Array.isArray(data) ? data : [];
+  },
+
+  /** Search doctors by name/username/spec */
+  searchDoctors: async (params: {
+    name?: string;
+    username?: string;
+    spec?: string;
+    universityId?: string;
+    page?: number;
+    pageSize?: number;
+  }): Promise<PagedResult<DoctorListDto>> => {
+    const res = await api.get('/Doctors', { params });
+    const data = res.data.data ?? res.data;
+    if (data && !Array.isArray(data)) {
+      return {
+        items: data.items ?? [],
+        totalCount: data.totalCount ?? 0,
+        currentPage: data.currentPage ?? 1,
+        totalPages: data.totalPages ?? 1,
+        hasPreviousPage: data.hasPreviousPage ?? false,
+        hasNextPage: data.hasNextPage ?? false,
+      };
+    }
+    return { items: Array.isArray(data) ? data : [], totalCount: 0, currentPage: 1, totalPages: 1, hasPreviousPage: false, hasNextPage: false };
   },
 };
+
+export interface DoctorListDto {
+  publicId: string;
+  fullName: string;
+  email: string;
+  username: string;
+  specialty?: string;
+}

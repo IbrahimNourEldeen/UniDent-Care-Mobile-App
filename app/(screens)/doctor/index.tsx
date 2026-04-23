@@ -3,24 +3,33 @@ import {
   ScrollView,
   RefreshControl,
   I18nManager,
+  View,
+  Text,
+  TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Users,
   Clock,
   CheckCircle2,
+  Briefcase,
 } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/store/hooks';
 import { useThemeLanguage } from '@/store/ThemeLanguageContext';
+import { useRouter } from 'expo-router';
 import {
   doctorDashboardService,
   DoctorStats,
-  PaginatedRequests,
+  PagedResult,
+  CaseRequest,
 } from '@/features/dashboard/services/doctorDashboardService';
 import { WelcomeHeader } from '@/features/dashboard/components/doctor/WelcomeHeader';
 import { DoctorStatsGrid } from '@/features/dashboard/components/doctor/DoctorStatsGrid';
 import { RecentRequests } from '@/features/dashboard/components/doctor/RecentRequests';
+import { useDoctorProfile, useDoctorRequests, useDoctorRequestActions } from '@/features/dashboard/hooks/useDoctorQueries';
+import { useQueryClient } from '@tanstack/react-query';
 
 const PAGE_SIZE = 10;
 
@@ -32,50 +41,20 @@ export default function DoctorDashboardScreen() {
 
   const doctorId = (user as any)?.publicId ?? (user as any)?.id;
 
-  const [stats, setStats] = useState<DoctorStats | null>(null);
-  const [requestsData, setRequestsData] = useState<PaginatedRequests | null>(null);
-  const [statsLoading, setStatsLoading] = useState(true);
-  const [reqsLoading, setReqsLoading] = useState(true);
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
+  const router = useRouter();
+  const queryClient = useQueryClient();
   const [currentPage, setCurrentPage] = useState(1);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const fetchStats = useCallback(async () => {
-    if (!doctorId) return;
-    try {
-      setStatsLoading(true);
-      const res = await doctorDashboardService.getDoctorDetails(doctorId);
-      setStats(res);
-    } catch (e) {
-      console.error('fetchStats', e);
-    } finally {
-      setStatsLoading(false);
-    }
-  }, [doctorId]);
-
-  const fetchRequests = useCallback(
-    async (page = currentPage) => {
-      try {
-        setReqsLoading(true);
-        const res = await doctorDashboardService.getDoctorRequests(doctorId, page, PAGE_SIZE);
-        setRequestsData(res);
-      } catch (e) {
-        console.error('fetchRequests', e);
-      } finally {
-        setReqsLoading(false);
-      }
-    },
-    [currentPage, doctorId],
-  );
-
-  useEffect(() => {
-    fetchStats();
-    fetchRequests(1);
-  }, [doctorId, fetchStats, fetchRequests]);
+  // Use React Query hooks
+  const { data: stats, isLoading: statsLoading } = useDoctorProfile(doctorId);
+  const { data: requestsData, isLoading: reqsLoading } = useDoctorRequests(doctorId, currentPage, PAGE_SIZE);
+  const { approveRequest, rejectRequest } = useDoctorRequestActions();
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await Promise.all([fetchStats(), fetchRequests(currentPage)]);
+    await queryClient.invalidateQueries({ queryKey: ['doctor'] });
     setRefreshing(false);
   };
 
@@ -83,8 +62,7 @@ export default function DoctorDashboardScreen() {
     if (actionLoading) return;
     setActionLoading(requestId);
     try {
-      await doctorDashboardService.approveRequest(requestId);
-      await Promise.all([fetchStats(), fetchRequests(currentPage)]);
+      await approveRequest(requestId);
     } catch (e) {
       console.error('approve', e);
     } finally {
@@ -96,8 +74,7 @@ export default function DoctorDashboardScreen() {
     if (actionLoading) return;
     setActionLoading(requestId);
     try {
-      await doctorDashboardService.rejectRequest(requestId);
-      await Promise.all([fetchStats(), fetchRequests(currentPage)]);
+      await rejectRequest(requestId);
     } catch (e) {
       console.error('reject', e);
     } finally {
@@ -160,6 +137,29 @@ export default function DoctorDashboardScreen() {
           loading={statsLoading} 
         />
 
+        {/* Browse Cases Quick Action */}
+        <TouchableOpacity
+          onPress={() => router.push('/(screens)/doctor/cases' as any)}
+          activeOpacity={0.85}
+          className="mb-5"
+        >
+          <LinearGradient
+            colors={isDark ? ['#1e1b4b', '#1e293b'] : ['#4f46e5', '#6366f1']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            className="flex-row items-center gap-4 px-5 py-4 rounded-3xl shadow-lg shadow-indigo-200 dark:shadow-none"
+          >
+            <View className="w-10 h-10 rounded-2xl bg-white/20 items-center justify-center">
+              <Briefcase size={20} color="white" />
+            </View>
+            <View className="flex-1">
+              <Text className="text-white font-black text-sm">{t('browse_cases')}</Text>
+              <Text className="text-white/60 text-[11px] font-medium mt-0.5">{t('available_cases_desc')}</Text>
+            </View>
+            <Text className="text-white/50 text-lg">›</Text>
+          </LinearGradient>
+        </TouchableOpacity>
+
         <RecentRequests
           requests={requestsData?.items || []}
           loading={reqsLoading}
@@ -168,7 +168,7 @@ export default function DoctorDashboardScreen() {
           actionLoading={actionLoading}
           isDark={isDark}
           language={language}
-          onRefresh={() => fetchRequests(1)}
+          onRefresh={onRefresh}
         />
       </ScrollView>
     </SafeAreaView>

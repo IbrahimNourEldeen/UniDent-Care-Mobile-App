@@ -3,8 +3,10 @@ import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import {
   Activity,
+  AlertCircle,
   ArrowRight,
   AtSign,
+  CheckCircle2,
   ChevronLeft,
   Eye,
   EyeOff,
@@ -14,6 +16,7 @@ import {
   Phone,
   Stethoscope,
   User,
+  XCircle,
 } from "lucide-react-native";
 import React, { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
@@ -36,17 +39,23 @@ import {
 } from "../../features/auth/schemas/doctorSignupSchema";
 import { authService } from "../../features/auth/services/authService";
 import { useThemeLanguage } from "../../store/ThemeLanguageContext";
+import { UniversityPicker } from "../../components/auth/UniversityPicker";
+import { UniversityLookup } from "@/types/types";
+import BrandLogo from "@/components/common/BrandLogo";
 
 export default function DoctorSignupScreen() {
   const router = useRouter();
   const { theme } = useThemeLanguage();
   const [showPassword, setShowPassword] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const isDark = theme === "dark";
 
   const {
     control,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<DoctorSignupValues>({
     resolver: zodResolver(doctorSignupSchema),
@@ -65,16 +74,22 @@ export default function DoctorSignupScreen() {
     mutationFn: authService.registerDoctor,
     onSuccess: (res) => {
       if (res.success) {
-        Alert.alert("Success 🎉", "Doctor account created successfully!");
-        router.push("/(auth)/login");
+        setErrorMessage(null);
+        setSuccessMessage(res.message || "Registration successful! Redirecting...");
+        setTimeout(() => {
+          router.push("/(auth)/login");
+        }, 2000);
+      } else {
+        setErrorMessage(res.message || "Registration failed. Please try again.");
       }
     },
     onError: (err: any) => {
       const serverErrors = err?.response?.data?.error?.errors;
       const msg = Array.isArray(serverErrors)
         ? serverErrors.join("\n")
-        : "Registration failed. Please check your data.";
-      Alert.alert("Registration Error", msg);
+        : err?.response?.data?.message || "Registration failed. Please check your data.";
+      setErrorMessage(msg);
+      setTimeout(() => setErrorMessage(null), 5000);
     },
   });
 
@@ -100,8 +115,8 @@ export default function DoctorSignupScreen() {
           </TouchableOpacity>
 
           <View className="items-center mb-8">
-            <View className="w-16 h-16 bg-teal-600 dark:bg-teal-500 rounded-2xl items-center justify-center shadow-lg shadow-teal-200 dark:shadow-none">
-              <Activity stroke="white" size={32} />
+            <View className="w-16 h-16 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl items-center justify-center shadow-lg shadow-slate-200 dark:shadow-none">
+              <BrandLogo size={40} isDark={isDark} />
             </View>
             <Text className="text-3xl font-black text-slate-900 dark:text-white mt-4 text-center">
               Join UniDent
@@ -110,6 +125,44 @@ export default function DoctorSignupScreen() {
               Step into a world of digital dental care
             </Text>
           </View>
+
+          {errorMessage && (
+            <View className="mb-6 flex-row items-center bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/50 p-4 rounded-2xl shadow-sm">
+              <AlertCircle color="#ef4444" size={20} />
+              <Text className="flex-1 ml-3 text-red-600 dark:text-red-400 font-bold text-sm">
+                {errorMessage}
+              </Text>
+              <TouchableOpacity onPress={() => setErrorMessage(null)}>
+                <XCircle color={isDark ? "#f87171" : "#fca5a5"} size={18} />
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {successMessage && (
+            <View className="mb-6 flex-row items-center bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-900/50 p-4 rounded-2xl shadow-sm">
+              <CheckCircle2 color="#10b981" size={20} />
+              <Text className="flex-1 ml-3 text-emerald-600 dark:text-emerald-400 font-bold text-sm">
+                {successMessage}
+              </Text>
+              <TouchableOpacity onPress={() => setSuccessMessage(null)}>
+                <XCircle color={isDark ? "#34d399" : "#6ee7b7"} size={18} />
+              </TouchableOpacity>
+            </View>
+          )}
+
+          <Controller
+            control={control}
+            name="universityId"
+            render={({ field: { value, onChange } }) => (
+              <UniversityPicker 
+                value={value}
+                error={errors.universityId?.message}
+                onSelect={(uni: UniversityLookup) => {
+                  onChange(uni.id);
+                }} 
+              />
+            )}
+          />
 
           <View className="space-y-4">
             <View>
@@ -266,36 +319,6 @@ export default function DoctorSignupScreen() {
               )}
             </View>
 
-            <View className="mt-4">
-              <Text className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 ml-1">
-                University ID
-              </Text>
-              <View
-                className={`flex-row items-center bg-white dark:bg-slate-900 border-2 ${errors.universityId ? "border-red-400 dark:border-red-500" : "border-slate-100 dark:border-slate-800"} rounded-2xl px-4 py-3`}
-              >
-                <Hash stroke={isDark ? "#64748b" : "#94a3b8"} size={20} />
-                <Controller
-                  control={control}
-                  name="universityId"
-                  render={({ field: { onChange, onBlur, value } }) => (
-                    <TextInput
-                      className="flex-1 ml-3 text-slate-900 dark:text-white font-medium"
-                      placeholder="7+ digits required"
-                      placeholderTextColor={isDark ? "#475569" : "#cbd5e1"}
-                      keyboardType="numeric"
-                      onBlur={onBlur}
-                      onChangeText={onChange}
-                      value={value}
-                    />
-                  )}
-                />
-              </View>
-              {errors.universityId && (
-                <Text className="text-xs text-red-500 font-bold mt-1 ml-1">
-                  {errors.universityId.message}
-                </Text>
-              )}
-            </View>
 
             <View className="mt-4">
               <Text className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 ml-1">

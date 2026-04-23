@@ -11,6 +11,36 @@ export interface ApiResponse<T> {
     links: string;
 }
 
+export interface UniversityMember {
+    universityId: string;
+    name: string;
+    department: string;
+    role: string;
+}
+
+export interface UniversityLookup {
+    id: string;
+    name: string;
+}
+
+export type UniversityLookupResponse = ApiResponse<UniversityLookup[]>;
+
+export interface City {
+    id: string;
+    governorate_id: string;
+    city_name_ar: string;
+    city_name_en: string;
+}
+
+export interface UniversityMembersResponse extends ApiResponse<{
+    totalCount: number;
+    currentPage: number;
+    totalPages: number;
+    hasPreviousPage: boolean;
+    hasNextPage: boolean;
+    items: UniversityMember[];
+}> { }
+
 export type UserBase = {
     publicId: string;
     fullName: string;
@@ -48,7 +78,9 @@ export type User = StudentUser | DoctorUser | PatientUser;
 export interface AuthData<TUser = User> {
     token: string;
     roles: string[];
-    user: TUser;
+    publicId: string;
+    uinversalId: string;
+    user?: TUser;
 }
 
 export interface LoginRequest {

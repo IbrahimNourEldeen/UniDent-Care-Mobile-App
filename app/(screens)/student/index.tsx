@@ -1,18 +1,18 @@
+import { Bell } from "lucide-react-native";
 import React, { useState } from "react";
-import { ScrollView, Text, View, RefreshControl, TouchableOpacity } from "react-native";
+import { useTranslation } from "react-i18next";
+import { RefreshControl, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useSelector } from "react-redux";
-import { useTranslation } from "react-i18next";
-import { Bell } from "lucide-react-native";
 
+import { useStudentStats } from "@/features/dashboard/hooks/useStudentStats";
 import { RootState } from "@/store/store";
 import { useThemeLanguage } from "@/store/ThemeLanguageContext";
-import { useStudentStats } from "@/features/dashboard/hooks/useStudentStats";
 
-import StatsCards from "@/features/dashboard/components/student/StatsCards";
-import UpcomingSessions from "@/features/dashboard/components/student/UpcomingSessions";
 import QuickActions from "@/features/dashboard/components/student/QuickActions";
 import RecentActivity from "@/features/dashboard/components/student/RecentActivity";
+import StatsCards from "@/features/dashboard/components/student/StatsCards";
+import UpcomingSessions from "@/features/dashboard/components/student/UpcomingSessions";
 
 export default function StudentDashboardScreen() {
   const { t } = useTranslation();

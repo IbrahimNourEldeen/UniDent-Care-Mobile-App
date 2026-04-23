@@ -4,12 +4,12 @@
     "slug": "unident-care",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/logoLight.png",
     "scheme": "unidentcare",
     "userInterfaceStyle": "automatic",
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/icon.png",
+        "foregroundImage": "./assets/images/logoLight.png",
         "backgroundColor": "#FFFFFF"
       },
       "package": "com.ibrahim.unidentcare"
@@ -19,7 +19,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/icon.png",
+          "image": "./assets/images/logoLight.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#FFFFFF"

@@ -11,10 +11,22 @@ export const getDecodedToken = (token: string | null): UserPayload | null => {
     try {
         const decoded: any = jwtDecode(token);
 
-        return {
-            publicId: decoded["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"],
-            role: decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"],
-        };
+        const publicId = 
+            decoded["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"] || 
+            decoded["sub"] || 
+            decoded["id"];
+        
+        const role = 
+            decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] || 
+            decoded["role"] || 
+            decoded["roles"]?.[0];
+
+        if (!publicId || !role) {
+            console.warn("Decoded token is missing publicId or role:", { publicId, role });
+            return null;
+        }
+
+        return { publicId, role };
     } catch (error) {
         console.error("Token decoding failed:", error);
         return null;

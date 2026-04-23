@@ -1,10 +1,13 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import api from '@/utils/api';
 import { CaseItem, CaseType } from '@/features/cases/types/caseTypes';
 
 const PAGE_SIZE = 10;
 
 export type ViewMode = 'cards' | 'list';
+export type SortKey = 'patientName' | 'patientAge' | 'createAt';
+export type SortDirection = 'asc' | 'desc';
+export interface SortConfig { key: SortKey; direction: SortDirection; }
 
 export function useAvailableCases() {
   const [allCases, setAllCases] = useState<CaseItem[]>([]);
@@ -17,6 +20,7 @@ export function useAvailableCases() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
 
   const fetchCases = useCallback(async () => {
     setLoading(true);
@@ -29,7 +33,7 @@ export function useAvailableCases() {
       if (search) params.search = search;
       if (selectedCaseType) params.caseTypeId = selectedCaseType;
 
-      const res = await api.get('/Cases', { params });
+      const res = await api.get('/Students/available-cases', { params });
       const data = res.data.data;
       const items: CaseItem[] = data?.items ?? data ?? [];
 
@@ -71,8 +75,38 @@ export function useAvailableCases() {
     }
   };
 
+  const handleSort = (key: SortKey) => {
+    setSortConfig((prev) => {
+      if (!prev || prev.key !== key) return { key, direction: 'asc' };
+      if (prev.direction === 'asc') return { key, direction: 'desc' };
+      return null;
+    });
+  };
+
+  const sortedCases = useMemo(() => {
+    if (!sortConfig) return allCases;
+    return [...allCases].sort((a, b) => {
+      let aVal: any;
+      let bVal: any;
+      if (sortConfig.key === 'patientName') {
+        aVal = a.patientName.toLowerCase();
+        bVal = b.patientName.toLowerCase();
+      } else if (sortConfig.key === 'patientAge') {
+        aVal = a.patientAge;
+        bVal = b.patientAge;
+      } else {
+        aVal = new Date(a.createAt).getTime();
+        bVal = new Date(b.createAt).getTime();
+      }
+      if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [allCases, sortConfig]);
+
   return {
     cases: allCases,
+    sortedCases,
     caseTypes,
     loading,
     error,
@@ -89,6 +123,8 @@ export function useAvailableCases() {
     hasPreviousPage: currentPage > 1,
     hasNextPage: currentPage < totalPages,
     onPageChange,
+    sortConfig,
+    handleSort,
     refetch: fetchCases,
   };
 }

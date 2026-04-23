@@ -2,37 +2,39 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import {
-  AlertCircle,
-  ArrowRight,
-  ChevronLeft,
-  Eye,
-  EyeOff,
-  Lock,
-  Mail,
-  ShieldCheck,
-  XCircle,
+    AlertCircle,
+    ArrowRight,
+    CheckCircle2,
+    ChevronLeft,
+    Eye,
+    EyeOff,
+    Lock,
+    Mail,
+    ShieldCheck,
+    XCircle,
 } from "lucide-react-native";
 import React, { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import {
-  ActivityIndicator,
-  ScrollView,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    ScrollView,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAppDispatch } from "../../store/hooks";
 
 import {
-  LoginFormValues,
-  loginSchema,
+    LoginFormValues,
+    loginSchema,
 } from "../../features/auth/schemas/loginSchema";
 import { authService } from "../../features/auth/services/authService";
 
 import * as SecureStore from "expo-secure-store";
 import { useThemeLanguage } from "../../store/ThemeLanguageContext";
+import BrandLogo from "@/components/common/BrandLogo";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -40,6 +42,7 @@ export default function LoginScreen() {
   const { theme } = useThemeLanguage();
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const isDark = theme === "dark";
 
@@ -56,16 +59,42 @@ export default function LoginScreen() {
     onSuccess: async (response) => {
       if (response.success && response.data.token) {
         setErrorMessage(null);
+        setSuccessMessage(response.message || "Login successful! Redirecting...");
         await SecureStore.setItemAsync("token", response.data.token);
-        router.replace("/(screens)");
+        
+        if (response.data.publicId) {
+          await SecureStore.setItemAsync("publicId", response.data.publicId);
+        }
+        
+        if (response.data.uinversalId) {
+          await SecureStore.setItemAsync("universityId", response.data.uinversalId);
+        }
+        
+        if (response.data.roles && response.data.roles.length > 0) {
+          await SecureStore.setItemAsync("role", response.data.roles[0]);
+        }
+        
+        // Delay redirect to show success message
+        setTimeout(() => {
+          router.replace("/(screens)");
+        }, 1500);
+      } else {
+        setErrorMessage(response.message || "Login failed. Please try again.");
       }
     },
     onError: (error: any) => {
-      const msg =
-        error?.response?.data?.message ||
-        "Invalid credentials. Please try again.";
-      setErrorMessage(msg);
+      const responseData = error?.response?.data;
+      let msg = "Invalid credentials. Please try again.";
 
+      if (responseData) {
+        if (responseData.error?.errors && Array.isArray(responseData.error.errors) && responseData.error.errors.length > 0) {
+          msg = responseData.error.errors.join("\n");
+        } else if (responseData.message) {
+          msg = responseData.message;
+        }
+      }
+      
+      setErrorMessage(msg);
       setTimeout(() => setErrorMessage(null), 5000);
     },
   });
@@ -78,18 +107,18 @@ export default function LoginScreen() {
         contentContainerStyle={{ flexGrow: 1 }}
         keyboardShouldPersistTaps="handled"
       >
-        <TouchableOpacity onPress={() => router.replace("/")} className="absolute z-10">
-          <View className="flex-row items-center mb-6 self-start p-2 -ml-2">
+        <TouchableOpacity onPress={() => router.push("/")} className="absolute top-2 left-4 z-10">
+          <View className="flex-row items-center p-2">
             <ChevronLeft color={isDark ? "#818cf8" : "#4f46e5"} size={24} />
             <Text className="text-blue-600 dark:text-indigo-400 font-bold text-lg ml-1">Home</Text>
           </View>
         </TouchableOpacity>
 
         <View className="flex-1 justify-center px-6 py-10">
-          <View className="items-center mb-10">
-            <View className="w-20 h-20 bg-blue-600 dark:bg-indigo-600 rounded-3xl items-center justify-center shadow-xl shadow-blue-500/50 dark:shadow-indigo-900/50">
-              <ShieldCheck color="white" size={40} />
-            </View>
+            <View className="items-center mb-10">
+              <View className="w-24 h-24 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl items-center justify-center shadow-xl shadow-slate-200 dark:shadow-none">
+                <BrandLogo size={64} isDark={isDark} />
+              </View>
             <Text className="text-3xl font-black text-slate-900 dark:text-white mt-4">
               UniDent <Text className="text-blue-600 dark:text-indigo-400">Care</Text>
             </Text>
@@ -106,6 +135,18 @@ export default function LoginScreen() {
               </Text>
               <TouchableOpacity onPress={() => setErrorMessage(null)}>
                 <XCircle color={isDark ? "#f87171" : "#fca5a5"} size={18} />
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {successMessage && (
+            <View className="mb-6 flex-row items-center bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-900/50 p-4 rounded-2xl shadow-sm">
+              <CheckCircle2 color="#10b981" size={20} />
+              <Text className="flex-1 ml-3 text-emerald-600 dark:text-emerald-400 font-bold text-sm">
+                {successMessage}
+              </Text>
+              <TouchableOpacity onPress={() => setSuccessMessage(null)}>
+                <XCircle color={isDark ? "#34d399" : "#6ee7b7"} size={18} />
               </TouchableOpacity>
             </View>
           )}

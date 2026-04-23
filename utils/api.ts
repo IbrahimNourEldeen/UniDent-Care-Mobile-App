@@ -26,6 +26,7 @@ axiosInstance.interceptors.response.use(
     (response) => response,
     async (error) => {
         if (error.response?.status === 401) {
+            console.warn(`[API] 401 Unauthorized for: ${error.config?.url}`);
             await SecureStore.deleteItemAsync("token");
         }
         return Promise.reject(error);

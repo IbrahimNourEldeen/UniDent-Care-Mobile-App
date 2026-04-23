@@ -38,7 +38,7 @@ export type Cases = CaseCardProps["caseItem"][];
 
 export interface AvailableCasesResponse extends ApiResponse<MetaData> { }
 
-export interface CaseDetailResponse extends ApiResponse<CaseItem> { }
+export interface CaseDetailResponse extends ApiResponse<StudentCaseItem> { }
 
 export interface CaseRequestBody {
     patientCasePublicId: string;
@@ -65,7 +65,6 @@ export interface CaseRequestData {
 
 export type CaseRequestResponse = ApiResponse<CaseRequestData>;
 
-
 export interface CaseTypeResponse extends ApiResponse<{
     totalCount: number;
     currentPage: number;
@@ -74,3 +73,141 @@ export interface CaseTypeResponse extends ApiResponse<{
     hasNextPage: boolean;
     items: CaseType[];
 }> { }
+
+/* ─── Student: My Cases & My Requests ─────────────────────────────────────── */
+
+export interface ToothData {
+    number: number;
+    status: string;
+    treatmentType?: string;
+    notes?: string;
+}
+
+export interface DiagnosisDto {
+    id: string;
+    diagnosisStage: string;
+    caseType: string;
+    notes: string;
+    teethNumbers: number[];
+    teeth?: ToothData[];
+}
+
+export interface UserFlags {
+    isOwner: boolean;
+    role: string;
+    isAssignedDoctor: boolean;
+    isAssignedStudent: boolean;
+    isAssignedToMe: boolean;
+    hasRequest: boolean;
+    requestId: string;
+    requestStatus: string;
+}
+
+export interface StudentCaseItem {
+    id: string;
+    patientId: string;
+    patientName: string;
+    patientAge: number;
+    status: string;
+    processStatus: string;
+    isPublic: boolean;
+    universityId: string;
+    universityName: string;
+    createAt: string;
+    totalSessions: number;
+    hasEvaluatedSession: boolean;
+    pendingRequests: number;
+    assignedStudentId: string;
+    assignedDoctorId: string;
+    diagnosisdto: DiagnosisDto | null;
+    imageUrls: string[];
+    createdById: string;
+    createdByRole: string;
+    userFlags: UserFlags;
+    availableActions: string[];
+}
+
+export interface StudentRequestItem {
+    id: string;
+    patientCasePublicId: string;
+    patientName: string;
+    caseName: string;
+    studentPublicId: string;
+    studentName: string;
+    university: string;
+    level: number;
+    doctorId: string;
+    doctorName: string;
+    description: string;
+    status: string;
+    createAt: string;
+}
+
+export interface StudentMyCasesQueryParams {
+    caseType?: string;
+    page?: number;
+    pageSize?: number;
+}
+
+export interface StudentMyRequestsQueryParams {
+    status?: string;
+    page?: number;
+    pageSize?: number;
+}
+
+export interface StudentMyCasesMetaData {
+    totalCount: number;
+    currentPage: number;
+    totalPages: number;
+    hasPreviousPage: boolean;
+    hasNextPage: boolean;
+    items: StudentCaseItem[];
+}
+
+export interface StudentMyRequestsMetaData {
+    totalCount: number;
+    currentPage: number;
+    totalPages: number;
+    hasPreviousPage: boolean;
+    hasNextPage: boolean;
+    items: StudentRequestItem[];
+}
+
+export type MyStudentCasesResponse = ApiResponse<StudentMyCasesMetaData>;
+export type MyStudentRequestsResponse = ApiResponse<StudentMyRequestsMetaData>;
+
+/* ─── Sessions ─────────────────────────────────────────────────────────────── */
+
+export interface SessionDto {
+    id: string;
+    caseId: string;
+    treatmentType: string | null;
+    patientId: string;
+    patientName: string | null;
+    studentId: string;
+    studentName: string | null;
+    scheduledAt: string;
+    endAt: string;
+    status: string | null; // e.g. "Scheduled", "Completed", "Cancelled"
+    totalNotes: number;
+    totalMedia: number;
+    createAt: string;
+}
+
+export interface CreateSessionPayload {
+    studentId: string;
+    patientCaseId: string;
+    sessionDate: string; // ISO date-time
+    location?: string;
+}
+
+export interface SessionPagedResult {
+    totalCount: number;
+    currentPage: number;
+    totalPages: number;
+    hasPreviousPage: boolean;
+    hasNextPage: boolean;
+    items: SessionDto[];
+}
+
+export type SessionsResponse = ApiResponse<SessionPagedResult>;

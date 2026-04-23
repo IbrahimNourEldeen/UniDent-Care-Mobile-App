@@ -1,8 +1,8 @@
-import React from 'react';
-import { View, Text } from 'react-native';
-import { useTranslation } from 'react-i18next';
-import { CheckCircle2, History, Info, PlusCircle } from 'lucide-react-native';
 import { useThemeLanguage } from '@/store/ThemeLanguageContext';
+import { CheckCircle2, History, Info, PlusCircle } from 'lucide-react-native';
+import React from 'react';
+import { useTranslation } from 'react-i18next';
+import { Text, View } from 'react-native';
 import { ActivityItem } from '../../hooks/useStudentStats';
 
 interface RecentActivityProps {

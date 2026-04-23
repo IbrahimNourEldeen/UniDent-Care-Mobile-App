@@ -1,11 +1,11 @@
+import { Building2, Calendar, GraduationCap, Mail, Phone, Stethoscope, User as UserIcon } from 'lucide-react-native';
 import React from 'react';
-import { View, Text, ScrollView } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { useAppSelector } from '../../store/hooks';
-import { User as UserIcon, Phone, GraduationCap, Building2, Stethoscope, Mail, Calendar } from 'lucide-react-native';
-import { useThemeLanguage } from '../../store/ThemeLanguageContext';
-import { User, StudentUser, DoctorUser, PatientUser } from '../../types/types';
+import { ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useAppSelector } from '../../store/hooks';
+import { useThemeLanguage } from '../../store/ThemeLanguageContext';
+import { DoctorUser, PatientUser, StudentUser } from '../../types/types';
 
 const InfoRow = ({ icon, label, value }: { icon: React.ReactNode; label: string; value: string | undefined }) => {
   return (

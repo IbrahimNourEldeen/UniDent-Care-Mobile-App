@@ -1,93 +1,57 @@
-import { Ionicons } from "@expo/vector-icons";
+import React from "react";
+import { Home, Search, Briefcase, User, Settings as SettingsIcon } from "lucide-react-native";
 import { Tabs } from "expo-router";
-import { Platform } from "react-native";
-import { useThemeLanguage } from "../../../store/ThemeLanguageContext";
+import { CustomTabBar } from "@/components/ui/CustomTabBar";
+import { useTranslation } from "react-i18next";
 
 export default function TabsLayout() {
-  const { theme } = useThemeLanguage();
-  const isDark = theme === "dark";
+  const { t } = useTranslation();
 
   return (
     <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarShowLabel: false,
-        tabBarActiveTintColor: isDark ? "#ffffff" : "#000000",
-        tabBarInactiveTintColor: isDark ? "#475569" : "#8e8e8e",
-        tabBarStyle: {
-          backgroundColor: isDark ? "#0f172a" : "#ffffff",
-          height: Platform.OS === "ios" ? 88 : 65,
-          borderTopWidth: 0.5,
-          borderTopColor: isDark ? "#1e293b" : "#dbdbdb",
-          elevation: 0,
-          shadowOpacity: 0,
-          paddingBottom: Platform.OS === "ios" ? 30 : 10,
-          paddingTop: 10,
-        },
-      }}
+      tabBar={(props) => <CustomTabBar {...props} />}
+      screenOptions={{ headerShown: false }}
     >
-      <Tabs.Screen
-        name="index"
-        options={{
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons
-              name={focused ? "home" : "home-outline"}
-              size={24}
-              color={color}
-            />
-          ),
-        }}
+      <Tabs.Screen 
+        name="index" 
+        options={{ 
+          title: t("home"),
+          tabBarIcon: ({ color, size }) => <Home size={size} color={color} /> 
+        }} 
       />
-
-      <Tabs.Screen
-        name="cases-list"
-        options={{
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons
-              name={focused ? "search" : "search-outline"}
-              size={26}
-              color={color}
-            />
-          ),
-        }}
+      <Tabs.Screen 
+        name="cases-list" 
+        options={{ 
+          title: t("search"),
+          tabBarIcon: ({ color, size }) => <Search size={size} color={color} /> 
+        }} 
       />
-
-      <Tabs.Screen
-        name="my-cases"
-        options={{
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons
-              name={focused ? "copy" : "copy-outline"}
-              size={24}
-              color={color}
-            />
-          ),
-        }}
+      <Tabs.Screen 
+        name="my-cases" 
+        options={{ 
+          title: t("my_cases"),
+          tabBarIcon: ({ color, size }) => <Briefcase size={size} color={color} /> 
+        }} 
       />
-
-      <Tabs.Screen
-        name="profile"
-        options={{
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons
-              name={focused ? "person" : "person-outline"}
-              size={24}
-              color={color}
-            />
-          ),
-        }}
+      <Tabs.Screen 
+        name="profile" 
+        options={{ 
+          title: t("profile"),
+          tabBarIcon: ({ color, size }) => <User size={size} color={color} /> 
+        }} 
       />
-
+      <Tabs.Screen 
+        name="settings" 
+        options={{ 
+          title: t("settings"),
+          tabBarIcon: ({ color, size }) => <SettingsIcon size={size} color={color} /> 
+        }} 
+      />
       <Tabs.Screen
-        name="settings"
-        options={{
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons
-              name={focused ? "settings" : "settings-outline"}
-              size={24}
-              color={color}
-            />
-          ),
+        name="my-cases/[caseId]/start-session/[sessionId]"
+        options={{ 
+          // @ts-ignore
+          href: null 
         }}
       />
     </Tabs>

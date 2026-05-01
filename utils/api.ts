@@ -1,8 +1,10 @@
 import axios from "axios";
 import * as SecureStore from 'expo-secure-store';
+import { store } from '@/store/store';
+import { logout } from '@/store/slices/authSlice';
 
 const axiosInstance = axios.create({
-    baseURL: "https://dental-hup1.runasp.net/api/",
+    baseURL: "https://dental-hup1.runasp.net/api",
 });
 
 axiosInstance.interceptors.request.use(
@@ -28,6 +30,9 @@ axiosInstance.interceptors.response.use(
         if (error.response?.status === 401) {
             console.warn(`[API] 401 Unauthorized for: ${error.config?.url}`);
             await SecureStore.deleteItemAsync("token");
+            await SecureStore.deleteItemAsync("publicId");
+            await SecureStore.deleteItemAsync("role");
+            store.dispatch(logout());
         }
         return Promise.reject(error);
     }

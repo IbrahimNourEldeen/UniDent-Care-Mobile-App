@@ -1,78 +1,109 @@
-import React, { useState } from 'react';
-import {
-    View, Text, ScrollView, TouchableOpacity, ActivityIndicator,
-    Image, Modal, Pressable, Alert,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import {
-    ArrowLeft, Calendar, User, Stethoscope, Clock, CheckCircle2,
-    AlertCircle, RefreshCw, Layers, Activity, FileText, Plus,
-    Trash2, MapPin, CircleCheck, Timer, XCircle,
-} from 'lucide-react-native';
-import { useThemeLanguage } from '@/store/ThemeLanguageContext';
-import { useTranslation } from 'react-i18next';
 import { useCaseDetails } from '@/features/cases/hooks/useCaseDetails';
 import { useCaseSessions } from '@/features/cases/hooks/useCaseSessions';
+import { useStudentActions } from '@/features/cases/hooks/useStudentActions';
+import { showToast } from '@/store/slices/uiSlice';
+import { RootState } from '@/store/store';
+import { useThemeLanguage } from '@/store/ThemeLanguageContext';
+import { useRouter } from 'expo-router';
+import {
+    AlertCircle,
+    CheckCircle2,
+    ChevronRight,
+    CircleCheck,
+    Clock,
+    MapPin,
+    Plus,
+    Timer,
+    Trash2,
+    XCircle
+} from 'lucide-react-native';
+import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import {
+    ActivityIndicator,
+    Modal, Pressable,
+    ScrollView,
+    Text,
+    TouchableOpacity,
+    View
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useDispatch, useSelector } from 'react-redux';
 import { AddSessionModal } from '../components/CaseDetails/AddSessionModal';
 import { DeleteConfirmationModal } from '../components/CaseDetails/DeleteConfirmationModal';
-import WebOdontogram from '../components/CaseDetails/WebOdontogram';
-
-
 import { SessionDto } from '../types/caseTypes';
 
-function getSessionStatusConfig(status: string | null, isDark: boolean) {
+// Import new modular components
+import DentalImageGallery from '../components/CaseDetails/Clinical/DentalImageGallery';
+import CaseDetailsSkeleton from '../components/CaseDetails/Layout/CaseDetailsSkeleton';
+import CaseDetailsTopBar from '../components/CaseDetails/Layout/CaseDetailsTopBar';
+import CaseInfoPanel from '../components/CaseDetails/Layout/CaseInfoPanel';
+import ScheduleSessionSection from '../components/CaseDetails/Layout/StudentActions/ScheduleSessionSection';
+import CaseDetailTabs from '../components/CaseDetails/Tabs/CaseDetailTabs';
+
+// ─── Case Status Config ────────────────────────────────────────────────────────
+
+const getCaseStatuses = (t: any) => [
+    { value: 'Pending',     label: t('status_pending'),      color: '#f59e0b', bg: '#fef3c7', bgDark: '#451a03' },
+    { value: 'InProgress',  label: t('status_in_progress'),  color: '#3b82f6', bg: '#dbeafe', bgDark: '#1e3a5f' },
+    { value: 'Completed',   label: t('status_completed'),    color: '#10b981', bg: '#d1fae5', bgDark: '#064e3b' },
+    { value: 'Cancelled',   label: t('status_cancelled'),    color: '#ef4444', bg: '#fee2e2', bgDark: '#450a0a' },
+    { value: 'UnderReview', label: t('status_underreview'), color: '#8b5cf6', bg: '#ede9fe', bgDark: '#2e1065' },
+    { value: 'Rejected',    label: t('status_rejected'),     color: '#f43f5e', bg: '#ffe4e6', bgDark: '#4c0519' },
+];
+
+function getSessionStatusConfig(status: string | null, isDark: boolean, t: any) {
     const s = status?.toLowerCase();
-    if (s === 'completed') return {
+    if (s === 'done') return {
         Icon: CircleCheck, dot: '#34d399',
         text: isDark ? '#6ee7b7' : '#059669',
         bg: isDark ? 'bg-emerald-900/30' : 'bg-emerald-50',
-        label: 'Completed',
+        label: t('status_done'),
     };
     if (s === 'cancelled') return {
         Icon: XCircle, dot: '#f87171',
         text: isDark ? '#fca5a5' : '#dc2626',
         bg: isDark ? 'bg-red-900/30' : 'bg-red-50',
-        label: 'Cancelled',
+        label: t('status_cancelled'),
     };
     return {
         Icon: Timer, dot: '#f59e0b',
         text: isDark ? '#fbbf24' : '#d97706',
         bg: isDark ? 'bg-amber-900/30' : 'bg-amber-50',
-        label: 'Scheduled',
+        label: t('status_scheduled'),
     };
 }
 
-function ProgressRing({ rate, isDark }: { rate: number; isDark: boolean }) {
+function ProgressRing({ rate, isDark, t, isRtl }: { rate: number; isDark: boolean; t: any; isRtl: boolean }) {
     const pct = Math.round(rate * 100);
     return (
         <View className={`rounded-[28px] p-5 mb-6 border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
-            <View className="flex-row items-center justify-between">
-                <View>
+            <View className={`flex-row items-center justify-between ${isRtl ? 'flex-row-reverse' : ''}`}>
+                <View className={isRtl ? 'items-end' : 'items-start'}>
                     <Text className={`text-xs font-black uppercase tracking-widest mb-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                        Session Progress
+                        {t('session_progress')}
                     </Text>
-                    <Text className={`text-4xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                        {pct}<Text className="text-xl">%</Text>
+                    <Text className={`text-4xl pt-3 font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                        {pct}<Text className="text-xl ">%</Text>
                     </Text>
-                    <Text className={`text-xs mt-1 font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Completed</Text>
+                    <Text className={`text-xs mt-1 font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('completed')}</Text>
                 </View>
                 {/* Visual bar */}
-                <View className="flex-1 ml-6">
+                <View className={`flex-1 ${isRtl ? 'mr-6' : 'ml-6'}`}>
                     <View className={`h-3 rounded-full overflow-hidden ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
                         <View
-                            style={{ width: `${pct}%` }}
+                            style={{ width: `${pct}%`, position: 'absolute', [isRtl ? 'right' : 'left']: 0 }}
                             className="h-full bg-indigo-600 rounded-full"
                         />
                     </View>
-                    <View className="flex-row justify-between mt-3">
+                    <View className={`flex-row justify-between mt-3 ${isRtl ? 'flex-row-reverse' : ''}`}>
                         <View className="items-center">
                             <View className="w-2 h-2 rounded-full bg-emerald-500 mb-1" />
-                            <Text className={`text-[10px] font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Done</Text>
+                            <Text className={`text-[10px] font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('done')}</Text>
                         </View>
                         <View className="items-center">
                             <View className="w-2 h-2 rounded-full bg-amber-400 mb-1" />
-                            <Text className={`text-[10px] font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Upcoming</Text>
+                            <Text className={`text-[10px] font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('upcoming')}</Text>
                         </View>
                     </View>
                 </View>
@@ -82,40 +113,48 @@ function ProgressRing({ rate, isDark }: { rate: number; isDark: boolean }) {
 }
 
 function SessionCard({
-    session, isDark, isDeleting, canDelete, onDelete,
+    session, isDark, isDeleting, canDelete, onDeleteRequest, onPress, t, language
 }: {
     session: SessionDto;
     isDark: boolean;
     isDeleting: boolean;
     canDelete: boolean;
     onDeleteRequest: (id: string) => void;
+    onPress?: () => void;
+    t: any;
+    language: string;
 }) {
 
-    const sc = getSessionStatusConfig(session.status, isDark);
+    const sc = getSessionStatusConfig(session.status, isDark, t);
     const { Icon } = sc;
+    const isRtl = language === 'ar';
+    const locale = isRtl ? 'ar-EG' : 'en-GB';
     const date = new Date(session.scheduledAt);
-    const dateStr = date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
-    const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const dateStr = date.toLocaleDateString(locale, { weekday: 'short', month: 'short', day: 'numeric' });
+    const timeStr = date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
 
     const handleDelete = () => {
         onDeleteRequest(session.id);
     };
 
-
     return (
-        <View className={`mb-3 p-4 rounded-[24px] border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
-            <View className="flex-row justify-between items-start">
-                <View className="flex-row items-center gap-3 flex-1 min-w-0">
+        <TouchableOpacity 
+            activeOpacity={0.7}
+            onPress={onPress}
+            className={`mb-3 p-4 rounded-[24px] border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}
+        >
+            <View className={`flex-row justify-between items-start ${isRtl ? 'flex-row-reverse' : ''}`}>
+                <View className={`flex-row items-center gap-3 flex-1 min-w-0 ${isRtl ? 'flex-row-reverse' : ''}`}>
                     <View className={`w-10 h-10 rounded-2xl items-center justify-center ${isDark ? 'bg-slate-800' : 'bg-indigo-50'}`}>
                         <Icon size={18} color={sc.text} />
                     </View>
-                    <View className="flex-1 min-w-0">
+                    <View className={`flex-1 min-w-0 ${isRtl ? 'items-end' : 'items-start'}`}>
                         <Text className={`text-sm font-black ${isDark ? 'text-white' : 'text-slate-800'}`}>{dateStr}</Text>
                         <Text className={`text-xs font-bold mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{timeStr}</Text>
                     </View>
                 </View>
-                <View className="flex-row items-center gap-2">
-                    <View className={`px-2.5 py-1 rounded-full flex-row items-center gap-1 ${sc.bg}`}>
+                <View className={`flex-row items-center gap-2 ${isRtl ? 'flex-row-reverse' : ''}`}>
+                    <View className={`px-2.5 py-1 rounded-full flex-row items-center gap-1 ${sc.bg} ${isRtl ? 'flex-row-reverse' : ''}`}>
                         <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: sc.dot }} />
                         <Text style={{ color: sc.text }} className="text-[9px] font-black uppercase tracking-widest">
                             {sc.label}
@@ -143,40 +182,68 @@ function SessionCard({
                     <Text className={`text-xs font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{(session as any).location}</Text>
                 </View>
             ) : null}
-        </View>
+        </TouchableOpacity>
     );
 }
 
 export default function CaseDetailsScreen({ caseId }: { caseId: string }) {
-    const router = useRouter();
-    const { theme } = useThemeLanguage();
+    const { language, theme } = useThemeLanguage();
     const { t } = useTranslation();
-    const insets = useSafeAreaInsets();
+    const isRtl = language === 'ar';
     const isDark = theme === 'dark';
+    const router = useRouter();
+    const insets = useSafeAreaInsets();
+    const dispatch = useDispatch();
+    const userRole = useSelector((state: RootState) => state.auth.role);
+    const isDoctor = userRole === 'Doctor';
 
-    const { patient, isLoading, refetch } = useCaseDetails(caseId);
+    const { patient, isLoading, refetch, statuses, updateStatus, isUpdatingStatus } = useCaseDetails(caseId);
+    
+    // Status UI Config
+    const statusConfig: Record<string, { color: string, bg: string, bgDark: string }> = {
+        'Pending':     { color: '#f59e0b', bg: '#fef3c7', bgDark: '#451a03' },
+        'InProgress':  { color: '#3b82f6', bg: '#dbeafe', bgDark: '#1e3a5f' },
+        'Completed':   { color: '#10b981', bg: '#d1fae5', bgDark: '#064e3b' },
+        'Cancelled':   { color: '#ef4444', bg: '#fee2e2', bgDark: '#450a0a' },
+        'UnderReview': { color: '#8b5cf6', bg: '#ede9fe', bgDark: '#2e1065' },
+        'Rejected':    { color: '#f43f5e', bg: '#ffe4e6', bgDark: '#4c0519' },
+    };
+
+    const CASE_STATUSES = (statuses && statuses.length > 0) 
+        ? statuses.map(s => ({
+            value: s.name,
+            label: t(`status_${s.name.toLowerCase().replace(/\s/g, '')}`),
+            ...(statusConfig[s.name] || { color: '#64748b', bg: '#f1f5f9', bgDark: '#1e293b' })
+          }))
+        : getCaseStatuses(t);
+
     const {
         sessions, isLoading: sessionsLoading, isSubmitting, isDeleting,
         completedCount, scheduledCount, totalCount, progressRate,
         addSession, removeSession, refetch: refetchSessions,
     } = useCaseSessions(caseId, patient?.id ?? caseId);
 
-    const isInProgress = patient?.status?.toLowerCase() === 'in-progress' || patient?.status?.toLowerCase() === 'inprogress';
-    const [activeTab, setActiveTab] = useState<'info' | 'teeth' | 'sessions'>(isInProgress ? 'sessions' : 'info');
+    const studentActions = useStudentActions(caseId, patient?.id ?? caseId);
+    const isStudent = userRole === 'Student';
+    const isPatient = userRole?.toLowerCase() === 'patient';
+    const canEditSessions = !isPatient;
 
-    const [selectedImage, setSelectedImage] = useState<string | null>(null);
+    const isInProgress = patient?.status?.toLowerCase() === 'in-progress' || patient?.status?.toLowerCase() === 'inprogress';
+
     const [showAddSession, setShowAddSession] = useState(false);
     const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
+    const [showStatusModal, setShowStatusModal] = useState(false);
 
     const bgClass = isDark ? 'bg-[#020617]' : 'bg-slate-50';
-
     const textClass = isDark ? 'text-white' : 'text-slate-900';
     const subTextClass = isDark ? 'text-slate-400' : 'text-slate-500';
 
+
+
     if (isLoading) {
         return (
-            <View className={`flex-1 ${bgClass} justify-center items-center`}>
-                <ActivityIndicator size="large" color="#4f46e5" />
+            <View className={`flex-1 ${bgClass} p-5`} style={{ paddingTop: insets.top }}>
+                <CaseDetailsSkeleton />
             </View>
         );
     }
@@ -185,10 +252,10 @@ export default function CaseDetailsScreen({ caseId }: { caseId: string }) {
         return (
             <View className={`flex-1 ${bgClass} justify-center items-center px-6`} style={{ paddingTop: insets.top }}>
                 <AlertCircle size={56} color={isDark ? '#f87171' : '#ef4444'} />
-                <Text className={`text-xl font-black mt-5 text-center ${textClass}`}>Case Not Found</Text>
-                <Text className={`text-sm mt-2 text-center ${subTextClass}`}>The case you are looking for does not exist or was removed.</Text>
+                <Text className={`text-xl font-black mt-5 text-center ${textClass}`}>{t('case_not_found')}</Text>
+                <Text className={`text-sm mt-2 text-center ${subTextClass}`}>{t('case_not_found_desc')}</Text>
                 <TouchableOpacity onPress={() => router.back()} className="mt-8 bg-indigo-600 px-8 py-3.5 rounded-2xl shadow-lg shadow-indigo-500/30">
-                    <Text className="text-white font-bold text-sm">Return to Dashboard</Text>
+                    <Text className="text-white font-bold text-sm">{t('return_to_dashboard')}</Text>
                 </TouchableOpacity>
             </View>
         );
@@ -197,47 +264,16 @@ export default function CaseDetailsScreen({ caseId }: { caseId: string }) {
     const { status, patientName, patientAge, createAt, totalSessions, imageUrls, diagnosisdto } = patient;
     const isAvailable = status?.toLowerCase() === 'available' || status?.toLowerCase() === 'unassigned';
 
-    const initName = patientName.substring(0, 2).toUpperCase();
 
-    const renderImages = () => {
-        if (!imageUrls || imageUrls.length === 0) {
-            return (
-                <View className={`rounded-3xl p-8 items-center justify-center border border-dashed ${isDark ? 'border-slate-800 bg-slate-900/50' : 'border-slate-300 bg-white/50'} mb-8`}>
-                    <Layers size={36} color={isDark ? '#475569' : '#cbd5e1'} />
-                    <Text className={`mt-4 font-bold ${textClass}`}>No Images</Text>
-                    <Text className={`mt-1 text-xs text-center ${subTextClass}`}>There are no clinical images attached to this case yet.</Text>
-                </View>
-            );
-        }
-        return (
-            <View className="mb-8">
-                <View className="flex-row items-center justify-between mb-4">
-                    <Text className={`font-black text-lg tracking-tight ${textClass}`}>Clinical Images</Text>
-                    <View className={`px-2.5 py-1 rounded-full ${isDark ? 'bg-slate-800' : 'bg-slate-200'}`}>
-                        <Text className={`text-[10px] font-bold ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{imageUrls.length} Files</Text>
-                    </View>
-                </View>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
-                    {imageUrls.map((url, i) => (
-                        <TouchableOpacity key={i} onPress={() => setSelectedImage(url)} activeOpacity={0.8}>
-                            <View className={`w-36 h-36 rounded-3xl overflow-hidden border-2 ${isDark ? 'border-slate-800' : 'border-white'} shadow-sm bg-slate-200 dark:bg-slate-800`}>
-                                <Image source={{ uri: url }} className="w-full h-full" resizeMode="cover" />
-                            </View>
-                        </TouchableOpacity>
-                    ))}
-                </ScrollView>
-            </View>
-        );
-    };
 
     const renderSessionsTab = () => (
         <View>
             {/* Stats Row */}
-            <View className="flex-row gap-3 mb-5">
+            <View className={`flex-row gap-3 mb-5 ${isRtl ? 'flex-row-reverse' : ''}`}>
                 {[
-                    { label: 'Total', value: totalCount, color: '#4f46e5' },
-                    { label: 'Done', value: completedCount, color: '#10b981' },
-                    { label: 'Upcoming', value: scheduledCount, color: '#f59e0b' },
+                    { label: t('total'), value: totalCount, color: '#4f46e5' },
+                    { label: t('done'), value: completedCount, color: '#10b981' },
+                    { label: t('upcoming'), value: scheduledCount, color: '#f59e0b' },
                 ].map(stat => (
                     <View key={stat.label} className={`flex-1 rounded-2xl p-3 items-center border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
                         <Text style={{ color: stat.color }} className="text-2xl font-black">{stat.value}</Text>
@@ -247,20 +283,20 @@ export default function CaseDetailsScreen({ caseId }: { caseId: string }) {
             </View>
 
             {/* Progress bar */}
-            {totalCount > 0 && <ProgressRing rate={progressRate} isDark={isDark} />}
+            {totalCount > 0 && <ProgressRing rate={progressRate} isDark={isDark} t={t} isRtl={isRtl} />}
 
             {/* Session list header + add button */}
-            <View className="flex-row justify-between items-center mb-4">
-                <Text className={`font-black text-base ${textClass}`}>All Sessions</Text>
-                <View className="flex-row items-center gap-2">
+            <View className={`flex-row justify-between items-center mb-4 ${isRtl ? 'flex-row-reverse' : ''}`}>
+                <Text className={`font-black text-base ${textClass}`}>{t('all_sessions')}</Text>
+                <View className={`flex-row items-center gap-2 ${isRtl ? 'flex-row-reverse' : ''}`}>
                     {sessionsLoading && <ActivityIndicator size="small" color="#4f46e5" />}
-                    {isInProgress && (
+                    {canEditSessions && isInProgress && (
                         <TouchableOpacity
                             onPress={() => setShowAddSession(true)}
-                            className="flex-row items-center gap-1.5 bg-indigo-600 px-3.5 py-2 rounded-2xl"
+                            className={`flex-row items-center gap-1.5 bg-indigo-600 px-3.5 py-2 rounded-2xl ${isRtl ? 'flex-row-reverse' : ''}`}
                         >
                             <Plus size={14} color="white" />
-                            <Text className="text-white text-xs font-black">Add</Text>
+                            <Text className="text-white text-xs font-black">{t('add')}</Text>
                         </TouchableOpacity>
                     )}
                 </View>
@@ -272,9 +308,9 @@ export default function CaseDetailsScreen({ caseId }: { caseId: string }) {
                     <View className={`w-14 h-14 rounded-full items-center justify-center mb-4 ${isDark ? 'bg-slate-800' : 'bg-slate-50'}`}>
                         <Clock size={22} color={isDark ? '#475569' : '#94a3b8'} />
                     </View>
-                    <Text className={`font-bold text-sm ${textClass} mb-1`}>No Sessions Yet</Text>
+                    <Text className={`font-bold text-sm ${textClass} mb-1`}>{t('no_sessions_yet')}</Text>
                     <Text className={`text-xs text-center ${subTextClass}`}>
-                        {isInProgress ? 'Tap "Add" to schedule the first session.' : 'Sessions will appear here once the case is active.'}
+                        {isInProgress ? t('add_session_prompt') : t('sessions_will_appear_later')}
                     </Text>
                 </View>
             )}
@@ -285,9 +321,12 @@ export default function CaseDetailsScreen({ caseId }: { caseId: string }) {
                         key={session.id}
                         session={session}
                         isDark={isDark}
-                        canDelete={isInProgress && isScheduled}
+                        canDelete={canEditSessions && isInProgress && isScheduled}
                         isDeleting={isDeleting === session.id}
                         onDeleteRequest={(id) => setSessionToDelete(id)}
+                        onPress={() => router.push(`/(screens)/session-details/${session.id}` as any)}
+                        t={t}
+                        language={language}
                     />
 
                 );
@@ -297,145 +336,61 @@ export default function CaseDetailsScreen({ caseId }: { caseId: string }) {
 
     return (
         <View className={`flex-1 ${bgClass}`}>
-            {/* Hero */}
-            <View className="bg-indigo-600 dark:bg-indigo-900 absolute top-0 left-0 right-0" style={{ height: 260 + insets.top, borderBottomLeftRadius: 40, borderBottomRightRadius: 40 }} />
-
             <View style={{ paddingTop: insets.top }} className="flex-1">
-                {/* Top Nav */}
-                <View className="px-5 py-3 flex-row items-center justify-between z-10">
-                    <TouchableOpacity onPress={() => router.back()} className="w-11 h-11 rounded-2xl items-center justify-center bg-white/20 dark:bg-black/20">
-                        <ArrowLeft size={20} color="#ffffff" />
-                    </TouchableOpacity>
-                    <Text className="text-base font-bold text-white tracking-wide">Case Overview</Text>
-                    <TouchableOpacity onPress={() => { refetch(); refetchSessions(); }} className="w-11 h-11 rounded-2xl items-center justify-center bg-white/20 dark:bg-black/20">
-                        <RefreshCw size={18} color="#ffffff" />
-                    </TouchableOpacity>
-                </View>
-
-                <ScrollView className="flex-1" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
-                    {/* Patient Card */}
-                    <View className="px-5 mt-4 z-20">
-                        <View className={`rounded-[32px] p-6 shadow-xl ${isDark ? 'bg-slate-900 shadow-black/50' : 'bg-white shadow-indigo-900/10'}`} style={{ elevation: 15 }}>
-                            <View className="flex-row justify-between items-start mb-5">
-                                <View className={`w-16 h-16 rounded-2xl items-center justify-center shadow-sm ${isDark ? 'bg-indigo-500/20' : 'bg-indigo-50'}`}>
-                                    <Text className={`text-2xl font-black ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`}>{initName}</Text>
-                                </View>
-                                <View className={`px-3 py-1.5 rounded-full flex-row items-center gap-1.5 ${isAvailable ? (isDark ? 'bg-emerald-900/40' : 'bg-emerald-50') : (isDark ? 'bg-blue-900/40' : 'bg-blue-50')}`}>
-                                    <CheckCircle2 size={12} color={isAvailable ? (isDark ? '#34d399' : '#16a34a') : (isDark ? '#60a5fa' : '#2563eb')} />
-                                    <Text className={`text-[10px] font-black uppercase tracking-widest ${isAvailable ? (isDark ? 'text-emerald-400' : 'text-emerald-700') : (isDark ? 'text-blue-400' : 'text-blue-700')}`}>
-                                        {status || 'Unassigned'}
-                                    </Text>
-                                </View>
-                            </View>
-
-                            <Text className={`text-2xl font-black tracking-tight mb-1 pl-1 ${textClass}`}>{patientName}</Text>
-                            <Text className={`text-sm font-medium pl-1 mb-6 ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`}>
-                                {diagnosisdto?.caseType || 'General Dentistry'}
-                            </Text>
-
-                            <View className={`flex-row flex-wrap gap-3 p-4 rounded-2xl ${isDark ? 'bg-slate-950/50' : 'bg-slate-50'}`}>
-                                <View className="w-[47%] flex-row items-center gap-2.5">
-                                    <View className={`w-8 h-8 rounded-full items-center justify-center ${isDark ? 'bg-slate-800' : 'bg-white shadow-sm'}`}>
-                                        <User size={13} color={isDark ? '#94a3b8' : '#64748b'} />
-                                    </View>
-                                    <View>
-                                        <Text className={`text-[10px] uppercase font-bold tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Age</Text>
-                                        <Text className={`text-xs font-bold ${textClass}`}>{patientAge} yrs</Text>
-                                    </View>
-                                </View>
-                                <View className="w-[47%] flex-row items-center gap-2.5">
-                                    <View className={`w-8 h-8 rounded-full items-center justify-center ${isDark ? 'bg-slate-800' : 'bg-white shadow-sm'}`}>
-                                        <Clock size={13} color={isDark ? '#94a3b8' : '#64748b'} />
-                                    </View>
-                                    <View>
-                                        <Text className={`text-[10px] uppercase font-bold tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Sessions</Text>
-                                        <Text className={`text-xs font-bold ${textClass}`}>{totalSessions}</Text>
-                                    </View>
-                                </View>
-                                <View className="w-full mt-2 flex-row items-center gap-2.5">
-                                    <View className={`w-8 h-8 rounded-full items-center justify-center ${isDark ? 'bg-slate-800' : 'bg-white shadow-sm'}`}>
-                                        <Calendar size={13} color={isDark ? '#94a3b8' : '#64748b'} />
-                                    </View>
-                                    <View>
-                                        <Text className={`text-[10px] uppercase font-bold tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Registered On</Text>
-                                        <Text className={`text-xs font-bold ${textClass}`}>{new Date(createAt).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</Text>
-                                    </View>
-                                </View>
-                            </View>
-                        </View>
-                    </View>
-
-                    {/* Tabs */}
-                    <View className="px-5 mt-8 mb-6 z-10">
-                        <View className={`flex-row p-1.5 rounded-2xl ${isDark ? 'bg-slate-900' : 'bg-slate-200/60'}`}>
-                            {[
-                                { id: 'info', label: 'Details', icon: FileText },
-                                { id: 'teeth', label: 'Chart', icon: Activity },
-                                { id: 'sessions', label: 'Sessions', icon: Clock },
-                            ].map((tab) => {
-                                const active = activeTab === tab.id;
-                                const Icon = tab.icon;
-                                return (
-                                    <TouchableOpacity
-                                        key={tab.id}
-                                        onPress={() => setActiveTab(tab.id as any)}
-                                        className={`flex-1 py-3 flex-row items-center justify-center gap-1.5 rounded-xl ${active ? (isDark ? 'bg-indigo-600 shadow-md shadow-indigo-500/20' : 'bg-white shadow-sm') : 'bg-transparent'}`}
-                                    >
-                                        <Icon size={14} color={active ? (isDark ? '#ffffff' : '#4f46e5') : (isDark ? '#64748b' : '#64748b')} />
-                                        <Text className={`text-[11px] font-bold uppercase tracking-wider ${active ? (isDark ? 'text-white' : 'text-indigo-600') : (isDark ? 'text-slate-400' : 'text-slate-500')}`}>
-                                            {tab.label}
-                                        </Text>
-                                        {tab.id === 'sessions' && totalCount > 0 && (
-                                            <View className={`px-1.5 py-0.5 rounded-md ${active ? 'bg-white/20' : (isDark ? 'bg-slate-800' : 'bg-slate-300')}`}>
-                                                <Text className={`text-[9px] font-bold ${active ? 'text-white' : (isDark ? 'text-slate-400' : 'text-slate-600')}`}>{totalCount}</Text>
-                                            </View>
-                                        )}
-                                    </TouchableOpacity>
-                                );
-                            })}
-                        </View>
-                    </View>
-
-                    {/* Tab content */}
+                <ScrollView className="flex-1" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100, paddingTop: 20 }}>
                     <View className="px-5">
-                        {activeTab === 'info' && (
-                            <View className="space-y-8">
-                                <View>
-                                    <Text className={`font-black text-lg tracking-tight mb-4 pl-1 ${textClass}`}>Clinical Notes</Text>
-                                    <View className={`p-6 rounded-[28px] border ${isDark ? 'border-slate-800 bg-slate-900/80' : 'border-indigo-50 bg-indigo-50/30'}`}>
-                                        <Text className={`leading-6 text-[13px] font-medium ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                                            {diagnosisdto?.notes || 'No description or clinical notes provided for this case.'}
-                                        </Text>
-                                    </View>
-                                </View>
-                                {renderImages()}
-                            </View>
-                        )}
+                        <CaseDetailsTopBar 
+                            currentStatus={status || 'Pending'} 
+                            patientName={patientName || ''} 
+                            onStatusPress={() => setShowStatusModal(true)}
+                        />
+                    </View>
 
-                        {activeTab === 'teeth' && (
-                            <View>
-                                <WebOdontogram
-                                    initialTeeth={diagnosisdto?.teeth || (diagnosisdto?.teethNumbers || []).map(n => ({ number: n, status: 'needs-treatment' }))}
-                                    readonly={status === 'Available' || status === 'Unassigned'}
-                                    status={status}
-                                />
-                            </View>
-                        )}
+                    <DentalImageGallery images={imageUrls || []} isDark={isDark} />
 
-                        {activeTab === 'sessions' && renderSessionsTab()}
+                    <View className={`mx-5 mb-6 rounded-3xl border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100 shadow-sm'} overflow-hidden`}>
+                        <CaseInfoPanel 
+                            role={userRole} 
+                            patient={patient} 
+                            onRefetch={() => { refetch(); refetchSessions(); }} 
+                        />
+                    </View>
+
+                    {isStudent && isInProgress && (
+                        <View className="px-5 mb-6">
+                            <Text className={`font-black text-lg mb-2 ${textClass}`}>Student Actions</Text>
+                            <ScheduleSessionSection 
+                                showForm={studentActions.showSessionForm}
+                                onToggleForm={studentActions.setShowSessionForm}
+                                onSubmit={studentActions.handleCreateSession}
+                                sessionLoading={studentActions.sessionLoading || studentActions.isAddingSession}
+                                scheduledSession={studentActions.scheduledSession}
+
+                                showStartNowModal={studentActions.showStartNowModal}
+                                onToggleStartNowModal={studentActions.setShowStartNowModal}
+                                onStartNow={studentActions.handleStartNow}
+                                startNowLoading={studentActions.startNowLoading}
+
+                                showCancelSessionModal={studentActions.showCancelSessionModal}
+                                onToggleCancelSessionModal={studentActions.setShowCancelSessionModal}
+                                onCancelSession={studentActions.handleCancelSession}
+                                cancelSessionLoading={studentActions.cancelSessionLoading}
+
+                                isDark={isDark}
+                            />
+                        </View>
+                    )}
+
+                    <View className="px-5">
+                        <CaseDetailTabs 
+                            patient={patient} 
+                            isDark={isDark} 
+                            totalSessionsCount={totalCount}
+                            sessionsContent={renderSessionsTab()}
+                        />
                     </View>
                 </ScrollView>
             </View>
-
-            {/* Image viewer */}
-            <Modal visible={!!selectedImage} transparent animationType="fade" onRequestClose={() => setSelectedImage(null)}>
-                <Pressable className="flex-1 bg-black/95 justify-center items-center" onPress={() => setSelectedImage(null)}>
-                    {selectedImage && <Image source={{ uri: selectedImage }} className="w-full h-4/5" resizeMode="contain" />}
-                    <View className="absolute bottom-10 py-3 px-6 bg-white/10 rounded-full border border-white/20">
-                        <Text className="text-white text-xs font-bold tracking-widest uppercase">Tap anywhere to close</Text>
-                    </View>
-                </Pressable>
-            </Modal>
 
             {/* Add Session Modal */}
             <AddSessionModal
@@ -459,12 +414,96 @@ export default function CaseDetailsScreen({ caseId }: { caseId: string }) {
                         setSessionToDelete(null);
                     }
                 }}
-                title="Delete Session"
-                message="Are you sure you want to remove this session? This will free up the time slot."
-                confirmLabel="Remove Session"
+                title={t('delete_session')}
+                message={t('delete_session_confirm')}
+                confirmLabel={t('remove_session')}
                 isLoading={!!isDeleting}
             />
-        </View>
 
+            {/* ── Case Status Modal ─────────────────────────────────────────── */}
+            <Modal
+                visible={showStatusModal}
+                transparent
+                animationType="slide"
+                onRequestClose={() => setShowStatusModal(false)}
+            >
+                <Pressable
+                    style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)' }}
+                    onPress={() => setShowStatusModal(false)}
+                >
+                    <Pressable style={{ marginTop: 'auto' }} onPress={e => e.stopPropagation()}>
+                        <View className={`rounded-t-[32px] px-5 pt-4 pb-10 ${isDark ? 'bg-slate-900' : 'bg-white'}`}>
+                            {/* Handle */}
+                            <View className="items-center mb-5">
+                                <View className={`w-10 h-1 rounded-full ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`} />
+                            </View>
+
+                             <Text className={`text-lg font-black mb-1 ${isDark ? 'text-white' : 'text-slate-900'} ${isRtl ? 'text-right' : 'text-left'}`}>
+                                {t('change_case_status')}
+                            </Text>
+                            <Text className={`text-xs mb-5 ${isDark ? 'text-slate-400' : 'text-slate-500'} ${isRtl ? 'text-right' : 'text-left'}`}>
+                                {t('current_status')}: <Text className="font-bold">{t(`status_${(status ?? 'unknown').toLowerCase().replace(/\s/g, '')}`)}</Text>
+                            </Text>
+
+                            {CASE_STATUSES
+                                .filter(s => ['InProgress', 'Cancelled', 'Completed'].includes(s.value))
+                                .sort((a, b) => {
+                                    const order = ['InProgress', 'Cancelled', 'Completed'];
+                                    return order.indexOf(a.value) - order.indexOf(b.value);
+                                })
+                                .map((s) => {
+                                const isActive = (status ?? '').toLowerCase() === s.value.toLowerCase();
+                                return (
+                                    <TouchableOpacity
+                                        key={s.value}
+                                        disabled={isActive || isUpdatingStatus}
+                                        onPress={async () => {
+                                            console.log(`[UI] Status clicked: ${s.value}`);
+                                            try {
+                                                const res = await updateStatus(s.value);
+                                                setShowStatusModal(false);
+                                                dispatch(showToast({ 
+                                                    message: res?.message || t('status_updated_successfully'), 
+                                                    type: 'success' 
+                                                }));
+                                            } catch (err: any) {
+                                                const errorMsg = err?.message || t('status_update_failed');
+                                                dispatch(showToast({ message: errorMsg, type: 'error' }));
+                                            }
+                                        }}
+                                        className={`flex-row items-center justify-between p-4 rounded-2xl mb-2.5 border ${isRtl ? 'flex-row-reverse' : ''} ${
+                                            isActive
+                                                ? (isDark ? 'border-indigo-500 bg-indigo-900/30' : 'border-indigo-400 bg-indigo-50')
+                                                : (isDark ? 'border-slate-800 bg-slate-800/40' : 'border-slate-100 bg-slate-50')
+                                        }`}
+                                    >
+                                        <View className={`flex-row items-center gap-3 ${isRtl ? 'flex-row-reverse' : ''}`}>
+                                            <View
+                                                style={{ backgroundColor: isDark ? s.bgDark : s.bg }}
+                                                className="w-8 h-8 rounded-xl items-center justify-center"
+                                            >
+                                                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: s.color }} />
+                                            </View>
+                                            <Text className={`font-bold text-sm ${
+                                                isActive
+                                                    ? (isDark ? 'text-indigo-300' : 'text-indigo-700')
+                                                    : (isDark ? 'text-white' : 'text-slate-800')
+                                            }`}>
+                                                {t(`status_${s.value.toLowerCase().replace(/\s/g, '')}`)}
+                                            </Text>
+                                        </View>
+                                        {isActive ? (
+                                            <CheckCircle2 size={16} color={isDark ? '#818cf8' : '#4f46e5'} />
+                                        ) : (
+                                            <ChevronRight size={16} color={isDark ? '#475569' : '#cbd5e1'} style={{ transform: [{ rotate: isRtl ? '180deg' : '0deg' }] }} />
+                                        )}
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </View>
+                    </Pressable>
+                </Pressable>
+            </Modal>
+        </View>
     );
 }

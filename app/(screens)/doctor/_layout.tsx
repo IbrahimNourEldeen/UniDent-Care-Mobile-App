@@ -1,85 +1,64 @@
-import { Ionicons } from "@expo/vector-icons";
+import React from "react";
+import { LayoutGrid, Clock, Users, User, Settings as SettingsIcon } from "lucide-react-native";
 import { Tabs } from "expo-router";
-import { Platform } from "react-native";
-import { useThemeLanguage } from "../../../store/ThemeLanguageContext";
+import { CustomTabBar } from "@/components/ui/CustomTabBar";
+import { useTranslation } from "react-i18next";
 
 export default function DoctorTabsLayout() {
-  const { theme } = useThemeLanguage();
-  const isDark = theme === "dark";
+  const { t } = useTranslation();
 
   return (
     <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarShowLabel: false,
-        tabBarActiveTintColor: isDark ? "#ffffff" : "#2563eb", 
-        tabBarInactiveTintColor: isDark ? "#475569" : "#8e8e8e",
-        tabBarStyle: {
-          backgroundColor: isDark ? "#0f172a" : "#ffffff",
-          height: Platform.OS === "ios" ? 88 : 65,
-          borderTopWidth: 0.5,
-          borderTopColor: isDark ? "#1e293b" : "#dbdbdb",
-          paddingBottom: Platform.OS === "ios" ? 30 : 10,
-          paddingTop: 10,
-        },
-      }}
+      tabBar={(props) => <CustomTabBar {...props} />}
+      screenOptions={{ headerShown: false }}
     >
-      <Tabs.Screen
-        name="index"
-        options={{
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "grid" : "grid-outline"} size={24} color={color} />
-          ),
-        }}
+      <Tabs.Screen 
+        name="index" 
+        options={{ 
+          title: t("dashboard"),
+          tabBarIcon: ({ color, size }) => <LayoutGrid size={size} color={color} /> 
+        }} 
       />
-
-      <Tabs.Screen
-        name="pending-cases"
-        options={{
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "time" : "time-outline"} size={24} color={color} />
-          ),
-        }}
+      <Tabs.Screen 
+        name="pending-cases" 
+        options={{ 
+          title: t("pending"),
+          tabBarIcon: ({ color, size }) => <Clock size={size} color={color} /> 
+        }} 
       />
-
-      <Tabs.Screen
-        name="student-list"
-        options={{
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "people" : "people-outline"} size={24} color={color} />
-          ),
-        }}
+      <Tabs.Screen 
+        name="student-list" 
+        options={{ 
+          title: t("students"),
+          tabBarIcon: ({ color, size }) => <Users size={size} color={color} /> 
+        }} 
       />
-
-      <Tabs.Screen
-        name="profile"
-        options={{
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "person" : "person-outline"} size={24} color={color} />
-          ),
-        }}
+      <Tabs.Screen 
+        name="profile" 
+        options={{ 
+          title: t("profile"),
+          tabBarIcon: ({ color, size }) => <User size={size} color={color} /> 
+        }} 
       />
-
-      <Tabs.Screen
-        name="settings"
-        options={{
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "settings" : "settings-outline"} size={24} color={color} />
-          ),
-        }}
+      <Tabs.Screen 
+        name="settings" 
+        options={{ 
+          title: t("settings"),
+          tabBarIcon: ({ color, size }) => <SettingsIcon size={size} color={color} /> 
+        }} 
       />
-
       <Tabs.Screen
         name="my-student/[id]"
-        options={{
-          href: null,
+        options={{ 
+          // @ts-ignore
+          href: null 
         }}
       />
-
       <Tabs.Screen
         name="cases"
-        options={{
-          href: null,
+        options={{ 
+          // @ts-ignore
+          href: null 
         }}
       />
     </Tabs>

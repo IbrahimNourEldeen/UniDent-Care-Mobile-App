@@ -4,7 +4,7 @@
     "slug": "unident-care",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/logoLight.png",
+    "icon": "./assets/images/icon.jpeg",
     "scheme": "unidentcare",
     "userInterfaceStyle": "automatic",
     "android": {

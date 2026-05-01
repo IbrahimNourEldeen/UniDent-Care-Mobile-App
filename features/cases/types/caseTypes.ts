@@ -87,6 +87,7 @@ export interface DiagnosisDto {
     id: string;
     diagnosisStage: string;
     caseType: string;
+    caseTypeId?: string;
     notes: string;
     teethNumbers: number[];
     teeth?: ToothData[];
@@ -108,11 +109,19 @@ export interface StudentCaseItem {
     patientId: string;
     patientName: string;
     patientAge: number;
+    phone?: string;
+    city?: string;
+    nationalId?: string;
+    gender?: string | null;
+    title?: string;
     status: string;
+    caseType?: CaseType | null;
+    caseTypeId?: string;
     processStatus: string;
     isPublic: boolean;
     universityId: string;
     universityName: string;
+    progressStep?: number;
     createAt: string;
     totalSessions: number;
     hasEvaluatedSession: boolean;
@@ -124,6 +133,8 @@ export interface StudentCaseItem {
     createdById: string;
     createdByRole: string;
     userFlags: UserFlags;
+    description?: string;
+    completedAt?: string;
     availableActions: string[];
 }
 
@@ -189,6 +200,7 @@ export interface SessionDto {
     scheduledAt: string;
     endAt: string;
     status: string | null; // e.g. "Scheduled", "Completed", "Cancelled"
+    location: string | null;
     totalNotes: number;
     totalMedia: number;
     createAt: string;

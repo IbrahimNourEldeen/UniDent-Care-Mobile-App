@@ -47,8 +47,27 @@ export async function getStudentMyRequests(
     return res.data;
 }
 
+export async function cancelCaseRequest(requestId: string, studentId: string): Promise<ApiResponse<boolean>> {
+    const res = await api.delete(`/CaseRequests/${requestId}/${studentId}`);
+    return res.data;
+}
+
 export async function getCaseById(caseId: string): Promise<CaseDetailResponse> {
     const res = await api.get(`/Cases/${caseId}`);
+    return res.data;
+}
+
+export async function updateCaseStatus(
+    caseId: string,
+    status: string,
+): Promise<ApiResponse<boolean>> {
+    const res = await api.put(`/Cases/${caseId}/status`, { status });
+    return res.data;
+}
+
+export async function getCaseStatuses(): Promise<{ name: string; value: number }[]> {
+    // Note: this endpoint is at the root, not under /api
+    const res = await api.get("../case-status");
     return res.data;
 }
 
@@ -70,6 +89,14 @@ export async function getSessionsByStudent(
     return res.data;
 }
 
+
+export async function getUpcomingSessions(
+    studentId: string,
+    params: { page?: number; pageSize?: number } = {},
+): Promise<SessionsResponse> {
+    const res = await api.get('/Sessions/schedule/upcoming', { params: { studentId, ...params } });
+    return res.data;
+}
 
 export async function createSession(
     data: CreateSessionPayload,

@@ -1228,6 +1228,70 @@
 }
 }
 },
+"/api/Cases/{id}/status": {
+"put": {
+"tags": [
+"Cases"
+],
+"parameters": [
+{
+"name": "id",
+"in": "path",
+"required": true,
+"schema": {
+"type": "string",
+"format": "uuid"
+}
+}
+],
+"requestBody": {
+"content": {
+"application/json": {
+"schema": {
+"$ref": "#/components/schemas/UpdateCaseStatusDto"
+}
+},
+"application/*+json": {
+"schema": {
+"$ref": "#/components/schemas/UpdateCaseStatusDto"
+}
+}
+}
+},
+"responses": {
+"200": {
+"description": "OK",
+"content": {
+"application/json": {
+"schema": {
+"$ref": "#/components/schemas/BooleanApiResponse"
+}
+}
+}
+},
+"400": {
+"description": "Bad Request",
+"content": {
+"application/json": {
+"schema": {
+"$ref": "#/components/schemas/ObjectApiResponse"
+}
+}
+}
+},
+"404": {
+"description": "Not Found",
+"content": {
+"application/json": {
+"schema": {
+"$ref": "#/components/schemas/ObjectApiResponse"
+}
+}
+}
+}
+}
+}
+},
 "/api/Cases/{id}/assign-university": {
 "put": {
 "tags": [
@@ -1525,6 +1589,32 @@
 }
 }
 }
+}
+}
+}
+},
+"/api/Chat/next": {
+"post": {
+"tags": [
+"Chat"
+],
+"requestBody": {
+"content": {
+"application/json": {
+"schema": {
+"$ref": "#/components/schemas/ChatRequestDto"
+}
+},
+"application/*+json": {
+"schema": {
+"$ref": "#/components/schemas/ChatRequestDto"
+}
+}
+}
+},
+"responses": {
+"200": {
+"description": "OK"
 }
 }
 }
@@ -2340,6 +2430,88 @@
 }
 }
 },
+"/case-status": {
+"get": {
+"tags": [
+"Enum"
+],
+"responses": {
+"200": {
+"description": "OK"
+}
+}
+}
+},
+"/request-status": {
+"get": {
+"tags": [
+"Enum"
+],
+"responses": {
+"200": {
+"description": "OK"
+}
+}
+}
+},
+"/session-status": {
+"get": {
+"tags": [
+"Enum"
+],
+"responses": {
+"200": {
+"description": "OK"
+}
+}
+}
+},
+"/enums/{enumName}": {
+"get": {
+"tags": [
+"Enum"
+],
+"parameters": [
+{
+"name": "enumName",
+"in": "path",
+"required": true,
+"schema": {
+"type": "string"
+}
+}
+],
+"responses": {
+"200": {
+"description": "OK"
+}
+}
+}
+},
+"/gender": {
+"get": {
+"tags": [
+"Enum"
+],
+"responses": {
+"200": {
+"description": "OK"
+}
+}
+}
+},
+"/cities": {
+"get": {
+"tags": [
+"Enum"
+],
+"responses": {
+"200": {
+"description": "OK"
+}
+}
+}
+},
 "/api/Patients": {
 "post": {
 "tags": [
@@ -2764,7 +2936,7 @@
 "content": {
 "application/json": {
 "schema": {
-"$ref": "#/components/schemas/GuidApiResponse"
+"$ref": "#/components/schemas/SessionNoteDtoApiResponse"
 }
 }
 }
@@ -2813,6 +2985,240 @@
 "application/json": {
 "schema": {
 "$ref": "#/components/schemas/SessionNoteDtoListApiResponse"
+}
+}
+}
+},
+"404": {
+"description": "Not Found",
+"content": {
+"application/json": {
+"schema": {
+"$ref": "#/components/schemas/ObjectApiResponse"
+}
+}
+}
+}
+}
+}
+},
+"/api/Sessions/{id}/notes/{noteId}/media": {
+"post": {
+"tags": [
+"Sessions"
+],
+"parameters": [
+{
+"name": "id",
+"in": "path",
+"required": true,
+"schema": {
+"type": "string",
+"format": "uuid"
+}
+},
+{
+"name": "noteId",
+"in": "path",
+"required": true,
+"schema": {
+"type": "string",
+"format": "uuid"
+}
+}
+],
+"requestBody": {
+"content": {
+"multipart/form-data": {
+"schema": {
+"type": "object",
+"properties": {
+"file": {
+"type": "string",
+"format": "binary"
+}
+}
+},
+"encoding": {
+"file": {
+"style": "form"
+}
+}
+}
+}
+},
+"responses": {
+"200": {
+"description": "OK",
+"content": {
+"application/json": {
+"schema": {
+"$ref": "#/components/schemas/SessionMediaDtoApiResponse"
+}
+}
+}
+},
+"400": {
+"description": "Bad Request",
+"content": {
+"application/json": {
+"schema": {
+"$ref": "#/components/schemas/ObjectApiResponse"
+}
+}
+}
+},
+"404": {
+"description": "Not Found",
+"content": {
+"application/json": {
+"schema": {
+"$ref": "#/components/schemas/ObjectApiResponse"
+}
+}
+}
+}
+}
+},
+"get": {
+"tags": [
+"Sessions"
+],
+"parameters": [
+{
+"name": "id",
+"in": "path",
+"required": true,
+"schema": {
+"type": "string",
+"format": "uuid"
+}
+},
+{
+"name": "noteId",
+"in": "path",
+"required": true,
+"schema": {
+"type": "string",
+"format": "uuid"
+}
+}
+],
+"responses": {
+"200": {
+"description": "OK",
+"content": {
+"application/json": {
+"schema": {
+"$ref": "#/components/schemas/SessionMediaDtoListApiResponse"
+}
+}
+}
+},
+"404": {
+"description": "Not Found",
+"content": {
+"application/json": {
+"schema": {
+"$ref": "#/components/schemas/ObjectApiResponse"
+}
+}
+}
+}
+}
+}
+},
+"/api/Sessions/{id}/media": {
+"post": {
+"tags": [
+"Sessions"
+],
+"parameters": [
+{
+"name": "id",
+"in": "path",
+"required": true,
+"schema": {
+"type": "string",
+"format": "uuid"
+}
+}
+],
+"requestBody": {
+"content": {
+"multipart/form-data": {
+"schema": {
+"type": "object",
+"properties": {
+"file": {
+"type": "string",
+"format": "binary"
+}
+}
+},
+"encoding": {
+"file": {
+"style": "form"
+}
+}
+}
+}
+},
+"responses": {
+"200": {
+"description": "OK",
+"content": {
+"application/json": {
+"schema": {
+"$ref": "#/components/schemas/SessionMediaDtoApiResponse"
+}
+}
+}
+},
+"400": {
+"description": "Bad Request",
+"content": {
+"application/json": {
+"schema": {
+"$ref": "#/components/schemas/ObjectApiResponse"
+}
+}
+}
+},
+"404": {
+"description": "Not Found",
+"content": {
+"application/json": {
+"schema": {
+"$ref": "#/components/schemas/ObjectApiResponse"
+}
+}
+}
+}
+}
+},
+"get": {
+"tags": [
+"Sessions"
+],
+"parameters": [
+{
+"name": "id",
+"in": "path",
+"required": true,
+"schema": {
+"type": "string",
+"format": "uuid"
+}
+}
+],
+"responses": {
+"200": {
+"description": "OK",
+"content": {
+"application/json": {
+"schema": {
+"$ref": "#/components/schemas/SessionMediaDtoListApiResponse"
 }
 }
 }
@@ -3784,9 +4190,6 @@
 "note": {
 "type": "string",
 "nullable": true
-},
-"isPrivate": {
-"type": "boolean"
 }
 },
 "additionalProperties": false
@@ -4093,6 +4496,9 @@
 "createAt": {
 "type": "string",
 "format": "date-time"
+},
+"isRejectedStudent": {
+"type": "boolean"
 }
 },
 "additionalProperties": false
@@ -4400,6 +4806,47 @@
 "nullable": true
 },
 "newPassword": {
+"type": "string",
+"nullable": true
+}
+},
+"additionalProperties": false
+},
+"ChatRequestDto": {
+"type": "object",
+"properties": {
+"answer": {
+"type": "string",
+"nullable": true
+},
+"state": {
+"$ref": "#/components/schemas/ChatStateDto"
+}
+},
+"additionalProperties": false
+},
+"ChatStateDto": {
+"type": "object",
+"properties": {
+"mode": {
+"type": "string",
+"nullable": true
+},
+"answers": {
+"type": "object",
+"additionalProperties": {
+"type": "string"
+},
+"nullable": true
+},
+"asked": {
+"type": "array",
+"items": {
+"type": "string"
+},
+"nullable": true
+},
+"current_q": {
 "type": "string",
 "nullable": true
 }
@@ -5541,6 +5988,13 @@
 "createAt": {
 "type": "string",
 "format": "date-time"
+},
+"notes": {
+"type": "array",
+"items": {
+"$ref": "#/components/schemas/SessionNoteDto"
+},
+"nullable": true
 }
 },
 "additionalProperties": false
@@ -5642,6 +6096,103 @@
 },
 "additionalProperties": false
 },
+"SessionMediaDto": {
+"type": "object",
+"properties": {
+"id": {
+"type": "string",
+"format": "uuid"
+},
+"sessionId": {
+"type": "string",
+"format": "uuid"
+},
+"noteId": {
+"type": "string",
+"format": "uuid",
+"nullable": true
+},
+"mediaUrl": {
+"type": "string",
+"nullable": true
+},
+"createAt": {
+"type": "string",
+"format": "date-time"
+}
+},
+"additionalProperties": false
+},
+"SessionMediaDtoApiResponse": {
+"type": "object",
+"properties": {
+"success": {
+"type": "boolean"
+},
+"message": {
+"type": "string",
+"nullable": true
+},
+"data": {
+"$ref": "#/components/schemas/SessionMediaDto"
+},
+"statusCode": {
+"type": "integer",
+"format": "int32"
+},
+"warnings": {
+"type": "array",
+"items": {
+"type": "string"
+},
+"nullable": true
+},
+"error": {
+"$ref": "#/components/schemas/ErrorResponse"
+},
+"links": {
+"nullable": true
+}
+},
+"additionalProperties": false
+},
+"SessionMediaDtoListApiResponse": {
+"type": "object",
+"properties": {
+"success": {
+"type": "boolean"
+},
+"message": {
+"type": "string",
+"nullable": true
+},
+"data": {
+"type": "array",
+"items": {
+"$ref": "#/components/schemas/SessionMediaDto"
+},
+"nullable": true
+},
+"statusCode": {
+"type": "integer",
+"format": "int32"
+},
+"warnings": {
+"type": "array",
+"items": {
+"type": "string"
+},
+"nullable": true
+},
+"error": {
+"$ref": "#/components/schemas/ErrorResponse"
+},
+"links": {
+"nullable": true
+}
+},
+"additionalProperties": false
+},
 "SessionNoteDto": {
 "type": "object",
 "properties": {
@@ -5660,6 +6211,46 @@
 "createAt": {
 "type": "string",
 "format": "date-time"
+},
+"medias": {
+"type": "array",
+"items": {
+"$ref": "#/components/schemas/SessionMediaDto"
+},
+"nullable": true
+}
+},
+"additionalProperties": false
+},
+"SessionNoteDtoApiResponse": {
+"type": "object",
+"properties": {
+"success": {
+"type": "boolean"
+},
+"message": {
+"type": "string",
+"nullable": true
+},
+"data": {
+"$ref": "#/components/schemas/SessionNoteDto"
+},
+"statusCode": {
+"type": "integer",
+"format": "int32"
+},
+"warnings": {
+"type": "array",
+"items": {
+"type": "string"
+},
+"nullable": true
+},
+"error": {
+"$ref": "#/components/schemas/ErrorResponse"
+},
+"links": {
+"nullable": true
 }
 },
 "additionalProperties": false
@@ -6189,6 +6780,16 @@
 "$ref": "#/components/schemas/ErrorResponse"
 },
 "links": {
+"nullable": true
+}
+},
+"additionalProperties": false
+},
+"UpdateCaseStatusDto": {
+"type": "object",
+"properties": {
+"status": {
+"type": "string",
 "nullable": true
 }
 },

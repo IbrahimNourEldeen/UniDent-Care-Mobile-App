@@ -39,9 +39,8 @@ export default function ProfileScreen() {
 
   const renderStudentData = (userData: StudentUser) => (
     <>
-      <InfoRow icon={<Building2 size={20} color={isDark ? '#94a3b8' : '#3b82f6'} />} label={t('university')} value={userData.university} />
+      <InfoRow icon={<Building2 size={20} color={isDark ? '#94a3b8' : '#3b82f6'} />} label={t('universityName')} value={userData.university} />
       <InfoRow icon={<GraduationCap size={20} color={isDark ? '#94a3b8' : '#3b82f6'} />} label={t('level')} value={userData.level?.toString()} />
-      <InfoRow icon={<UserIcon size={20} color={isDark ? '#94a3b8' : '#3b82f6'} />} label={t('universityId')} value={userData.universityId} />
     </>
   );
 

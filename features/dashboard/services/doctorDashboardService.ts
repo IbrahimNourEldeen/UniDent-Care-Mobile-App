@@ -16,6 +16,7 @@ export interface DoctorStats {
 
 export interface CaseRequest {
   id: string;
+  patientCasePublicId: string;
   caseName: string;
   patientName: string;
   studentName: string;
@@ -171,6 +172,24 @@ export const doctorDashboardService = {
   /** Alias maintained for backward compatibility */
   getCaseRequestsByDoctor: async (doctorId: string, page: number, pageSize: number): Promise<PagedResult<CaseRequest>> => {
     return doctorDashboardService.getDoctorRequests(doctorId, page, pageSize);
+  },
+
+  /**
+   * Efficiently get the count of requests for a given status.
+   * Uses pageSize=1 so only totalCount is meaningful — no heavy payload.
+   * RequestStatus enum: 0=Pending, 1=Approved, 2=Rejected, 3=Cancelled, 4=Taken, 5=Completed
+   */
+  getDoctorRequestsCount: async (status: number): Promise<number> => {
+    try {
+      const res = await api.get('/Doctors/my-requests', {
+        params: { page: 1, pageSize: 1, status },
+      });
+      const data = res.data.data ?? res.data;
+      return data?.totalCount ?? 0;
+    } catch (error) {
+      console.error('getDoctorRequestsCount error:', error);
+      return 0;
+    }
   },
 
   /** Get a single case request by its ID */

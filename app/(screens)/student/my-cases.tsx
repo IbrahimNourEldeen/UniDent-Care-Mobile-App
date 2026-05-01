@@ -223,7 +223,7 @@ export default function MyCasesScreen() {
       {/* Hero Background */}
       <View className="bg-indigo-600 dark:bg-indigo-900 absolute top-0 left-0 right-0" style={{ height: 260 + insets.top, borderBottomLeftRadius: 40, borderBottomRightRadius: 40 }} />
 
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+      <ScrollView className="flex-1" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 110 }}>
         <View style={{ paddingTop: insets.top + 20 }}>
           
           {/* Header Title */}

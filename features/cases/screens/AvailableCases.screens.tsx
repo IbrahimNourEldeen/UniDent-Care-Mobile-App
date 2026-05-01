@@ -10,6 +10,8 @@ import CasesHeader from '../components/AvailableCases/CasesHeader';
 import CasesGrid from '../components/AvailableCases/CasesGrid';
 import CasesTable from '../components/AvailableCases/CasesTable';
 
+import { LinearGradient } from 'expo-linear-gradient';
+
 const { width } = Dimensions.get('window');
 
 // ---- Advanced Sort Pills ----
@@ -82,11 +84,19 @@ export default function AvailableCasesScreen() {
     return (
         <View className={`flex-1 ${bgClass}`}>
             {/* Hero Background */}
-            <View className="bg-indigo-600 dark:bg-indigo-900 absolute top-0 left-0 right-0" style={{ height: 260 + insets.top, borderBottomLeftRadius: 40, borderBottomRightRadius: 40 }} />
+            <View className="absolute top-0 left-0 right-0" style={{ height: 280 + insets.top }}>
+                <LinearGradient
+                    colors={isDark ? ['#1e1b4b', '#0f172a'] : ['#3b82f6', '#4f46e5']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    className="w-full h-full rounded-b-[48px] shadow-2xl shadow-indigo-500/20"
+                />
+            </View>
 
             <ScrollView
                 className="flex-1"
                 showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ paddingBottom: 110 }}
                 refreshControl={
                     <RefreshControl
                         refreshing={false}

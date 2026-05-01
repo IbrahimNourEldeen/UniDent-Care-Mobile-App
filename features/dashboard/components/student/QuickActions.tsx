@@ -25,21 +25,7 @@ export default function QuickActions() {
       href: '/(screens)/student/my-cases', // Using my-cases as a placeholder for schedule
       color: '#7c3aed',
       bg: 'bg-purple-50 dark:bg-purple-900/30',
-    },
-    {
-      label: t('scan_attendance'),
-      icon: QrCode,
-      href: null,
-      color: '#059669',
-      bg: 'bg-emerald-50 dark:bg-emerald-900/30',
-    },
-    {
-      label: t('create_request'),
-      icon: ClipboardPlus,
-      href: null,
-      color: '#ea580c',
-      bg: 'bg-orange-50 dark:bg-orange-900/30',
-    },
+    }
   ];
 
   return (

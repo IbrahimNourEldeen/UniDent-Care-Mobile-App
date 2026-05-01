@@ -17,7 +17,7 @@ const ThemeLanguageContext = createContext<ThemeLanguageContextType | undefined>
 
 export const ThemeLanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setThemeState] = useState<'light' | 'dark'>('light');
-  const [language, setLanguageState] = useState<'en' | 'ar'>('en');
+  const [language, setLanguageState] = useState<'en' | 'ar'>('ar');
   const { colorScheme, setColorScheme } = useColorScheme();
   const [isReady, setIsReady] = useState(false);
 
@@ -34,16 +34,19 @@ export const ThemeLanguageProvider: React.FC<{ children: React.ReactNode }> = ({
             setColorScheme('light');
         }
 
-        if (savedLanguage === 'ar' || savedLanguage === 'en') {
-          setLanguageState(savedLanguage);
-          i18n.changeLanguage(savedLanguage);
-          const isRTL = savedLanguage === 'ar';
-          if (I18nManager.isRTL !== isRTL) {
-            I18nManager.allowRTL(isRTL);
-            I18nManager.forceRTL(isRTL);
-            // Removed Updates.reloadAsync() here because in Expo Go,
-            // if the RTL engine doesn't flip instantly, it triggers an infinite reload loop on startup!
-          }
+        const finalLanguage = (savedLanguage === 'ar' || savedLanguage === 'en') ? savedLanguage : 'ar';
+        
+        setLanguageState(finalLanguage);
+        i18n.changeLanguage(finalLanguage);
+        
+        if (!savedLanguage) {
+          await SecureStore.setItemAsync('language', 'ar');
+        }
+
+        const isRTL = finalLanguage === 'ar';
+        if (I18nManager.isRTL !== isRTL) {
+          I18nManager.allowRTL(isRTL);
+          I18nManager.forceRTL(isRTL);
         }
       } catch (error) {
         console.error('Failed to load preferences:', error);

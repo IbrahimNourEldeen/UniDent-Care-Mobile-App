@@ -1,267 +1,164 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
   ActivityIndicator,
-  TextInput,
-  Dimensions,
+  RefreshControl,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+  StatusBar,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useSelector } from "react-redux";
-import { 
-  Activity, 
-  Calendar, 
-  CheckCircle2, 
-  CalendarDays, 
-  Clock, 
-  User, 
-  Filter, 
-  SearchX, 
-  History, 
-  ClipboardList, 
-  ChevronRight,
-  AlertCircle
-} from "lucide-react-native";
+import { Bell, Search, Settings } from "lucide-react-native";
+import { useRouter } from "expo-router";
+import { LinearGradient } from 'expo-linear-gradient';
 
-import api from "@/utils/api";
 import { RootState } from "@/store/store";
 import { useThemeLanguage } from "@/store/ThemeLanguageContext";
+import { usePatientDashboard } from "@/features/patient/hooks/usePatientDashboard";
 
-const { width } = Dimensions.get("window");
+import DashboardCharts from "@/features/dashboard/components/patient/DashboardCharts";
+import UpcomingAppointmentsList from "@/features/dashboard/components/patient/UpcomingAppointmentsList";
+import RecentCasesList from "@/features/dashboard/components/patient/RecentCasesList";
+import PatientCalendarWidget from "@/features/dashboard/components/patient/PatientCalendarWidget";
+import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
+import { useTranslation } from "react-i18next";
 
-const StatsCards = ({ patientId }: { patientId: string }) => {
-  const { theme } = useThemeLanguage();
-  const isDark = theme === "dark";
-  const [stats, setStats] = useState({ activeCases: 0, upcomingSessions: 0, completedTreatments: 0 });
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const [sessionsRes, casesRes] = await Promise.all([
-          api.get(`/Sessions/patient/${patientId}`, { params: { page: 1, pageSize: 100 } }),
-          api.get(`/Cases/patient/${patientId}`)
-        ]);
-        const sessionsData = sessionsRes.data.data?.items || sessionsRes.data.data || [];
-        const casesData = casesRes.data.data?.items || casesRes.data.data || [];
-
-        setStats({
-          upcomingSessions: sessionsData.filter((s: any) => s.status === "Scheduled").length,
-          activeCases: casesData.filter((c: any) => c.status === "In Progress").length,
-          completedTreatments: casesData.filter((c: any) => c.status === "Completed").length,
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchStats();
-  }, [patientId]);
-
-  const items = [
-    { label: "Active", value: stats.activeCases, icon: Activity, color: isDark ? "#60a5fa" : "#2563eb", bg: isDark ? "bg-blue-900/40" : "bg-blue-50" },
-    { label: "Upcoming", value: stats.upcomingSessions, icon: Calendar, color: isDark ? "#c084fc" : "#9333ea", bg: isDark ? "bg-purple-900/40" : "bg-purple-50" },
-    { label: "Completed", value: stats.completedTreatments, icon: CheckCircle2, color: isDark ? "#4ade80" : "#16a34a", bg: isDark ? "bg-green-900/40" : "bg-green-50" },
-  ];
-
-  return (
-    <View className="flex-row justify-between mb-6">
-      {items.map((item, i) => (
-        <View key={i} className={`p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm dark:shadow-none items-center`} style={{ width: width * 0.28 }}>
-          <View className={`p-2 rounded-xl ${item.bg} mb-2`}>
-            <item.icon size={20} color={item.color} />
-          </View>
-          <Text className="text-lg font-black text-slate-900 dark:text-white">{loading ? "..." : item.value}</Text>
-          <Text className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">{item.label}</Text>
-        </View>
-      ))}
-    </View>
-  );
-};
-
-// --- 2. مكون UpcomingAppointments ---
-const UpcomingAppointments = ({ patientId }: { patientId: string }) => {
-  const { theme } = useThemeLanguage();
-  const isDark = theme === "dark";
-  const [sessions, setSessions] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [limit, setLimit] = useState("3");
-
-  useEffect(() => {
-    const fetchSessions = async () => {
-      try {
-        const res = await api.get(`/Sessions/patient/${patientId}`);
-        const data = res.data.data?.items || res.data.data || [];
-        const scheduled = data.filter((s: any) => s.status === "Scheduled")
-          .sort((a: any, b: any) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime());
-        setSessions(scheduled);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchSessions();
-  }, [patientId]);
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return {
-      day: date.toLocaleDateString("en-US", { day: "numeric", month: "short" }),
-      time: date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
-    };
-  };
-
-  return (
-    <View className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-100 dark:border-slate-800 shadow-sm dark:shadow-none mb-6">
-      <View className="flex-row justify-between items-center mb-4">
-        <View>
-          <Text className="text-lg font-black text-slate-900 dark:text-white">Upcoming</Text>
-          <Text className="text-xs text-slate-500 dark:text-slate-400">Your next sessions</Text>
-        </View>
-        <View className="flex-row items-center bg-slate-50 dark:bg-slate-800 px-3 py-1 rounded-full border border-slate-100 dark:border-slate-700">
-          <Filter size={14} color={isDark ? "#94a3b8" : "#64748b"} />
-          <TextInput 
-            className="ml-1 text-xs font-bold w-6 text-slate-900 dark:text-white" 
-            keyboardType="numeric" 
-            value={limit} 
-            onChangeText={setLimit}
-          />
-        </View>
-      </View>
-
-      {loading ? (
-        <ActivityIndicator color={isDark ? "#60a5fa" : "#2563eb"} />
-      ) : sessions.length > 0 ? (
-        sessions.slice(0, parseInt(limit) || 3).map((s) => {
-          const { day, time } = formatDate(s.scheduledAt);
-          return (
-            <TouchableOpacity key={s.id} className="flex-row items-center bg-slate-50/50 dark:bg-slate-800 p-4 rounded-2xl mb-3 border border-slate-100 dark:border-slate-700">
-              <View className="bg-blue-600 dark:bg-indigo-600 p-2 rounded-xl items-center justify-center mr-4 w-12 h-12">
-                <Text className="text-white font-black text-xs text-center leading-3">{day.split(' ')[0]}{'\n'}{day.split(' ')[1]}</Text>
-              </View>
-              <View className="flex-1">
-                <Text className="font-bold text-slate-900 dark:text-white">{s.treatmentType}</Text>
-                <View className="flex-row items-center mt-1">
-                  <Clock size={12} color={isDark ? "#94a3b8" : "#64748b"} />
-                  <Text className="text-xs text-slate-500 dark:text-slate-400 ml-1">{time}</Text>
-                </View>
-              </View>
-              <ChevronRight size={18} color={isDark ? "#475569" : "#cbd5e1"} />
-            </TouchableOpacity>
-          );
-        })
-      ) : (
-        <View className="items-center py-6">
-          <SearchX color={isDark ? "#334155" : "#cbd5e1"} size={32} />
-          <Text className="text-slate-400 dark:text-slate-500 text-xs mt-2">No appointments</Text>
-        </View>
-      )}
-    </View>
-  );
-};
-
-// --- 3. مكون RecentCases ---
-const RecentCases = ({ patientId }: { patientId: string }) => {
-  const { theme } = useThemeLanguage();
-  const isDark = theme === "dark";
-  const [cases, setCases] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchCases = async () => {
-      try {
-        const res = await api.get(`/Cases/patient/${patientId}`);
-        const data = res.data.data?.items || res.data.data || [];
-        setCases(data.sort((a: any, b: any) => new Date(b.createAt).getTime() - new Date(a.createAt).getTime()));
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchCases();
-  }, [patientId]);
-
-  const getStatusStyles = (status: string) => {
-    switch (status.toLowerCase()) {
-      case "completed": return { bg: isDark ? "bg-green-900/40" : "bg-green-100", text: isDark ? "text-green-400" : "text-green-700", icon: <CheckCircle2 size={12} color={isDark ? "#4ade80" : "#15803d"} /> };
-      case "in progress": return { bg: isDark ? "bg-blue-900/40" : "bg-blue-100", text: isDark ? "text-blue-400" : "text-blue-700", icon: <Clock size={12} color={isDark ? "#60a5fa" : "#1d4ed8"} /> };
-      default: return { bg: isDark ? "bg-slate-800" : "bg-slate-100", text: isDark ? "text-slate-300" : "text-slate-700", icon: <AlertCircle size={12} color={isDark ? "#cbd5e1" : "#334155"} /> };
-    }
-  };
-
-  return (
-    <View className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-100 dark:border-slate-800 shadow-sm dark:shadow-none">
-      <View className="flex-row items-center gap-3 mb-5">
-        <View className="p-2 bg-indigo-50 dark:bg-indigo-900/40 rounded-xl">
-          <History size={20} color={isDark ? "#818cf8" : "#4f46e5"} />
-        </View>
-        <Text className="text-lg font-black text-slate-900 dark:text-white">Recent History</Text>
-      </View>
-
-      {loading ? (
-        <ActivityIndicator color={isDark ? "#818cf8" : "#4f46e5"} />
-      ) : cases.length > 0 ? (
-        cases.slice(0, 5).map((c) => {
-          const style = getStatusStyles(c.status);
-          return (
-            <View key={c.id} className="flex-row items-center justify-between mb-4 pb-4 border-b border-slate-50 dark:border-slate-800/50">
-              <View className="flex-row items-center flex-1">
-                <View className="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-800 items-center justify-center mr-3">
-                  <ClipboardList size={18} color={isDark ? "#64748b" : "#94a3b8"} />
-                </View>
-                <View>
-                  <Text className="font-bold text-slate-800 dark:text-slate-200 text-sm" numberOfLines={1}>General Case #{c.id.slice(-4)}</Text>
-                  <Text className="text-[10px] text-slate-400 dark:text-slate-500">{new Date(c.createAt).toLocaleDateString()}</Text>
-                </View>
-              </View>
-              <View className={`${style.bg} px-3 py-1 rounded-full flex-row items-center gap-1`}>
-                {style.icon}
-                <Text className={`text-[10px] font-black uppercase ${style.text}`}>{c.status}</Text>
-              </View>
-            </View>
-          );
-        })
-      ) : (
-        <Text className="text-center text-slate-400 dark:text-slate-500 py-4">No history found</Text>
-      )}
-    </View>
-  );
-};
+function getGreeting(t: any) {
+  const h = new Date().getHours();
+  if (h < 12) return t("good_morning");
+  if (h < 18) return t("good_afternoon");
+  return t("good_evening");
+}
 
 export default function PatientDashboardScreen() {
-  const patientId = useSelector((state: RootState) => state.auth.user?.publicId);
-  const { theme } = useThemeLanguage();
+  const user = useSelector((state: RootState) => state.auth.user);
+  const patientId = user?.publicId;
+  const firstName = user?.fullName?.split(" ")[0] || "Patient";
+  const { theme, language } = useThemeLanguage();
   const isDark = theme === "dark";
+  const isRtl = language === "ar";
+  const { t } = useTranslation();
+  const router = useRouter();
 
-  if (!patientId) {
+  const { dashboardData, isLoading, isError, refetchAll, sessions } = usePatientDashboard(patientId || "");
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await refetchAll();
+    setRefreshing(false);
+  };
+
+  if (!patientId || (isLoading && !dashboardData)) {
     return (
       <View className="flex-1 justify-center items-center bg-slate-50 dark:bg-slate-950">
-        <ActivityIndicator size="large" color={isDark ? "#60a5fa" : "#2563eb"} />
+        <ActivityIndicator size="large" color="#4f46e5" />
+        <Text className="mt-4 text-slate-500 font-bold">{t("sync_data")}</Text>
       </View>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-950">
-      <ScrollView 
+    <View className="flex-1 bg-slate-50 dark:bg-slate-950">
+      <StatusBar barStyle="light-content" />
+      
+      {/* Fixed Header Background */}
+      <View className="absolute top-0 left-0 right-0 h-[300px]">
+        <LinearGradient
+          colors={isDark ? ['#1e1b4b', '#0f172a'] : ['#3b82f6', '#4f46e5']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          className="w-full h-full rounded-b-[48px] shadow-2xl shadow-indigo-500/20"
+        />
+      </View>
+
+      <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
+        contentContainerStyle={{ paddingBottom: 110 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={isDark ? "#818cf8" : "#4f46e5"}
+          />
+        }
       >
-        {/* Header */}
-        <View className="mb-8">
-          <Text className="text-slate-500 dark:text-slate-400 font-bold text-sm uppercase tracking-widest">Dashboard</Text>
-          <Text className="text-3xl font-black text-slate-900 dark:text-white">Health Overview</Text>
+        {/* Header Content - Scrolls with data */}
+        <Animated.View entering={FadeInUp.duration(600)} className="px-6 pt-16 pb-10">
+          <View className={`flex-row justify-between items-center ${isRtl ? 'flex-row-reverse' : ''}`}>
+            <View className={isRtl ? 'items-end' : 'items-start'}>
+              <Text className="text-white/70 font-bold text-xs uppercase tracking-[3px] mb-1">
+                {getGreeting(t)}
+              </Text>
+              <Text className="text-white text-3xl font-black" numberOfLines={1}>
+                {firstName} 👋
+              </Text>
+            </View>
+
+            <View className={`flex-row items-center gap-2 bg-white/20 backdrop-blur-md px-4 py-2 rounded-2xl ${isRtl ? 'flex-row-reverse' : ''}`}>
+              <Text className="text-white text-xs font-bold uppercase tracking-wider">
+                {new Date().toLocaleDateString(isRtl ? 'ar-EG' : 'en-US', { weekday: "long", day: "numeric", month: "long" })}
+              </Text>
+            </View>
+          </View>
+        </Animated.View>
+
+        {/* Content Section */}
+        <View className="px-6 pb-12">
+          {isError && !isLoading && (
+            <View className="bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-3xl p-5 mb-6 shadow-sm">
+              <Text className="text-rose-600 dark:text-rose-400 text-sm font-bold text-center">
+                {t("pull_to_refresh_error")}
+              </Text>
+            </View>
+          )}
+
+          {dashboardData && (
+            <>
+              {/* Analytics Charts */}
+              <DashboardCharts charts={dashboardData.charts} />
+
+              {/* Progress Card (Matching Web Progress) */}
+              <Animated.View 
+                entering={FadeInDown.delay(300).duration(500)}
+                className="bg-white dark:bg-slate-900 rounded-[32px] p-6 border border-slate-100 dark:border-slate-800 shadow-sm mb-6"
+              >
+                <View className={`flex-row justify-between items-center mb-4 ${isRtl ? 'flex-row-reverse' : ''}`}>
+                  <Text className="text-lg font-black text-slate-800 dark:text-white">{t("session_progress")}</Text>
+                  <Text className="text-sm font-black text-indigo-600 dark:text-indigo-400">{dashboardData.progress.progressPercentage}%</Text>
+                </View>
+                <View className="h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                  <Animated.View 
+                    className={`h-full bg-indigo-500 rounded-full ${isRtl ? 'self-end' : ''}`} 
+                    style={{ width: `${dashboardData.progress.progressPercentage}%` }}
+                  />
+                </View>
+                <Text className={`text-xs font-bold text-slate-400 mt-3 ${isRtl ? 'text-right' : ''}`}>
+                  {t("sessions_completed_label", { completed: dashboardData.progress.completedSessions, total: dashboardData.progress.totalSessions })}
+                </Text>
+              </Animated.View>
+
+              {/* Schedule Calendar */}
+              <Animated.View entering={FadeInDown.delay(400).duration(500)}>
+                <PatientCalendarWidget sessions={sessions} />
+              </Animated.View>
+
+              {/* Upcoming Appointments */}
+              <Animated.View entering={FadeInDown.delay(500).duration(500)}>
+                <UpcomingAppointmentsList sessions={dashboardData.upcomingSessions} />
+              </Animated.View>
+
+              {/* Activity Timeline */}
+              <Animated.View entering={FadeInDown.delay(600).duration(500)}>
+                <RecentCasesList activities={dashboardData.recentActivity} />
+              </Animated.View>
+            </>
+          )}
         </View>
 
-        {/* Stats Section */}
-        <StatsCards patientId={patientId} />
-
-        {/* Appointments Section */}
-        <UpcomingAppointments patientId={patientId} />
-
-        {/* History Section */}
-        <RecentCases patientId={patientId} />
-
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }

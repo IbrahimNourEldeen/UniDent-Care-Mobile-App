@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,566 +8,473 @@ import {
   Pressable,
   RefreshControl,
   ActivityIndicator,
-  I18nManager,
+  Image,
+  Alert,
+  StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Clock,
-  CheckCircle2,
-  XCircle,
   RefreshCw,
   ClipboardList,
-  FileText,
+  CheckCircle2,
+  XCircle,
   User,
   GraduationCap,
   Hospital,
-  BookOpen,
   Stethoscope,
   Calendar,
-  Info,
   X,
+  ImageIcon,
   ChevronRight,
-  MessageSquare,
-  Quote,
+  FileText,
+  ChevronLeft,
+  Phone,
+  MapPin,
+  Stethoscope as CaseIcon,
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
-import { useAppSelector } from '@/store/hooks';
+import { useRouter } from 'expo-router';
 import { useThemeLanguage } from '@/store/ThemeLanguageContext';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
 import {
   doctorDashboardService,
   CaseRequest,
-  PaginatedRequests,
+  PatientCaseDto,
 } from '@/features/dashboard/services/doctorDashboardService';
-import { useDoctorRequests, useDoctorRequestActions } from '@/features/dashboard/hooks/useDoctorQueries';
-import { useQueryClient } from '@tanstack/react-query';
+import {
+  useDoctorRequests,
+  useDoctorRequestActions,
+} from '@/features/dashboard/hooks/useDoctorQueries';
+import { useAppSelector } from '@/store/hooks';
+import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 
-const PAGE_SIZE = 12;
+const PAGE_SIZE = 20;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function getStatusStyle(status: string, isDark: boolean) {
-  switch (status.toLowerCase()) {
-    case 'approved':
-      return {
-        bg: isDark ? '#064e3b' : '#d1fae5',
-        text: isDark ? '#34d399' : '#065f46',
-        bar: '#34d399',
-        icon: 'approved',
-      };
-    case 'rejected':
-      return {
-        bg: isDark ? '#450a0a' : '#fee2e2',
-        text: isDark ? '#f87171' : '#991b1b',
-        bar: '#f87171',
-        icon: 'rejected',
-      };
-    default:
-      return {
-        bg: isDark ? '#451a03' : '#fef3c7',
-        text: isDark ? '#fbbf24' : '#92400e',
-        bar: '#fbbf24',
-        icon: 'pending',
-      };
-  }
+function getInitials(name: string) {
+  return (name || '')
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase();
 }
 
-function StatusIcon({ type, size = 13, color }: { type: string; size?: number; color: string }) {
-  if (type === 'approved') return <CheckCircle2 size={size} color={color} />;
-  if (type === 'rejected') return <XCircle size={size} color={color} />;
-  return <Clock size={size} color={color} />;
+function formatDate(dateStr: string, locale: string) {
+  if (!dateStr) return 'N/A';
+  return new Date(dateStr).toLocaleDateString(locale, {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
 }
 
-// ─── Screen ──────────────────────────────────────────────────────────────────
+// ─── Shared Components for Modal ───────────────────────────────────────────
 
-export default function PendingCasesScreen() {
-  const { t } = useTranslation();
-  const { user } = useAppSelector((s) => s.auth);
-  const { theme, language } = useThemeLanguage();
-  const isDark = theme === 'dark';
-  const isRtl = I18nManager.isRTL;
-  const locale = language === 'ar' ? 'ar-EG' : 'en-GB';
+function InfoCard({ 
+  icon: Icon, 
+  label, 
+  value, 
+  isDark,
+  colorClass 
+}: { 
+  icon: any, 
+  label: string, 
+  value: string, 
+  isDark: boolean,
+  colorClass: string 
+}) {
+  return (
+    <View className={`p-4 rounded-3xl border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+      <View className="flex-row items-center gap-2.5 mb-1.5">
+        <View className={`w-7 h-7 rounded-lg items-center justify-center ${isDark ? 'bg-slate-800' : 'bg-slate-50'}`}>
+          <Icon size={14} className={colorClass} />
+        </View>
+        <Text className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">
+          {label}
+        </Text>
+      </View>
+      <Text className="text-sm font-bold text-slate-900 dark:text-white" numberOfLines={1}>
+        {value}
+      </Text>
+    </View>
+  );
+}
 
-  const doctorId = (user as any)?.publicId ?? (user as any)?.id;
+// ─── Case Detail Modal (Refined to match Case Details style) ───────────────
 
-  const queryClient = useQueryClient();
-  const [currentPage, setCurrentPage] = useState(1);
-  const [refreshing, setRefreshing] = useState(false);
-  const [selectedReq, setSelectedReq] = useState<CaseRequest | null>(null);
+interface CaseDetailModalProps {
+  request: CaseRequest | null;
+  onClose: () => void;
+  onApprove: (requestId: string) => Promise<void>;
+  onReject: (requestId: string) => Promise<void>;
+  isDark: boolean;
+  locale: string;
+  t: (k: string, opts?: any) => string;
+}
 
-  // Use React Query hooks
-  const { data: resData, isLoading: loading } = useDoctorRequests(doctorId, currentPage, PAGE_SIZE);
-  const { approveRequest, rejectRequest } = useDoctorRequestActions();
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
+function CaseDetailModal({
+  request,
+  onClose,
+  onApprove,
+  onReject,
+  isDark,
+  locale,
+  t,
+}: CaseDetailModalProps) {
+  const [actionLoading, setActionLoading] = useState<'approve' | 'reject' | null>(null);
 
-  const requests = resData?.items.filter(req => req.status === 'Pending') || [];
-  const pagination = resData ? { ...resData, totalCount: requests.length } : null;
+  const { data: caseDetail, isLoading: caseLoading } = useQuery<PatientCaseDto>({
+    queryKey: ['case-detail-modal', request?.patientCasePublicId],
+    queryFn: () => doctorDashboardService.getCaseById(request!.patientCasePublicId),
+    enabled: !!request?.patientCasePublicId,
+    staleTime: 2 * 60 * 1000,
+  });
 
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await queryClient.invalidateQueries({ queryKey: ['doctor', 'requests'] });
-    setRefreshing(false);
-  };
-
-  const handleApprove = async (id: string) => {
-    if (actionLoading) return;
-    setActionLoading(id);
+  const handleApprove = async () => {
+    if (!request || actionLoading) return;
+    setActionLoading('approve');
     try {
-      await approveRequest(id);
-      if (selectedReq?.id === id) {
-        setSelectedReq({ ...selectedReq, status: 'Approved' });
-      }
-    } catch (e) {
-      console.error(e);
+      await onApprove(request.id);
+      onClose();
+    } catch (e: any) {
+      Alert.alert(t('approve'), e?.message || t('request_failed'));
     } finally {
       setActionLoading(null);
     }
   };
 
-  const handleReject = async (id: string) => {
-    if (actionLoading) return;
-    setActionLoading(id);
+  const handleReject = async () => {
+    if (!request || actionLoading) return;
+    setActionLoading('reject');
     try {
-      await rejectRequest(id);
-      if (selectedReq?.id === id) {
-        setSelectedReq({ ...selectedReq, status: 'Rejected' });
-      }
-    } catch (e) {
-      console.error(e);
+      await onReject(request.id);
+      onClose();
+    } catch (e: any) {
+      Alert.alert(t('reject'), e?.message || t('request_failed'));
     } finally {
       setActionLoading(null);
     }
   };
 
-  function formatDate(dateStr: string) {
-    return new Date(dateStr).toLocaleDateString(locale, {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    });
-  }
-
-  // ─── Render ─────────────────────────────────────────────────────────────────
+  const imageUrls: string[] = caseDetail?.imageUrls ?? [];
+  const initials = getInitials(caseDetail?.patientName ?? request?.patientName ?? '?');
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-950">
-      <ScrollView
-        className="flex-1"
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={isDark ? '#fbbf24' : '#d97706'}
-          />
-        }
-        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 40 }}
-      >
-        {/* Header */}
-        <View className="flex-row items-center justify-between mb-6">
-          <View className="flex-row items-center gap-3 flex-1">
-            <View className="p-3 bg-amber-50 dark:bg-amber-900/30 rounded-2xl">
-              <Clock size={24} color={isDark ? '#fbbf24' : '#d97706'} strokeWidth={2.5} />
+    <Modal visible={!!request} animationType="slide" transparent onRequestClose={onClose}>
+      <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)' }} onPress={onClose}>
+        <Pressable style={{ marginTop: 'auto' }} onPress={(e) => e.stopPropagation()}>
+          <View className={`rounded-t-[48px] border-t overflow-hidden ${isDark ? 'bg-[#020617] border-slate-800' : 'bg-slate-50 border-slate-100'}`}>
+            {/* Top Bar / Handle */}
+            <View className="items-center pt-3 pb-1">
+              <View className="w-12 h-1.5 rounded-full bg-slate-200 dark:bg-slate-800" />
             </View>
-            <View className="flex-1">
-              <Text className="text-xl font-black text-slate-800 dark:text-white">
-                {t('pending_cases')}
-              </Text>
-              <Text className="text-xs text-slate-400 dark:text-slate-500 font-medium mt-0.5" numberOfLines={1}>
-                {pagination
-                  ? t('total_requests_label', { count: pagination.totalCount })
-                  : t('loading')}
-              </Text>
-            </View>
-          </View>
-          <TouchableOpacity
-            onPress={onRefresh}
-            className="p-2.5 rounded-xl"
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            {loading ? (
-              <ActivityIndicator size={18} color={isDark ? '#94a3b8' : '#64748b'} />
-            ) : (
-              <RefreshCw size={18} color={isDark ? '#94a3b8' : '#64748b'} />
-            )}
-          </TouchableOpacity>
-        </View>
 
-        {/* Content */}
-        {loading ? (
-          Array.from({ length: 4 }).map((_, i) => (
-            <View
-              key={i}
-              className="h-52 bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 mb-4 animate-pulse"
-            />
-          ))
-        ) : requests.length === 0 ? (
-          <View className="py-24 items-center">
-            <View className="w-20 h-20 rounded-full bg-slate-100 dark:bg-slate-800 items-center justify-center mb-5">
-              <ClipboardList size={36} color={isDark ? '#334155' : '#cbd5e1'} />
+            <View className={`flex-row items-center justify-between px-6 py-4`}>
+               <Text className="text-sm font-black text-slate-400 dark:text-slate-500 uppercase tracking-[2px]">
+                  {t('case_request_item')}
+               </Text>
+               <TouchableOpacity onPress={onClose} className="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-slate-900 items-center justify-center">
+                  <X size={20} color={isDark ? '#94a3b8' : '#64748b'} />
+               </TouchableOpacity>
             </View>
-            <Text className="text-base font-bold text-slate-500 dark:text-slate-400">
-              {t('no_pending_cases')}
-            </Text>
-            <Text className="text-sm text-slate-400 dark:text-slate-500 mt-1 text-center px-8">
-              {t('no_pending_cases_desc')}
-            </Text>
-          </View>
-        ) : (
-          requests.map((req) => {
-            const s = getStatusStyle(req.status, isDark);
-            const isPending = req.status === 'Pending';
-            const isLoading = actionLoading === req.id;
-            const initials = req.studentName.split(' ').filter(Boolean).map((n) => n[0]).join('').toUpperCase().slice(0, 2);
 
-            return (
-              <TouchableOpacity
-                key={req.id}
-                activeOpacity={0.95}
-                onPress={() => setSelectedReq(req)}
-                style={{
-                  shadowColor: isDark ? '#000' : '#4f46e5',
-                  shadowOffset: { width: 0, height: 12 },
-                  shadowOpacity: isDark ? 0.4 : 0.08,
-                  shadowRadius: 24,
-                  elevation: 8,
-                }}
-                className={`rounded-[40px] mb-8 overflow-hidden border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-50'}`}
-              >
-                {/* ─── Premium Glassmorphic Header ─── */}
-                <View className="p-7 pb-0">
-                  <View className="flex-row items-start justify-between gap-4 mb-6">
-                    <View className="flex-1">
-                      <View className="flex-row items-center gap-2 mb-2">
-                        <View className={`w-2 h-2 rounded-full ${isDark ? 'bg-indigo-500' : 'bg-indigo-600'}`} />
-                        <Text className={`text-[10px] font-black uppercase tracking-[3px] ${isDark ? 'text-indigo-400/80' : 'text-indigo-600/60'}`}>
-                          {t('case_request_item')}
-                        </Text>
-                      </View>
-                      <Text className={`text-2xl font-black leading-tight tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`} numberOfLines={2}>
-                        {req.caseName}
-                      </Text>
-                    </View>
-                    
-                    {/* Status Badge - Glassmorphic Style */}
-                    <View 
-                      style={{ backgroundColor: s.bg, borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }} 
-                      className="px-4 py-2 rounded-2xl flex-row items-center gap-2 border"
+            <ScrollView className="max-h-[85%]" contentContainerStyle={{ paddingBottom: 20 }} showsVerticalScrollIndicator={false}>
+              {caseLoading ? (
+                <View className="py-24 items-center">
+                  <ActivityIndicator size="large" color="#4f46e5" />
+                  <Text className="text-slate-400 text-sm font-bold mt-4">{t('loading')}</Text>
+                </View>
+              ) : (
+                <View className="px-6">
+                  {/* Identity Section (Like CaseDetails) */}
+                  <View className="flex-row items-center gap-4 mb-6 mt-2">
+                    <LinearGradient
+                      colors={['#3b82f6', '#4f46e5']}
+                      className="w-16 h-16 rounded-[24px] items-center justify-center shadow-lg shadow-indigo-500/30"
                     >
-                      <StatusIcon type={s.icon} size={12} color={s.text} />
-                      <Text style={{ color: s.text }} className="text-[11px] font-black uppercase tracking-widest">
-                        {t(req.status.toLowerCase()) || req.status}
+                      <Text className="text-white font-black text-2xl">{initials}</Text>
+                    </LinearGradient>
+                    <View className="flex-1">
+                      <Text className="text-2xl font-black text-slate-900 dark:text-white leading-tight">
+                        {caseDetail?.patientName ?? request?.patientName}
                       </Text>
+                      <View className="flex-row items-center gap-2 mt-1">
+                         <View className="px-2.5 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/40">
+                            <Text className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase">
+                               {caseDetail?.status || 'Active'}
+                            </Text>
+                         </View>
+                         <Text className="text-xs font-bold text-slate-400">
+                            ID: {request?.patientCasePublicId?.slice(0, 8)}
+                         </Text>
+                      </View>
                     </View>
                   </View>
 
-                  {/* ─── Student Profile "Hero" Segment ─── */}
-                  <LinearGradient
-                    colors={isDark ? ['#1e293b', '#0f172a'] : ['#f8fafc', '#f1f5f9']}
-                    className="flex-row items-center p-5 rounded-[32px] mb-5 border border-white/10 dark:border-slate-800/50"
-                  >
-                    <View className="relative">
-                       <LinearGradient
-                        colors={['#818cf8', '#4f46e5', '#3730a3']}
-                        className="w-14 h-14 rounded-[22px] items-center justify-center shadow-lg shadow-indigo-500/50"
-                      >
-                        <Text className="text-white font-black text-lg">{initials}</Text>
-                      </LinearGradient>
-                      <View className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-2 border-white dark:border-slate-900 items-center justify-center">
-                          <CheckCircle2 size={10} color="white" />
-                      </View>
-                    </View>
-                    
-                    <View className="flex-1 ml-5">
-                      <Text className={`text-base font-black ${isDark ? 'text-slate-100' : 'text-slate-900'}`} numberOfLines={1}>
-                        {req.studentName}
-                      </Text>
-                      <View className="flex-row items-center gap-2 mt-1">
-                        <View className={`px-2.5 py-1 rounded-lg ${isDark ? 'bg-indigo-500/10' : 'bg-indigo-50'}`}>
-                           <Text className={`text-[10px] font-black uppercase ${isDark ? 'text-indigo-400' : 'text-indigo-700'}`}>{t('level_label')} {req.level}</Text>
-                        </View>
-                        <View className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-700" />
-                        <Text className={`text-[11px] font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`} numberOfLines={1}>
-                          {req.university}
-                        </Text>
-                      </View>
-                    </View>
-                  </LinearGradient>
+                  {/* Divider */}
+                  <View className="h-[1px] bg-slate-200 dark:bg-slate-800 mb-6" />
 
-                  {/* ─── Motivation Preview Detail ─── */}
-                  {req.description && (
-                    <View className={`mb-6 p-5 rounded-[28px] relative ${isDark ? 'bg-slate-950/60' : 'bg-slate-50'}`}>
-                       <View className="absolute top-0 right-0 p-3 opacity-20">
-                          <Quote size={24} color={isDark ? '#4f46e5' : '#4f46e5'} style={{ transform: [{ rotate: '180deg' }] }} />
-                       </View>
-                       <Text className={`text-[13px] leading-6 font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`} numberOfLines={3}>
-                         {req.description}
+                  {/* Description Card */}
+                  {(request?.description || caseDetail?.diagnosisdto?.notes) && (
+                    <View className={`p-5 rounded-[32px] mb-6 border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+                       <Text className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">
+                          {t('motivation_label')}
+                       </Text>
+                       <Text className="text-sm font-medium text-slate-600 dark:text-slate-300 leading-6">
+                          {request?.description || caseDetail?.diagnosisdto?.notes}
                        </Text>
                     </View>
                   )}
 
-                  {/* ─── Footer: Patient & Meta ─── */}
-                  <View className="flex-row items-center justify-between mb-8">
-                    <View className="flex-row items-center gap-3">
-                      <View className={`w-10 h-10 rounded-full items-center justify-center ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
-                        <User size={18} color={isDark ? '#818cf8' : '#4f46e5'} />
-                      </View>
-                      <View>
-                        <Text className={`text-[10px] font-black uppercase tracking-tight ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{t('patient_name')}</Text>
-                        <Text className={`text-sm font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{req.patientName || 'N/A'}</Text>
-                      </View>
+                  {/* Info Grid (Simplified CaseDetails style) */}
+                  <View className="flex-row flex-wrap justify-between gap-y-3 mb-6">
+                    <View className="w-[48%]">
+                      <InfoCard icon={User} label={t('age')} value={`${caseDetail?.patientAge || '?'} ${t('years_old').replace('{{age}}', '')}`} isDark={isDark} colorClass="text-blue-500" />
                     </View>
-                    <View className="items-end">
-                       <Text className={`text-[10px] font-black uppercase tracking-tight ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{t('sent_at')}</Text>
-                       <Text className={`text-xs font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{formatDate(req.createAt)}</Text>
+                    <View className="w-[48%]">
+                      <InfoCard icon={Phone} label={t('phone_label')} value={caseDetail?.phone || "N/A"} isDark={isDark} colorClass="text-emerald-500" />
+                    </View>
+                    <View className="w-[48%]">
+                      <InfoCard icon={MapPin} label={t('city_label')} value={caseDetail?.city || "N/A"} isDark={isDark} colorClass="text-rose-500" />
+                    </View>
+                    <View className="w-[48%]">
+                      <InfoCard icon={Hospital} label={t('university')} value={caseDetail?.universityName || request?.university || "N/A"} isDark={isDark} colorClass="text-indigo-500" />
+                    </View>
+                    <View className="w-[48%]">
+                      <InfoCard icon={GraduationCap} label={t('student_name')} value={request?.studentName || "N/A"} isDark={isDark} colorClass="text-cyan-500" />
+                    </View>
+                    <View className="w-[48%]">
+                      <InfoCard icon={Calendar} label={t('sent_at')} value={formatDate(request?.createAt ?? '', locale)} isDark={isDark} colorClass="text-violet-500" />
                     </View>
                   </View>
+
+                  {/* Images Section */}
+                  {imageUrls.length > 0 && (
+                    <View className="mb-6">
+                      <Text className="text-[10px] font-black text-slate-400 uppercase tracking-[3px] mb-4 ml-1">
+                        {t('case_images')} ({imageUrls.length})
+                      </Text>
+                      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
+                        {imageUrls.map((url, idx) => (
+                          <Image key={idx} source={{ uri: url }} style={{ width: 140, height: 140, borderRadius: 28 }} resizeMode="cover" />
+                        ))}
+                      </ScrollView>
+                    </View>
+                  )}
                 </View>
+              )}
+            </ScrollView>
 
-                {/* ─── Actions: Approve / Reject ─── */}
-                {isPending ? (
-                  <View className={`p-5 flex-row gap-4 ${isDark ? 'bg-slate-800/40 border-t border-slate-800' : 'bg-slate-50/50 border-t border-slate-50'}`}>
-                    <TouchableOpacity
-                      onPress={() => handleReject(req.id)}
-                      disabled={!!isLoading}
-                      activeOpacity={0.7}
-                      className={`flex-1 flex-row items-center justify-center gap-2.5 py-4.5 rounded-[22px] border ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'}`}
-                    >
-                      {isLoading && actionLoading === req.id ? (
-                        <ActivityIndicator size={14} color="#f87171" />
-                      ) : (
-                        <X size={18} color="#f87171" />
-                      )}
-                      <Text className="text-xs font-black text-rose-500 uppercase tracking-widest">{t('reject')}</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      onPress={() => handleApprove(req.id)}
-                      disabled={!!isLoading}
-                      activeOpacity={0.8}
-                      className="flex-[1.5] py-4.5 rounded-[22px] bg-indigo-600 flex-row items-center justify-center gap-2.5 shadow-xl shadow-indigo-600/40"
-                    >
-                      {isLoading && actionLoading === req.id ? (
-                        <ActivityIndicator size={14} color="white" />
-                      ) : (
-                        <CheckCircle2 size={18} color="white" />
-                      )}
-                      <Text className="text-xs font-black text-white uppercase tracking-widest">{t('approve')}</Text>
-                    </TouchableOpacity>
-                  </View>
-                ) : (
-                  <View className={`p-6 items-center justify-center ${isDark ? 'bg-slate-800/20' : 'bg-slate-50/30'}`}>
-                     <TouchableOpacity
-                        onPress={() => setSelectedReq(req)}
-                        className="flex-row items-center gap-2 group"
-                     >
-                        <Text className={`text-xs font-black uppercase tracking-[2px] ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`}>{t('full_details')}</Text>
-                        <ChevronRight size={16} color={isDark ? '#818cf8' : '#4f46e5'} />
-                     </TouchableOpacity>
-                  </View>
-                )}
-              </TouchableOpacity>
-            );
-          })
-        )}
-
-        {/* Pagination */}
-        {pagination && pagination.totalPages > 1 && (
-          <View className="flex-row items-center justify-between mt-2">
-            <Text className="text-xs text-slate-400 dark:text-slate-500 font-medium">
-              {t('page_of', { current: pagination.currentPage, total: pagination.totalPages })}
-            </Text>
-            <View className="flex-row gap-2">
-              <TouchableOpacity
-                onPress={() => setCurrentPage(currentPage - 1)}
-                disabled={!pagination.hasPreviousPage}
-                style={{ opacity: pagination.hasPreviousPage ? 1 : 0.4 }}
-                className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700"
-              >
-                <Text className="text-xs font-bold text-slate-600 dark:text-slate-300">‹ Prev</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => setCurrentPage(currentPage + 1)}
-                disabled={!pagination.hasNextPage}
-                style={{ opacity: pagination.hasNextPage ? 1 : 0.4 }}
-                className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700"
-              >
-                <Text className="text-xs font-bold text-slate-600 dark:text-slate-300">Next ›</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-      </ScrollView>
-
-      {/* ── Detail Modal ── */}
-      <Modal
-        visible={!!selectedReq}
-        animationType="slide"
-        transparent
-        onRequestClose={() => setSelectedReq(null)}
-      >
-        <Pressable
-          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.45)' }}
-          onPress={() => setSelectedReq(null)}
-        >
-          <Pressable
-            style={{ marginTop: 'auto' }}
-            onPress={(e) => e.stopPropagation()}
-          >
-            <View className="bg-white dark:bg-slate-900 rounded-t-3xl border-t border-slate-100 dark:border-slate-800">
-              {/* Modal handle */}
-              <View className="items-center pt-3 pb-1">
-                <View className="w-10 h-1 rounded-full bg-slate-200 dark:bg-slate-700" />
-              </View>
-
-              {/* Modal header */}
-              <View className="flex-row items-center justify-between px-5 py-3 border-b border-slate-100 dark:border-slate-800">
-                <View className="flex-row items-center gap-2">
-                  <View className="p-2 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl">
-                    <FileText size={16} color={isDark ? '#818cf8' : '#4f46e5'} />
-                  </View>
-                  <Text className="text-base font-black text-slate-800 dark:text-white">
-                    {t('full_details')}
-                  </Text>
-                </View>
-                <TouchableOpacity
-                  onPress={() => setSelectedReq(null)}
-                  className="p-2 rounded-xl"
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            {/* Action Buttons (Always visible at bottom) */}
+            {request?.status === 'Pending' && (
+              <View className={`flex-row gap-4 px-6 pt-5 pb-12 border-t ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
+                <TouchableOpacity 
+                  onPress={handleReject} 
+                  disabled={!!actionLoading} 
+                  activeOpacity={0.7}
+                  className={`flex-1 h-15 rounded-3xl flex-row items-center justify-center gap-2 border ${isDark ? 'bg-slate-900 border-rose-500/20' : 'bg-white border-rose-100'}`}
                 >
-                  <X size={18} color={isDark ? '#94a3b8' : '#64748b'} />
+                  {actionLoading === 'reject' ? <ActivityIndicator size={18} color="#f43f5e" /> : <XCircle size={22} color="#f43f5e" />}
+                  <Text className="text-rose-600 font-black text-sm uppercase tracking-widest">{t('reject')}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  onPress={handleApprove} 
+                  disabled={!!actionLoading} 
+                  activeOpacity={0.9}
+                  className="flex-[1.5] h-15 rounded-3xl overflow-hidden shadow-xl shadow-indigo-500/30"
+                >
+                  <LinearGradient colors={['#3b82f6', '#4f46e5']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} className="flex-1 flex-row items-center justify-center gap-2">
+                    {actionLoading === 'approve' ? <ActivityIndicator size={18} color="white" /> : <CheckCircle2 size={22} color="white" />}
+                    <Text className="text-white font-black text-sm uppercase tracking-widest">{t('approve')}</Text>
+                  </LinearGradient>
                 </TouchableOpacity>
               </View>
-
-              {selectedReq && (
-                <ScrollView
-                  className="max-h-[80%]"
-                  contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
-                >
-                  {/* Status row */}
-                  {(() => {
-                    const s = getStatusStyle(selectedReq.status, isDark);
-                    return (
-                      <View className="flex-row items-center justify-between mb-4">
-                        <View style={{ backgroundColor: s.bg }} className="flex-row items-center gap-2 px-4 py-2 rounded-full">
-                          <StatusIcon type={s.icon} size={14} color={s.text} />
-                          <Text style={{ color: s.text }} className="text-sm font-bold">
-                            {selectedReq.status}
-                          </Text>
-                        </View>
-                        <Text className="text-xs text-slate-400 dark:text-slate-500">
-                          {formatDate(selectedReq.createAt)}
-                        </Text>
-                      </View>
-                    );
-                  })()}
-
-                  {/* Description */}
-                  {selectedReq.description && (
-                    <View className="mb-4">
-                      <Text className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">
-                        Description
-                      </Text>
-                      <View className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4">
-                        <Text className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-                          {selectedReq.description}
-                        </Text>
-                      </View>
-                    </View>
-                  )}
-
-                  {/* Detail grid */}
-                  {[
-                    { icon: <FileText size={14} color="#6366f1" />, label: t('case_name'), value: selectedReq.caseName },
-                    { icon: <User size={14} color="#6366f1" />, label: t('patient_name'), value: selectedReq.patientName || 'N/A' },
-                    { icon: <GraduationCap size={14} color="#6366f1" />, label: t('student_name'), value: selectedReq.studentName },
-                    { icon: <BookOpen size={14} color="#6366f1" />, label: t('student_id'), value: selectedReq.studentPublicId },
-                    { icon: <Hospital size={14} color="#6366f1" />, label: t('university'), value: selectedReq.university },
-                    { icon: <Info size={14} color="#6366f1" />, label: t('level_label'), value: String(selectedReq.level) },
-                    { icon: <Stethoscope size={14} color="#6366f1" />, label: t('doctor_name'), value: selectedReq.doctorName },
-                    { icon: <Calendar size={14} color="#6366f1" />, label: t('submitted_on'), value: formatDate(selectedReq.createAt) },
-                  ].map((row, i) => (
-                    <View
-                      key={i}
-                      className="flex-row items-start gap-3 p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-xl mb-2"
-                    >
-                      <View className="mt-0.5">{row.icon}</View>
-                      <View className="flex-1">
-                        <Text className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                          {row.label}
-                        </Text>
-                        <Text className="text-sm font-semibold text-slate-800 dark:text-white mt-0.5" selectable>
-                          {row.value}
-                        </Text>
-                      </View>
-                    </View>
-                  ))}
-
-                  {/* Modal action buttons */}
-                  {selectedReq.status === 'Pending' && (
-                    <View className="flex-row gap-3 mt-4">
-                      <TouchableOpacity
-                        onPress={() => handleApprove(selectedReq.id)}
-                        disabled={actionLoading === selectedReq.id}
-                        className="flex-1 flex-row items-center justify-center gap-2 py-3.5 rounded-2xl bg-emerald-500"
-                        style={{ opacity: actionLoading === selectedReq.id ? 0.6 : 1 }}
-                      >
-                        {actionLoading === selectedReq.id ? (
-                          <ActivityIndicator size={15} color="white" />
-                        ) : (
-                          <CheckCircle2 size={15} color="white" />
-                        )}
-                        <Text className="text-white font-black text-sm">{t('approve')}</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={() => handleReject(selectedReq.id)}
-                        disabled={actionLoading === selectedReq.id}
-                        className="flex-1 flex-row items-center justify-center gap-2 py-3.5 rounded-2xl bg-red-500"
-                        style={{ opacity: actionLoading === selectedReq.id ? 0.6 : 1 }}
-                      >
-                        {actionLoading === selectedReq.id ? (
-                          <ActivityIndicator size={15} color="white" />
-                        ) : (
-                          <XCircle size={15} color="white" />
-                        )}
-                        <Text className="text-white font-black text-sm">{t('reject')}</Text>
-                      </TouchableOpacity>
-                    </View>
-                  )}
-                </ScrollView>
-              )}
-            </View>
-          </Pressable>
+            )}
+          </View>
         </Pressable>
-      </Modal>
-    </SafeAreaView>
+      </Pressable>
+    </Modal>
   );
 }
 
-// ── Helper component ──────────────────────────────────────────────────────────
+// ─── Compact Request Card ───────────────────────────────────────────────────
 
-function InfoRow({
-  icon,
-  label,
-  value,
-  truncate = false,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  truncate?: boolean;
-}) {
+function RequestCard({ request, onPress, isDark, locale, t }: { request: CaseRequest; onPress: () => void; isDark: boolean; locale: string; t: (k: string) => string }) {
+  const initials = getInitials(request.studentName);
+
   return (
-    <View className="flex-row items-start gap-2 mb-1.5">
-      <View className="mt-0.5">{icon}</View>
-      <Text className="text-xs text-slate-400 dark:text-slate-500 font-semibold shrink-0">
-        {label}:{' '}
-      </Text>
-      <Text
-        className="flex-1 text-xs text-slate-700 dark:text-slate-200 font-semibold"
-        numberOfLines={truncate ? 1 : undefined}
+    <Animated.View entering={FadeInDown.duration(400)}>
+      <TouchableOpacity
+        activeOpacity={0.9}
+        onPress={onPress}
+        className={`mb-4 rounded-[32px] overflow-hidden border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100 shadow-sm shadow-slate-200/50'}`}
       >
-        {value}
-      </Text>
+        <View className="p-5 flex-row items-center gap-4">
+          <LinearGradient colors={['#3b82f6', '#4f46e5']} className="w-15 h-15 rounded-[22px] items-center justify-center">
+            <Text className="text-white font-black text-xl">{initials}</Text>
+          </LinearGradient>
+
+          <View className="flex-1">
+            <View className={`flex-row items-center justify-between mb-1.5`}>
+               <Text className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">{t('case_request_item')}</Text>
+               <Text className="text-[10px] text-slate-400 font-bold">{formatDate(request.createAt, locale)}</Text>
+            </View>
+            
+            <Text className="text-[17px] font-black text-slate-900 dark:text-white leading-tight mb-2" numberOfLines={1}>
+              {request.caseName}
+            </Text>
+
+            <View className="flex-row items-center gap-2.5">
+              <Text className="text-sm font-bold text-slate-600 dark:text-slate-300" numberOfLines={1}>
+                {request.studentName}
+              </Text>
+              <View className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-700" />
+              <Text className="text-xs font-medium text-slate-400" numberOfLines={1}>
+                {request.university}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        <View className={`px-6 py-3.5 flex-row items-center justify-between ${isDark ? 'bg-slate-800/30' : 'bg-slate-50/70'}`}>
+           <View className="flex-row items-center gap-2">
+              <User size={14} color={isDark ? '#64748b' : '#94a3b8'} />
+              <Text className="text-xs font-bold text-slate-500 dark:text-slate-400">{request.patientName || 'N/A'}</Text>
+           </View>
+           <View className="flex-row items-center gap-1.5 bg-amber-100 dark:bg-amber-900/30 px-3 py-1 rounded-full">
+              <View className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+              <Text className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest">{t('status_pending')}</Text>
+           </View>
+        </View>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}
+
+// ─── Main Screen ──────────────────────────────────────────────────────────────
+
+export default function PendingCasesScreen() {
+  const { t } = useTranslation();
+  const router = useRouter();
+  const { user } = useAppSelector((s) => s.auth);
+  const { theme, language } = useThemeLanguage();
+  const isDark = theme === "dark";
+  const isRtl = language === "ar";
+  const locale = isRtl ? "ar-EG" : "en-GB";
+
+  const doctorId = (user as any)?.publicId ?? (user as any)?.id;
+  const queryClient = useQueryClient();
+
+  const [refreshing, setRefreshing] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState<CaseRequest | null>(null);
+
+  const { data: resData, isLoading: loading } = useDoctorRequests(doctorId, 1, PAGE_SIZE, 0);
+  const { approveRequest, rejectRequest } = useDoctorRequestActions();
+
+  const pendingRequests = resData?.items ?? [];
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await queryClient.invalidateQueries({ queryKey: ['doctor'] });
+    setRefreshing(false);
+  }, [queryClient]);
+
+  const handleApprove = useCallback(async (requestId: string) => {
+    await approveRequest(requestId);
+    await queryClient.invalidateQueries({ queryKey: ['doctor'] });
+  }, [approveRequest, queryClient]);
+
+  const handleReject = useCallback(async (requestId: string) => {
+    await rejectRequest(requestId);
+    await queryClient.invalidateQueries({ queryKey: ['doctor'] });
+  }, [rejectRequest, queryClient]);
+
+  return (
+    <View className="flex-1 bg-slate-50 dark:bg-slate-950">
+      <StatusBar barStyle="light-content" />
+      
+      {/* Fixed Gradient Background */}
+      <View className="absolute top-0 left-0 right-0 h-[280px]">
+        <LinearGradient
+          colors={isDark ? ['#1e1b4b', '#0f172a'] : ['#3b82f6', '#4f46e5']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          className="w-full h-full rounded-b-[48px] shadow-2xl shadow-indigo-500/20"
+        />
+      </View>
+
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 110 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={isDark ? "#818cf8" : "white"}
+          />
+        }
+      >
+        {/* Header Content */}
+        <Animated.View entering={FadeInUp.duration(600)} className="px-6 pt-16 pb-10">
+          <View className={`flex-row justify-between items-center ${isRtl ? 'flex-row-reverse' : ''}`}>
+            <View className={isRtl ? 'items-end' : 'items-start'}>
+              <Text className="text-white/70 font-bold text-xs uppercase tracking-[3px] mb-1">
+                {t('doctor_dashboard')}
+              </Text>
+              <Text className="text-white text-3xl font-black" numberOfLines={1}>
+                {t('pending_cases')}
+              </Text>
+            </View>
+
+            <TouchableOpacity
+              onPress={() => router.back()}
+              className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md items-center justify-center"
+            >
+              <ChevronLeft size={24} color="white" />
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
+
+        {/* Content Section */}
+        <View className="px-6">
+          {loading ? (
+            Array.from({ length: 5 }).map((_, i) => (
+              <View key={i} className={`h-32 rounded-[32px] mb-4 bg-white/10`} />
+            ))
+          ) : pendingRequests.length === 0 ? (
+            <Animated.View entering={FadeInDown.delay(200)} className="py-24 items-center bg-white dark:bg-slate-900 rounded-[48px] border border-slate-100 dark:border-slate-800 shadow-sm">
+              <View className="w-24 h-24 rounded-[40px] bg-slate-50 dark:bg-slate-800 items-center justify-center mb-6">
+                <ClipboardList size={40} color={isDark ? '#334155' : '#cbd5e1'} />
+              </View>
+              <Text className="text-xl font-black text-slate-800 dark:text-white">
+                {t('no_pending_cases')}
+              </Text>
+              <Text className="text-sm text-slate-400 dark:text-slate-500 mt-2 text-center px-12 font-bold leading-5">
+                {t('no_pending_cases_desc')}
+              </Text>
+            </Animated.View>
+          ) : (
+            pendingRequests.map((req) => (
+              <RequestCard key={req.id} request={req} onPress={() => setSelectedRequest(req)} isDark={isDark} locale={locale} t={t} />
+            ))
+          )}
+        </View>
+      </ScrollView>
+
+      <CaseDetailModal
+        request={selectedRequest}
+        onClose={() => setSelectedRequest(null)}
+        onApprove={handleApprove}
+        onReject={handleReject}
+        isDark={isDark}
+        locale={locale}
+        t={t}
+      />
     </View>
   );
 }

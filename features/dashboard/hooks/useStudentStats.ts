@@ -1,11 +1,16 @@
-import { useState, useEffect } from 'react';
+import { RootState } from '@/store/store';
+import api from '@/utils/api';
+import { caseKeys } from '@/features/cases/hooks/caseQueryKeys';
+import { useQuery } from '@tanstack/react-query';
+import { useSelector } from 'react-redux';
 
+// Kept for backward-compat with components that still import these types
 export interface UpcomingSession {
   id: string;
   patientInitials: string;
   treatmentType: string;
   scheduledAt: string;
-  status: 'Scheduled' | 'Completed' | 'Cancelled';
+  status: 'Scheduled' | 'Done' | 'Cancelled';
 }
 
 export interface ActivityItem {
@@ -15,75 +20,63 @@ export interface ActivityItem {
   timestamp: string;
 }
 
+export interface StudentStatsDto {
+  totalRequests: number;
+  pendingRequests: number;
+  approvedRequests: number;
+  rejectedRequests: number;
+  totalSessions: number;
+  completedSessions: number;
+  totalCases: number;
+}
+
+async function fetchStudentStats(studentId: string): Promise<StudentStatsDto> {
+  const res = await api.get<{ data: StudentStatsDto }>(`/Students/${studentId}/statistics`);
+  return res.data.data;
+}
+
 export function useStudentStats() {
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({
+  const user = useSelector((state: RootState) => state.auth.user);
+  const studentId = (user as any)?.publicId ?? '';
+
+  const { data, isLoading, isError, refetch } = useQuery<StudentStatsDto>({
+    queryKey: caseKeys.studentStats(studentId),
+    queryFn: () => fetchStudentStats(studentId),
+    enabled: !!studentId,
+    staleTime: 1000 * 60 * 2, // 2 minutes
+  });
+
+  const stats: StudentStatsDto = data ?? {
     totalRequests: 0,
     pendingRequests: 0,
     approvedRequests: 0,
-    completedSessions: 0,
+    rejectedRequests: 0,
     totalSessions: 0,
+    completedSessions: 0,
     totalCases: 0,
-  });
-  const [upcomingSessions, setUpcomingSessions] = useState<UpcomingSession[]>([]);
-  const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
+  };
 
-  useEffect(() => {
-    // Mock simulation delay
-    const timer = setTimeout(() => {
-      setStats({
-        totalRequests: 24,
-        pendingRequests: 5,
-        approvedRequests: 19,
-        completedSessions: 8,
-        totalSessions: 12,
-        totalCases: 15,
-      });
+  const requestApprovalRate =
+    stats.totalRequests > 0
+      ? Math.round((stats.approvedRequests / stats.totalRequests) * 100)
+      : 0;
 
-      setUpcomingSessions([
-        {
-          id: '1',
-          patientInitials: 'A.M',
-          treatmentType: 'Root Canal',
-          scheduledAt: new Date(Date.now() + 86400000).toISOString(), // Tomorrow
-          status: 'Scheduled',
-        },
-        {
-          id: '2',
-          patientInitials: 'S.K',
-          treatmentType: 'Scaling',
-          scheduledAt: new Date(Date.now() + 172800000).toISOString(), // day after tomorrow
-          status: 'Scheduled',
-        }
-      ]);
+  const sessionProgress =
+    stats.totalSessions > 0
+      ? Math.round((stats.completedSessions / stats.totalSessions) * 100)
+      : 0;
 
-      setRecentActivity([
-        {
-          id: 'a1',
-          type: 'case_approved',
-          title: 'Case #4521 Approved by Dr. Ahmed',
-          timestamp: new Date(Date.now() - 3600000).toISOString(),
-        },
-        {
-          id: 'a2',
-          type: 'session_completed',
-          title: 'Scaling Session with P. J. Completed',
-          timestamp: new Date(Date.now() - 86400000).toISOString(),
-        }
-      ]);
+  // "Completed cases" = cases that are fully done (totalCases is the assigned ones;
+  // we derive from completedSessions as a proxy – backend may expose this directly later)
+  const completedCases = stats.totalCases;
 
-      setLoading(false);
-    }, 800);
-    return () => clearTimeout(timer);
-  }, []);
-
-  const requestApprovalRate = stats.totalRequests > 0 
-    ? Math.round((stats.approvedRequests / stats.totalRequests) * 100) 
-    : 0;
-
-  const sessionProgress = stats.totalSessions > 0 
-    ? Math.round((stats.completedSessions / stats.totalSessions) * 100) 
-    : 0;
-
-  return { stats, upcomingSessions, recentActivity, loading, sessionProgress, requestApprovalRate };
+  return {
+    stats,
+    loading: isLoading,
+    isError,
+    refetch,
+    sessionProgress,
+    requestApprovalRate,
+    completedCases,
+  };
 }

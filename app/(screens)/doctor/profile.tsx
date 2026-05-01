@@ -1,51 +1,50 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import { useDoctorProfile, useUniversities, useUpdateDoctorProfile } from '@/features/dashboard/hooks/useDoctorQueries';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { logout, updateUser } from '@/store/slices/authSlice';
+import { useThemeLanguage } from '@/store/ThemeLanguageContext';
+import { useQueryClient } from '@tanstack/react-query';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 import {
-  View,
-  Text,
-  ScrollView,
-  TextInput,
-  TouchableOpacity,
-  ActivityIndicator,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  I18nManager,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import {
-  User,
+  Calendar,
+  CheckCircle2,
+  Clock,
+  Edit3,
+  Layers,
   Mail,
+  RefreshCw,
+  Save,
   Stethoscope,
   University,
-  Calendar,
   Users,
-  Clock,
-  CheckCircle2,
-  Edit3,
-  X,
-  Save,
-  LogOut,
-  Settings,
-  RefreshCw,
+  X
 } from 'lucide-react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAppSelector, useAppDispatch } from '@/store/hooks';
-import { useThemeLanguage } from '@/store/ThemeLanguageContext';
-import { useRouter } from 'expo-router';
-import { logout, updateUser } from '@/store/slices/authSlice';
-import { authService } from '@/features/auth/services/authService';
-import { UniversityLookup } from '@/types/types';
-import { useDoctorProfile, useUpdateDoctorProfile, useUniversities } from '@/features/dashboard/hooks/useDoctorQueries';
-import { useQueryClient } from '@tanstack/react-query';
+import {
+  ActivityIndicator,
+  Alert,
+  I18nManager,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-function StatCard({ value, label, color, isDark }: { value: number; label: string; color: string; isDark: boolean }) {
+function StatCard({ value, label, icon, color, bgColor, isDark }: { value: number; label: string; icon: React.ReactNode; color: string; bgColor: string; isDark: boolean }) {
   return (
     <View className="flex-1 items-center bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-4">
-      <Text style={{ color }} className="text-3xl font-black">{value}</Text>
-      <Text className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-1 text-center uppercase tracking-wider" numberOfLines={2}>
+      <View className={`w-9 h-9 rounded-xl ${bgColor} items-center justify-center mb-2`}>
+        {icon}
+      </View>
+      <Text style={{ color }} className="text-2xl font-black">{value}</Text>
+      <Text className="text-[9px] font-bold text-slate-400 dark:text-slate-500 mt-0.5 text-center uppercase tracking-wider" numberOfLines={2}>
         {label}
       </Text>
     </View>
@@ -73,6 +72,7 @@ export default function DoctorProfileScreen() {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((s) => s.auth);
+  const doctorStats = useAppSelector((s) => s.doctor);
   const { theme } = useThemeLanguage();
   const isDark = theme === 'dark';
   const isRtl = I18nManager.isRTL;
@@ -162,7 +162,7 @@ export default function DoctorProfileScreen() {
   return (
     <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-950">
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
-        <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+        <ScrollView contentContainerStyle={{ paddingBottom: 110 }}>
           {/* Header */}
           <LinearGradient
             colors={isDark ? ['#1e1b4b', '#0f172a'] : ['#4f46e5', '#6366f1']}
@@ -206,34 +206,50 @@ export default function DoctorProfileScreen() {
               ) : (
                 <Text className="text-white text-2xl font-black">{profile.fullName}</Text>
               )}
-              <View className="flex-row items-center gap-2 mt-2">
-                <View className="bg-white/20 px-3 py-1 rounded-full">
-                  <Text className="text-white/90 text-xs font-bold">
-                    {editing ? (
-                      <TextInput
-                        value={editSpecialty}
-                        onChangeText={setEditSpecialty}
-                        className="text-white text-xs font-bold"
-                        placeholderTextColor="rgba(255,255,255,0.5)"
-                        placeholder={t('specialty')}
-                        style={{ writingDirection: isRtl ? 'rtl' : 'ltr', minWidth: 100 }}
-                      />
-                    ) : (
-                      profile.specialty
-                    )}
-                  </Text>
-                </View>
-              </View>
+              
             </View>
           </LinearGradient>
 
-          {/* Stats Row REMOVED as per request */}
-          <View className="mb-6" />
+          {/* Stats Row — reads from Redux, no extra API call */}
+          <View className="flex-row gap-2 mx-5 -mt-5 mb-5">
+            <StatCard
+              value={doctorStats.profile?.totalStudents ?? 0}
+              label={t('total_students')}
+              icon={<Users size={14} color={isDark ? '#818cf8' : '#4f46e5'} />}
+              color={isDark ? '#818cf8' : '#4f46e5'}
+              bgColor="bg-indigo-50 dark:bg-indigo-900/30"
+              isDark={isDark}
+            />
+            <StatCard
+              value={doctorStats.profile?.pendingRequests ?? 0}
+              label={t('pending_requests')}
+              icon={<Clock size={14} color={isDark ? '#fbbf24' : '#d97706'} />}
+              color={isDark ? '#fbbf24' : '#d97706'}
+              bgColor="bg-amber-50 dark:bg-amber-900/30"
+              isDark={isDark}
+            />
+            <StatCard
+              value={doctorStats.ongoingCasesCount}
+              label={t('ongoing_cases')}
+              icon={<Layers size={14} color={isDark ? '#60a5fa' : '#2563eb'} />}
+              color={isDark ? '#60a5fa' : '#2563eb'}
+              bgColor="bg-blue-50 dark:bg-blue-900/30"
+              isDark={isDark}
+            />
+            <StatCard
+              value={doctorStats.completedCasesCount}
+              label={t('completed_cases')}
+              icon={<CheckCircle2 size={14} color={isDark ? '#34d399' : '#059669'} />}
+              color={isDark ? '#34d399' : '#059669'}
+              bgColor="bg-emerald-50 dark:bg-emerald-900/30"
+              isDark={isDark}
+            />
+          </View>
 
           {/* Info Card */}
           <View className="mx-5 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm dark:shadow-none mb-5 overflow-hidden">
             <Text className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 px-5 pt-5 pb-3">
-              {t('patient_info')}
+              {t('doctor_info')}
             </Text>
             <InfoRow icon={<Mail size={14} color={isDark ? '#818cf8' : '#4f46e5'} />} label={t('email')} value={profile.email} isDark={isDark} />
             <InfoRow icon={<Stethoscope size={14} color={isDark ? '#818cf8' : '#4f46e5'} />} label={t('specialty')} value={profile.specialty} isDark={isDark} />

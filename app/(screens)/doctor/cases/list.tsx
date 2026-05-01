@@ -184,7 +184,7 @@ export default function BrowseCasesScreen() {
       <ScrollView
         className="flex-1"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={isDark ? '#818cf8' : '#4f46e5'} />}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 4, paddingBottom: 40 }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 4, paddingBottom: 110 }}
       >
         {loading && !refreshing ? (
           Array.from({ length: 6 }).map((_, i) => (

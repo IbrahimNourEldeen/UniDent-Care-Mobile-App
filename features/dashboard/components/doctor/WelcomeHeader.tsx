@@ -1,7 +1,8 @@
-import React from 'react';
-import { View, Text } from 'react-native';
+import { useThemeLanguage } from '@/store/ThemeLanguageContext';
 import { LinearGradient } from 'expo-linear-gradient';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { Text, View } from 'react-native';
 
 interface WelcomeHeaderProps {
   userName: string;
@@ -12,15 +13,17 @@ interface WelcomeHeaderProps {
 
 export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({ userName, role, initials, isDark }) => {
   const { t } = useTranslation();
+  const { language } = useThemeLanguage();
+  const isRtl = language === 'ar';
+
   return (
-    <View className="flex-row items-center justify-between mb-8">
-      <View className="flex-1">
+    <View className={`flex-row items-center justify-between mb-8 ${isRtl ? 'flex-row-reverse' : ''}`}>
+      <View className={`flex-1 ${isRtl ? 'items-end' : ''}`}>
         <Text className="text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-widest mb-1.5">
           {t('welcome_back')}
         </Text>
-        <Text className="text-2xl font-black text-slate-900 dark:text-white leading-none">
-          {role === 'Doctor' ? t('doctor_prefix') : ''}
-          {userName}
+        <Text className={`text-2xl font-black text-slate-900 dark:text-white leading-none ${isRtl ? 'text-right' : ''}`}>
+          {isRtl ? `${userName} 👋` : `${t('doctor_prefix')}${userName} 👋`}
         </Text>
       </View>
       <LinearGradient

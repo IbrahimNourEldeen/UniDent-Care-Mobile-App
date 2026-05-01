@@ -4,6 +4,7 @@ import { User, Briefcase, Calendar, Clock, X, ChevronRight, CheckCircle2, Send, 
 import { useTranslation } from 'react-i18next';
 import { useThemeLanguage } from '@/store/ThemeLanguageContext';
 import { useAppSelector } from '@/store/hooks';
+import { RootState } from '@/store/store';
 import { CaseItem } from '@/features/cases/types/caseTypes';
 import api from '@/utils/api';
 import { DoctorPicker } from '@/components/auth/DoctorPicker';
@@ -29,7 +30,7 @@ function SendRequestModal({
   const { t } = useTranslation();
   const { theme } = useThemeLanguage();
   const isDark = theme === 'dark';
-  const student = useAppSelector((s) => s.auth.user);
+  const student = useAppSelector((state: RootState) => state.auth.user);
   const [description, setDescription] = useState('');
   const [doctorUsername, setDoctorUsername] = useState('');
   const [submitting, setSubmitting] = useState(false);

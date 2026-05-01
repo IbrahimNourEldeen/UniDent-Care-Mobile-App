@@ -33,6 +33,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
 import { useThemeLanguage } from '@/store/ThemeLanguageContext';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
+import { caseKeys } from '@/features/cases/hooks/caseQueryKeys';
 import {
   doctorDashboardService,
   PatientCaseDto,
@@ -123,7 +125,7 @@ function SessionCard({ session, isDark, locale, t, onStatusUpdate }:
         {session.status.toLowerCase() === 'scheduled' && (
           <View className="flex-row gap-2 mt-3">
             <TouchableOpacity
-              onPress={() => onStatusUpdate(session.id, 'Completed')}
+              onPress={() => onStatusUpdate(session.id, 'Done')}
               className="flex-1 flex-row items-center justify-center gap-1.5 py-2 rounded-xl bg-emerald-500"
             >
               <CheckCircle2 size={12} color="white" />
@@ -218,6 +220,7 @@ export default function CaseDetailScreen() {
   const isDark = theme === 'dark';
   const isRtl = I18nManager.isRTL;
   const locale = language === 'ar' ? 'ar-EG' : 'en-GB';
+  const queryClient = useQueryClient();
 
   const caseId = params.id as string;
 
@@ -276,7 +279,13 @@ export default function CaseDetailScreen() {
     setUpdatingSessionId(sessionId);
     try {
       await doctorDashboardService.updateSessionStatus(sessionId, status);
+      // Update local state immediately for instant feedback
       setSessions(prev => prev.map(s => s.id === sessionId ? { ...s, status } : s));
+      // Invalidate React Query caches so the session-details page and student
+      // case view both see the new status when they next render.
+      queryClient.invalidateQueries({ queryKey: caseKeys.session(sessionId) });
+      queryClient.invalidateQueries({ queryKey: caseKeys.sessions(caseId) });
+      queryClient.invalidateQueries({ queryKey: caseKeys.detail(caseId) });
     } catch (e) {
       Alert.alert('', 'Failed to update session status.');
     } finally {

@@ -85,7 +85,8 @@ export interface ToothData {
 
 export interface DiagnosisDto {
     id: string;
-    diagnosisStage: string;
+    diagnosisStage?: string;
+    stage?: number;
     caseType: string;
     caseTypeId?: string;
     notes: string;
@@ -129,6 +130,7 @@ export interface StudentCaseItem {
     assignedStudentId: string;
     assignedDoctorId: string;
     diagnosisdto: DiagnosisDto | null;
+    diagnoses?: DiagnosisDto[];
     imageUrls: string[];
     createdById: string;
     createdByRole: string;

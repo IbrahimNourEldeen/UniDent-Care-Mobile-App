@@ -4,7 +4,8 @@ import {
   setDoctorProfile,
   setOngoingCasesCount,
 } from '@/store/slices/doctorSlice';
-import { useAppDispatch } from '@/store/hooks';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { RootState } from '@/store/store';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { doctorDashboardService } from '../services/doctorDashboardService';
 
@@ -20,8 +21,11 @@ export const DOCTOR_QUERY_KEYS = {
   ],
   cases: (status?: string) => ['doctor', 'cases', status],
   universities: ['universities', 'lookup'],
-  ongoingCount: ['doctor', 'count', 'ongoing'],
+  ongoingCount: ['doctor', 'count', 'inprogress'],
   completedCount: ['doctor', 'count', 'completed'],
+  cancelledCount: ['doctor', 'count', 'cancelled'],
+  underReviewCount: ['doctor', 'count', 'underreview'],
+  rejectedCount: ['doctor', 'count', 'rejected'],
 };
 
 /**
@@ -86,33 +90,70 @@ export const useDoctorCases = (status?: string, page: number = 1, pageSize: numb
  * Uses pageSize=1 (efficient — only reads totalCount).
  * RequestStatus: 1=Approved (Ongoing), 5=Completed
  */
-export const useDoctorCaseCounts = () => {
+export const useDoctorCaseCounts = (doctorId: string) => {
   const dispatch = useAppDispatch();
 
-  const ongoingQuery = useQuery({
+  const inProgressQuery = useQuery({
     queryKey: DOCTOR_QUERY_KEYS.ongoingCount,
     queryFn: async () => {
-      const count = await doctorDashboardService.getDoctorRequestsCount(1); // Approved
+      const res = await doctorDashboardService.getCasesByDoctor(doctorId, 'InProgress', 1, 1);
+      const count = res.totalCount;
       dispatch(setOngoingCasesCount(count));
       return count;
     },
+    enabled: !!doctorId,
     staleTime: 2 * 60 * 1000,
   });
 
   const completedQuery = useQuery({
     queryKey: DOCTOR_QUERY_KEYS.completedCount,
     queryFn: async () => {
-      const count = await doctorDashboardService.getDoctorRequestsCount(5); // Completed
+      const res = await doctorDashboardService.getCasesByDoctor(doctorId, 'Completed', 1, 1);
+      const count = res.totalCount;
       dispatch(setCompletedCasesCount(count));
       return count;
     },
+    enabled: !!doctorId,
+    staleTime: 2 * 60 * 1000,
+  });
+
+  const cancelledQuery = useQuery({
+    queryKey: DOCTOR_QUERY_KEYS.cancelledCount,
+    queryFn: async () => {
+      const res = await doctorDashboardService.getCasesByDoctor(doctorId, 'Cancelled', 1, 1);
+      return res.totalCount;
+    },
+    enabled: !!doctorId,
+    staleTime: 2 * 60 * 1000,
+  });
+
+  const underReviewQuery = useQuery({
+    queryKey: DOCTOR_QUERY_KEYS.underReviewCount,
+    queryFn: async () => {
+      const res = await doctorDashboardService.getCasesByDoctor(doctorId, 'UnderReview', 1, 1);
+      return res.totalCount;
+    },
+    enabled: !!doctorId,
+    staleTime: 2 * 60 * 1000,
+  });
+
+  const rejectedQuery = useQuery({
+    queryKey: DOCTOR_QUERY_KEYS.rejectedCount,
+    queryFn: async () => {
+      const res = await doctorDashboardService.getCasesByDoctor(doctorId, 'Rejected', 1, 1);
+      return res.totalCount;
+    },
+    enabled: !!doctorId,
     staleTime: 2 * 60 * 1000,
   });
 
   return {
-    ongoingCount: ongoingQuery.data ?? 0,
+    ongoingCount: inProgressQuery.data ?? 0,
     completedCount: completedQuery.data ?? 0,
-    isLoading: ongoingQuery.isLoading || completedQuery.isLoading,
+    cancelledCount: cancelledQuery.data ?? 0,
+    underReviewCount: underReviewQuery.data ?? 0,
+    rejectedCount: rejectedQuery.data ?? 0,
+    isLoading: inProgressQuery.isLoading || completedQuery.isLoading || cancelledQuery.isLoading || underReviewQuery.isLoading || rejectedQuery.isLoading,
   };
 };
 
@@ -135,16 +176,18 @@ export const useUniversities = () => {
  */
 export const useDoctorRequestActions = () => {
   const queryClient = useQueryClient();
+  const { user } = useAppSelector((s: RootState) => s.auth);
+  const doctorId = (user as any)?.publicId ?? (user as any)?.id;
 
   const approveMutation = useMutation({
-    mutationFn: (requestId: string) => doctorDashboardService.approveRequest(requestId),
+    mutationFn: (requestId: string) => doctorDashboardService.approveRequest(requestId, doctorId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['doctor'] });
     },
   });
 
   const rejectMutation = useMutation({
-    mutationFn: (requestId: string) => doctorDashboardService.rejectRequest(requestId),
+    mutationFn: (requestId: string) => doctorDashboardService.rejectRequest(requestId, doctorId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['doctor'] });
     },

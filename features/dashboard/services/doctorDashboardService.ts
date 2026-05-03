@@ -58,7 +58,7 @@ export interface DiagnosisDto {
   patientCaseId: string;
   stage: number; // 0=Initial 1=Intermediate 2=Final
   caseTypeId: string;
-  caseTypeName: string;
+  caseType: string;
   notes: string;
   createdById?: string;
   role: string;
@@ -101,7 +101,8 @@ export interface PatientCaseDto {
   pendingRequests: number;
   assignedStudentId?: string;
   assignedDoctorId?: string;
-  diagnosisdto?: any;
+  diagnosisdto?: DiagnosisDto;
+  diagnoses?: DiagnosisDto[];
   imageUrls?: string[];
   createdByRole?: string;
   gender?: number;
@@ -198,14 +199,18 @@ export const doctorDashboardService = {
     return res.data.data ?? res.data;
   },
 
-  /** Approve a pending case request */
-  approveRequest: async (requestId: string): Promise<void> => {
-    await api.post(`/Doctors/requests/${requestId}/approve`);
+  /** Approve a pending case request via /api/CaseRequests/approve */
+  approveRequest: async (requestId: string, doctorId: string): Promise<void> => {
+    await api.post('/CaseRequests/approve', {
+      requestId,
+      doctorId,
+      isApproved: true,
+    });
   },
 
-  /** Reject a pending case request */
-  rejectRequest: async (requestId: string): Promise<void> => {
-    await api.post(`/Doctors/requests/${requestId}/reject`);
+  /** Reject a pending case request via /api/CaseRequests/reject/{id}/{doctorId} */
+  rejectRequest: async (requestId: string, doctorId: string): Promise<void> => {
+    await api.post(`/CaseRequests/reject/${requestId}/${doctorId}`);
   },
 
   // ─── Cases ────────────────────────────────────────────────────────────────
@@ -236,6 +241,28 @@ export const doctorDashboardService = {
     return { items: Array.isArray(data) ? data : [], totalCount: 0, currentPage: 1, totalPages: 1, hasPreviousPage: false, hasNextPage: false };
   },
 
+  /** Get cases associated with a doctor (e.g. supervised cases) via /api/Cases/doctor/{docId} */
+  getCasesByDoctor: async (docId: string, status?: string, page = 1, pageSize = 10): Promise<PagedResult<PatientCaseDto>> => {
+    try {
+      const res = await api.get(`/Cases/doctor/${docId}`, { params: { status, page, pageSize } });
+      const data = res.data.data ?? res.data;
+      if (data && !Array.isArray(data)) {
+        return {
+          items: data.items ?? [],
+          totalCount: data.totalCount ?? 0,
+          currentPage: data.currentPage ?? 1,
+          totalPages: data.totalPages ?? 1,
+          hasPreviousPage: data.hasPreviousPage ?? false,
+          hasNextPage: data.hasNextPage ?? false,
+        };
+      }
+      return { items: Array.isArray(data) ? data : [], totalCount: 0, currentPage: 1, totalPages: 1, hasPreviousPage: false, hasNextPage: false };
+    } catch (error) {
+      console.error('getCasesByDoctor error:', error);
+      return { items: [], totalCount: 0, currentPage: 1, totalPages: 1, hasPreviousPage: false, hasNextPage: false };
+    }
+  },
+
   /** Get a single case by ID */
   getCaseById: async (caseId: string): Promise<PatientCaseDto> => {
     const res = await api.get(`/Cases/${caseId}`);
@@ -261,9 +288,30 @@ export const doctorDashboardService = {
     return { items: Array.isArray(data) ? data : [], totalCount: 0, currentPage: 1, totalPages: 1, hasPreviousPage: false, hasNextPage: false };
   },
 
+  /** Create a new diagnosis */
+  createDiagnosis: async (data: {
+    patientCaseId: string;
+    stage: number;
+    caseTypeId: string;
+    notes: string;
+    createdById: string;
+    role: string;
+    teethNumbers: number[];
+  }): Promise<DiagnosisDto> => {
+    const res = await api.post('/Diagnoses', data);
+    return res.data.data ?? res.data;
+  },
+
   /** Accept a diagnosis (doctor-only) */
   acceptDiagnosis: async (diagnosisId: string): Promise<void> => {
     await api.post(`/Diagnoses/${diagnosisId}/accept`);
+  },
+
+  /** Get all available case types */
+  getCaseTypes: async (page = 1, pageSize = 100): Promise<CaseTypeDto[]> => {
+    const res = await api.get('/CaseTypes', { params: { page, pageSize } });
+    const data = res.data.data ?? res.data;
+    return Array.isArray(data) ? data : (data?.items ?? []);
   },
 
   // ─── Sessions ─────────────────────────────────────────────────────────────
@@ -315,7 +363,6 @@ export const doctorDashboardService = {
     return Array.isArray(data) ? data : [];
   },
 
-  /** Search doctors by name/username/spec */
   searchDoctors: async (params: {
     name?: string;
     username?: string;
@@ -325,6 +372,40 @@ export const doctorDashboardService = {
     pageSize?: number;
   }): Promise<PagedResult<DoctorListDto>> => {
     const res = await api.get('/Doctors', { params });
+    const data = res.data.data ?? res.data;
+    if (data && !Array.isArray(data)) {
+      return {
+        items: data.items ?? [],
+        totalCount: data.totalCount ?? 0,
+        currentPage: data.currentPage ?? 1,
+        totalPages: data.totalPages ?? 1,
+        hasPreviousPage: data.hasPreviousPage ?? false,
+        hasNextPage: data.hasNextPage ?? false,
+      };
+    }
+    return { items: Array.isArray(data) ? data : [], totalCount: 0, currentPage: 1, totalPages: 1, hasPreviousPage: false, hasNextPage: false };
+  },
+
+  /** Search Case Types */
+  searchCaseTypes: async (search?: string, page = 1, pageSize = 100): Promise<PagedResult<CaseTypeDto>> => {
+    const res = await api.get('/CaseTypes', { params: { search, page, pageSize } });
+    const data = res.data.data ?? res.data;
+    if (data && !Array.isArray(data)) {
+      return {
+        items: data.items ?? [],
+        totalCount: data.totalCount ?? 0,
+        currentPage: data.currentPage ?? 1,
+        totalPages: data.totalPages ?? 1,
+        hasPreviousPage: data.hasPreviousPage ?? false,
+        hasNextPage: data.hasNextPage ?? false,
+      };
+    }
+    return { items: Array.isArray(data) ? data : [], totalCount: 0, currentPage: 1, totalPages: 1, hasPreviousPage: false, hasNextPage: false };
+  },
+
+  /** Search Patients */
+  searchPatients: async (name?: string, page = 1, pageSize = 50): Promise<PagedResult<any>> => {
+    const res = await api.get('/Patients', { params: { Name: name, pageNumber: page, pageSize } });
     const data = res.data.data ?? res.data;
     if (data && !Array.isArray(data)) {
       return {

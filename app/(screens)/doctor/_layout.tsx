@@ -20,9 +20,9 @@ export default function DoctorTabsLayout() {
         }} 
       />
       <Tabs.Screen 
-        name="pending-cases" 
+        name="cases" 
         options={{ 
-          title: t("pending"),
+          title: t("cases"),
           tabBarIcon: ({ color, size }) => <Clock size={size} color={color} /> 
         }} 
       />
@@ -49,13 +49,6 @@ export default function DoctorTabsLayout() {
       />
       <Tabs.Screen
         name="my-student/[id]"
-        options={{ 
-          // @ts-ignore
-          href: null 
-        }}
-      />
-      <Tabs.Screen
-        name="cases"
         options={{ 
           // @ts-ignore
           href: null 

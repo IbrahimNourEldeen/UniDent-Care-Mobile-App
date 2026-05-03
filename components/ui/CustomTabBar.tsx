@@ -1,5 +1,5 @@
-import React from "react";
-import { Platform, View, TouchableOpacity, Text } from "react-native";
+import React, { useState, useEffect } from "react";
+import { Platform, View, TouchableOpacity, Text, Keyboard } from "react-native";
 import { BlurView } from "expo-blur";
 import Animated, { FadeIn, FadeOut, LinearTransition } from "react-native-reanimated";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
@@ -10,10 +10,28 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
   const isDark = theme === "dark";
   const isRtl = language === "ar";
 
+  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      () => setKeyboardVisible(true)
+    );
+    const keyboardDidHideListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => setKeyboardVisible(false)
+    );
+
+    return () => {
+      keyboardDidHideListener.remove();
+      keyboardDidShowListener.remove();
+    };
+  }, []);
+
   const focusedRoute = state.routes[state.index];
   const focusedOptions = descriptors[focusedRoute.key].options;
 
-  if (focusedOptions.tabBarStyle?.display === 'none') {
+  if ((focusedOptions.tabBarStyle as any)?.display === 'none' || isKeyboardVisible) {
     return null;
   }
 

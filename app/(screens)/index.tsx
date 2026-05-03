@@ -30,7 +30,7 @@ export default function AuthBoundary() {
         return;
       }
 
-      const decoded = getDecodedToken(token);
+      const decoded = getDecodedToken(token) as any;
       if (!decoded) {
         router.replace("/(auth)/login");
         return;
@@ -38,10 +38,10 @@ export default function AuthBoundary() {
 
       if (!user) {
         const userData = await getProfileByRole(decoded.role, decoded.publicId);
-        dispatch(setUserFromReload({ user: userData, role: decoded.role }));
+        dispatch(setUserFromReload({ user: userData, role: decoded.role, token: token }));
       }
 
-      const role = decoded.role.toLowerCase();
+      const role = (decoded as any).role.toLowerCase();
       if (role === "doctor") router.replace("/(screens)/doctor");
       else if (role === "student") router.replace("/(screens)/student");
       else if (role === "patient") router.replace("/(screens)/patient");

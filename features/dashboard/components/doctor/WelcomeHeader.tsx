@@ -19,10 +19,10 @@ export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({ userName, role, in
   return (
     <View className={`flex-row items-center justify-between mb-8 ${isRtl ? 'flex-row-reverse' : ''}`}>
       <View className={`flex-1 ${isRtl ? 'items-end' : ''}`}>
-        <Text className="text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-widest mb-1.5">
+        <Text className="text-white/60 font-bold text-xs uppercase tracking-widest mb-1.5">
           {t('welcome_back')}
         </Text>
-        <Text className={`text-2xl font-black text-slate-900 dark:text-white leading-none ${isRtl ? 'text-right' : ''}`}>
+        <Text className={`text-2xl font-black text-white leading-none ${isRtl ? 'text-right' : ''}`}>
           {isRtl ? `${userName} 👋` : `${t('doctor_prefix')}${userName} 👋`}
         </Text>
       </View>

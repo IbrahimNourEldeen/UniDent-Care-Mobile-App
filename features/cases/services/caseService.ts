@@ -16,6 +16,8 @@ export const createCase = (data: {
     Title: string;
     Description: string;
     CaseTypeId: string;
+    IsPublic?: boolean;
+    UniversityId?: string;
     Images?: File[];
 }) => {
     const formData = new FormData();
@@ -23,14 +25,64 @@ export const createCase = (data: {
     formData.append("Title", data.Title);
     formData.append("Description", data.Description);
     formData.append("CaseTypeId", data.CaseTypeId);
+    
+    if (data.IsPublic !== undefined) {
+        formData.append("IsPublic", String(data.IsPublic));
+    }
+    if (data.UniversityId) {
+        formData.append("UniversityId", data.UniversityId);
+    }
 
     if (data.Images && data.Images.length > 0) {
         data.Images.forEach((image) => {
-            formData.append("Images", image);
+            formData.append("Images", image as any);
         });
     }
 
-    return api.post("/Cases", formData);
+    return api.post("/Cases", formData, {
+        headers: {
+            "Content-Type": "multipart/form-data",
+        },
+    });
+};
+
+export const createCaseAI = (data: {
+    PatientId: string;
+    Title: string;
+    Description: string;
+    CaseTypeId: string;
+    Images?: any[];
+}) => {
+    const formData = new FormData();
+    formData.append("PatientId", data.PatientId);
+    formData.append("Title", data.Title);
+    formData.append("Description", data.Description);
+    formData.append("CaseTypeId", data.CaseTypeId);
+    
+    if (data.Images && data.Images.length > 0) {
+        data.Images.forEach((image) => {
+            formData.append("Images", image as any);
+        });
+    }
+
+    return api.post("/Cases/ai/create", formData, {
+        headers: {
+            "Content-Type": "multipart/form-data",
+            "X-AI-API-KEY": "this_key_for_ai_created_by_omargamal",
+        },
+    });
+};
+
+export const createDiagnosisAI = (data: {
+    patientCaseId: string;
+    caseTypeId: string;
+    note: string;
+}) => {
+    return api.post("/Diagnoses/ai/create", data, {
+        headers: {
+            "X-AI-API-KEY": "this_key_for_ai_created_by_omargamal",
+        },
+    });
 };
 
 export async function getStudentMyCases(

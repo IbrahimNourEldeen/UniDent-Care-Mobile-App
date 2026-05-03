@@ -2,7 +2,7 @@ import React, { useRef, useEffect } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { useThemeLanguage } from '@/store/ThemeLanguageContext';
-import { ToothData } from '../../types/caseTypes';
+import { ToothData } from '../../../types/caseTypes';
 
 interface WebOdontogramProps {
     initialTeeth: ToothData[];

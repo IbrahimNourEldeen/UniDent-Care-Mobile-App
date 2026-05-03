@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
-import { ToothData } from '../../types/caseTypes';
+import { ToothData } from '../../../types/caseTypes';
 import { useThemeLanguage } from '@/store/ThemeLanguageContext';
 import { Info, X } from 'lucide-react-native';
 

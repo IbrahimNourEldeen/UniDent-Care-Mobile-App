@@ -9,6 +9,7 @@ import {
 import { useAppSelector } from '@/store/hooks';
 import { useThemeLanguage } from '@/store/ThemeLanguageContext';
 import { useQueryClient } from '@tanstack/react-query';
+import Animated, { FadeInUp } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import {
@@ -17,12 +18,15 @@ import {
   Clock,
   Layers,
   Users,
+  XCircle,
+  X,
 } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   RefreshControl,
   ScrollView,
+  StatusBar,
   Text,
   TouchableOpacity,
   View,
@@ -43,7 +47,7 @@ export default function DoctorDashboardScreen() {
 
   // ─── Data Fetching ────────────────────────────────────────────────────────
   const { data: profile, isLoading: statsLoading } = useDoctorProfile(doctorId);
-  const { ongoingCount, completedCount, isLoading: countsLoading } = useDoctorCaseCounts();
+  const { ongoingCount, completedCount, cancelledCount, underReviewCount, rejectedCount, isLoading: countsLoading } = useDoctorCaseCounts(doctorId);
   const { data: requestsData, isLoading: reqsLoading } = useDoctorRequests(doctorId, 1, 5, 0); // Pending only
   const { approveRequest, rejectRequest } = useDoctorRequestActions();
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -75,14 +79,6 @@ export default function DoctorDashboardScreen() {
   // ─── Stat Cards ───────────────────────────────────────────────────────────
   const statItems: StatItem[] = [
     {
-      label: t('total_students'),
-      value: profile?.totalStudents ?? 0,
-      icon: Users,
-      bgColor: 'bg-indigo-50 dark:bg-indigo-900/30',
-      iconColor: isDark ? '#818cf8' : '#4f46e5',
-      accentColor: 'bg-indigo-200 dark:bg-indigo-800',
-    },
-    {
       label: t('pending_requests'),
       value: profile?.pendingRequests ?? 0,
       icon: Clock,
@@ -106,6 +102,30 @@ export default function DoctorDashboardScreen() {
       iconColor: isDark ? '#34d399' : '#059669',
       accentColor: 'bg-emerald-200 dark:bg-emerald-800',
     },
+    {
+      label: t('under_review'),
+      value: underReviewCount,
+      icon: Clock,
+      bgColor: 'bg-amber-50 dark:bg-amber-900/30',
+      iconColor: isDark ? '#fbbf24' : '#d97706',
+      accentColor: 'bg-amber-200 dark:bg-amber-800',
+    },
+    {
+      label: t('cancelled_cases', 'Cancelled'),
+      value: cancelledCount,
+      icon: XCircle,
+      bgColor: 'bg-slate-50 dark:bg-slate-900/30',
+      iconColor: isDark ? '#94a3b8' : '#64748b',
+      accentColor: 'bg-slate-200 dark:bg-slate-800',
+    },
+    {
+      label: t('rejected_cases', 'Rejected'),
+      value: rejectedCount,
+      icon: X,
+      bgColor: 'bg-rose-50 dark:bg-rose-900/30',
+      iconColor: isDark ? '#fb7185' : '#e11d48',
+      accentColor: 'bg-rose-200 dark:bg-rose-800',
+    },
   ];
 
   const userName = (user as any)?.fullName ?? 'Doctor';
@@ -115,25 +135,39 @@ export default function DoctorDashboardScreen() {
   const pendingRequests = (requestsData?.items ?? []).filter(r => r.status === 'Pending');
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-950">
+    <View className="flex-1 bg-slate-50 dark:bg-slate-950">
+      <StatusBar barStyle="light-content" />
+
+      {/* Fixed Gradient Background */}
+      <View className="absolute top-0 left-0 right-0 h-[280px]">
+        <LinearGradient
+          colors={isDark ? ['#1e1b4b', '#0f172a'] : ['#3b82f6', '#4f46e5']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          className="w-full h-full rounded-b-[48px] shadow-2xl shadow-indigo-500/20"
+        />
+      </View>
+
       <ScrollView
         className="flex-1"
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor={isDark ? '#6366f1' : '#4f46e5'}
+            tintColor={isDark ? '#818cf8' : 'white'}
           />
         }
-        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 110 }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 64, paddingBottom: 110 }}
       >
         {/* Welcome Header */}
-        <WelcomeHeader
-          userName={userName}
-          role={role || ''}
-          initials={initials}
-          isDark={isDark}
-        />
+        <Animated.View entering={FadeInUp.duration(600).delay(200)}>
+          <WelcomeHeader
+            userName={userName}
+            role={role || ''}
+            initials={initials}
+            isDark={isDark}
+          />
+        </Animated.View>
 
         {/* 4-Card Stats Grid */}
         <DoctorStatsGrid stats={statItems} loading={isLoading} />
@@ -197,7 +231,7 @@ export default function DoctorDashboardScreen() {
               </View>
             )}
           </View>
-          <TouchableOpacity onPress={() => router.push('/(screens)/doctor/pending-cases' as any)} activeOpacity={0.7}>
+          <TouchableOpacity onPress={() => router.push('/(screens)/doctor/cases' as any)} activeOpacity={0.7}>
             <Text className="text-xs font-bold text-indigo-500">{t('view_all')}</Text>
           </TouchableOpacity>
         </View>
@@ -256,6 +290,6 @@ export default function DoctorDashboardScreen() {
           ))
         )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }

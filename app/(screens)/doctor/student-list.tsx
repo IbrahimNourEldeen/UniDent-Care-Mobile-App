@@ -14,6 +14,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
+import { useRouter } from 'expo-router';
 import {
   ClipboardList,
   Search,
@@ -33,7 +34,7 @@ import { useAppSelector } from '@/store/hooks';
 import { doctorDashboardService, CaseRequest, PatientCaseDto, PagedResult } from '@/features/dashboard/services/doctorDashboardService';
 import { useQuery } from '@tanstack/react-query';
 import { RequestDetailModal } from '@/features/dashboard/components/student-list/RequestDetailModal';
-import { PendingCaseDetailModal } from '@/features/dashboard/components/pending-cases/PendingCaseDetailModal';
+
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -343,6 +344,7 @@ export default function MyStudentListScreen() {
   const queryClient = useQueryClient();
 
   const doctorId = (user as any)?.publicId ?? (user as any)?.id;
+  const router = useRouter();
 
   const [activeTab, setActiveTab] = useState<TabId>('under_review');
   const [refreshing, setRefreshing] = useState(false);
@@ -616,7 +618,7 @@ export default function MyStudentListScreen() {
                   locale={locale}
                   t={t as any}
                   tabColor={currentTab.color}
-                  onPress={() => setSelectedCase(item)}
+                  onPress={() => router.push(`/case-details/${item.id}`)} 
                 />
               )
             ))
@@ -632,11 +634,7 @@ export default function MyStudentListScreen() {
         isUnderReview={activeTab === 'under_review'}
       />
 
-      <PendingCaseDetailModal 
-        caseItem={selectedCase}
-        visible={!!selectedCase}
-        onClose={() => setSelectedCase(null)}
-      />
+
     </View>
   );
 }

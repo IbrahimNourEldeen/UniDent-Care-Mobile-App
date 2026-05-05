@@ -110,7 +110,6 @@ export default function CasesGrid({
                     key={c.id}
                     caseItem={c}
                     onRequestSent={refetch}
-                    onViewDetails={() => router.push(`/case-detail/${c.id}` as any)}
                 />
             ))}
             <Pagination

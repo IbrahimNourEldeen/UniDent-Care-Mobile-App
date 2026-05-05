@@ -12,6 +12,7 @@ import { useSelector } from "react-redux";
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { useStudentDashboardData } from "@/features/dashboard/hooks/useStudentDashboardData";
+import { useStudentStats } from "@/features/dashboard/hooks/useStudentStats";
 import { RootState } from "@/store/store";
 import { useThemeLanguage } from "@/store/ThemeLanguageContext";
 
@@ -30,6 +31,7 @@ export default function StudentDashboardScreen() {
   const insets = useSafeAreaInsets();
 
   const { profile, sessions, upcomingSessions, myCases, myRequests } = useStudentDashboardData();
+  const { refetch: refetchStats } = useStudentStats();
   
   const [refreshing, setRefreshing] = useState(false);
 
@@ -40,7 +42,8 @@ export default function StudentDashboardScreen() {
       sessions.refetch(),
       upcomingSessions.refetch(),
       myCases.refetch(),
-      myRequests.refetch()
+      myRequests.refetch(),
+      refetchStats()
     ]);
     setRefreshing(false);
   };
@@ -91,12 +94,8 @@ export default function StudentDashboardScreen() {
         </Animated.View>
 
         <View className="px-5 pb-8 gap-y-4">
-          {/* Row 1: Stats Cards */}
-          <View>
-            <StatsCards />
-          </View>
+          <StatsCards />
 
-          {/* Row 2: Components */}
           <MyCurrentCases />
           <MyRequests />
           <AcademicProgress />

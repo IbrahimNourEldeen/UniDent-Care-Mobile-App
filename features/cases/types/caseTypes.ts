@@ -38,7 +38,7 @@ export type Cases = CaseCardProps["caseItem"][];
 
 export interface AvailableCasesResponse extends ApiResponse<MetaData> { }
 
-export interface CaseDetailResponse extends ApiResponse<StudentCaseItem> { }
+
 
 export interface CaseRequestBody {
     patientCasePublicId: string;

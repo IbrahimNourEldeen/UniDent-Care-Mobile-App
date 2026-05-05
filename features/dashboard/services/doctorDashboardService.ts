@@ -129,6 +129,12 @@ export const doctorDashboardService = {
     return res.data.data ?? res.data;
   },
 
+  /** Get student profile + stats */
+  getStudentDetails: async (studentId: string): Promise<any> => {
+    const res = await api.get(`/Students/${studentId}`);
+    return res.data.data ?? res.data;
+  },
+
   /** Update doctor profile */
   updateDoctorProfile: async (
     doctorId: string,

@@ -25,23 +25,23 @@ function StatItem({ label, value, IconComp, iconColor, iconBg, loading, progress
 
   if (loading) {
     return (
-      <View className={`flex-1 rounded-[22px] p-4 border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'} shadow-sm`}>
-        <View className="w-10 h-10 rounded-xl mb-3 items-center justify-center bg-slate-100 dark:bg-slate-800">
+      <View className={`flex-1 min-h-[110px] rounded-3xl p-4 border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'} shadow-sm shadow-slate-200/50 dark:shadow-none`}>
+        <View className="w-10 h-10 rounded-2xl mb-3 items-center justify-center bg-slate-100 dark:bg-slate-800">
             <ActivityIndicator size="small" color={isDark ? '#cbd5e1' : '#94a3b8'} />
         </View>
-        <View className="h-6 w-16 rounded bg-slate-200 dark:bg-slate-800 mb-2" />
-        <View className="h-3 w-24 rounded bg-slate-100 dark:bg-slate-800/60" />
+        <View className="h-6 w-12 rounded bg-slate-200 dark:bg-slate-800 mb-2" />
+        <View className="h-3 w-20 rounded bg-slate-100 dark:bg-slate-800/60" />
       </View>
     );
   }
 
   return (
-    <View className={`flex-1 rounded-[22px] p-4 border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'} shadow-sm ${isRtl ? 'items-end' : 'items-start'}`}>
-      <View className="w-10 h-10 rounded-xl items-center justify-center mb-3" style={{ backgroundColor: iconBg }}>
-        <IconComp size={20} color={iconColor} />
+    <View className={`flex-1 min-h-[110px] rounded-3xl p-4 border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'} shadow-sm shadow-slate-200/50 dark:shadow-none ${isRtl ? 'items-end' : 'items-start'}`}>
+      <View className="w-10 h-10 rounded-2xl items-center justify-center mb-3" style={{ backgroundColor: iconBg }}>
+        <IconComp size={20} color={iconColor} strokeWidth={2.5} />
       </View>
       <Text className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{value}</Text>
-      <Text className={`text-[10px] font-bold mt-1 uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`} numberOfLines={1}>
+      <Text className={`text-[10px] font-black mt-1 uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`} numberOfLines={1}>
         {label}
       </Text>
       {progress !== undefined && (
@@ -64,30 +64,42 @@ export default function StatsCards() {
       label: isRtl ? "إجمالي الحالات" : "Total Cases",
       value: stats.totalCases,
       IconComp: Briefcase,
-      iconColor: isDark ? '#60a5fa' : '#2563eb', // blue-400 : blue-600
-      iconBg: isDark ? 'rgba(30,58,138,0.2)' : '#eff6ff', // blue-900/20 : blue-50
+      iconColor: isDark ? '#60a5fa' : '#2563eb', 
+      iconBg: isDark ? 'rgba(30,58,138,0.2)' : '#eff6ff', 
     },
     {
       label: isRtl ? "طلبات معلقة" : "Pending Requests",
       value: stats.pendingRequests,
       IconComp: Clock,
-      iconColor: isDark ? '#fbbf24' : '#d97706', // amber-400 : amber-600
-      iconBg: isDark ? 'rgba(120,53,15,0.2)' : '#fffbeb', // amber-900/20 : amber-50
+      iconColor: isDark ? '#fbbf24' : '#d97706', 
+      iconBg: isDark ? 'rgba(120,53,15,0.2)' : '#fffbeb', 
     },
     {
       label: isRtl ? "معدل القبول" : "Acceptance Rate",
       value: `${requestApprovalRate}%`,
       IconComp: Percent,
-      iconColor: isDark ? '#818cf8' : '#4f46e5', // indigo-400 : indigo-600
-      iconBg: isDark ? 'rgba(49,46,129,0.2)' : '#e0e7ff', // indigo-900/20 : indigo-100
+      iconColor: isDark ? '#818cf8' : '#4f46e5', 
+      iconBg: isDark ? 'rgba(49,46,129,0.2)' : '#e0e7ff', 
       progress: requestApprovalRate,
     },
   ];
 
+  // Logic to split items into rows of 2 for first row, and 1 for subsequent
+  const firstRow = statItems.slice(0, 2);
+  const remaining = statItems.slice(2);
+
   return (
-    <View className={`flex-row flex-wrap gap-3 mb-4 ${isRtl ? 'flex-row-reverse' : ''}`}>
-      {statItems.map((item, index) => (
-        <View key={index} className={index === 2 ? "w-full" : "flex-1"} style={{ minWidth: index === 2 ? '100%' : '45%' }}>
+    <View className="mb-2">
+      {/* First Row: 2 Cards */}
+      <View className={`flex-row gap-3 mb-3 ${isRtl ? 'flex-row-reverse' : ''}`}>
+        {firstRow.map((item, index) => (
+          <StatItem key={index} loading={loading} isRtl={isRtl} {...item} />
+        ))}
+      </View>
+      
+      {/* Remaining: Full Width Cards */}
+      {remaining.map((item, index) => (
+        <View key={index} className="flex-row">
           <StatItem loading={loading} isRtl={isRtl} {...item} />
         </View>
       ))}

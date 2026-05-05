@@ -86,7 +86,11 @@ function CaseCard({ item, isDark, t }: { item: StudentCaseItem; isDark: boolean;
   const initials = (item.patientName || 'P').split(' ').filter(Boolean).map(n => n[0]).join('').toUpperCase().slice(0, 2);
 
   return (
-    <TouchableOpacity onPress={() => router.push(`/case-detail/${item.id}` as any)} activeOpacity={0.8} className={`mb-4 mx-5 rounded-[28px] p-5 shadow-lg ${isDark ? 'bg-slate-900 shadow-black/40 border border-slate-800' : 'bg-white shadow-slate-200/60 border border-slate-100'}`}>
+    <TouchableOpacity 
+      onPress={() => router.push(`/case-details/${item.id}`)}
+      activeOpacity={0.8} 
+      className={`mb-4 mx-5 rounded-[28px] p-5 shadow-lg ${isDark ? 'bg-slate-900 shadow-black/40 border border-slate-800' : 'bg-white shadow-slate-200/60 border border-slate-100'}`}
+    >
       <View className="flex-row justify-between items-start mb-4">
         <View className="flex-row items-center gap-3.5 flex-1 min-w-0">
           <View className={`w-12 h-12 rounded-[18px] items-center justify-center ${isDark ? 'bg-indigo-500/20' : 'bg-indigo-50'}`}>
@@ -136,7 +140,11 @@ function RequestCard({ item, isDark, t }: { item: StudentRequestItem; isDark: bo
   const sc = getRequestStatusConfig(item.status, isDark);
 
   return (
-    <TouchableOpacity onPress={() => router.push(`/case-detail/${item.patientCasePublicId}` as any)} activeOpacity={0.8} className={`mb-4 mx-5 rounded-[28px] p-5 shadow-lg ${isDark ? 'bg-slate-900 shadow-black/40 border border-slate-800' : 'bg-white shadow-slate-200/60 border border-slate-100'}`}>
+    <TouchableOpacity 
+      onPress={() => router.push(`/case-details/${item.patientCasePublicId || item.id}`)}
+      activeOpacity={0.8} 
+      className={`mb-4 mx-5 rounded-[28px] p-5 shadow-lg ${isDark ? 'bg-slate-900 shadow-black/40 border border-slate-800' : 'bg-white shadow-slate-200/60 border border-slate-100'}`}
+    >
       <View className="flex-row items-start justify-between gap-3 mb-4">
         <View className="flex-1 min-w-0">
           <Text className={`text-base font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-800'}`} numberOfLines={1}>{item.patientName || 'Anonymous'}</Text>

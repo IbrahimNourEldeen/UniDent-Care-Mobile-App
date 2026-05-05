@@ -95,7 +95,9 @@ export default function MyRequests() {
             scrollEnabled={false}
             contentContainerStyle={{ gap: 14 }}
             renderItem={({ item }) => (
-              <View
+              <TouchableOpacity
+                onPress={() => router.push(`/case-details/${item.patientCasePublicId || item.id}`)}
+                activeOpacity={0.7}
                 className={`p-5 rounded-2xl border ${isDark ? 'border-slate-800 bg-slate-800/20' : 'border-slate-100 bg-slate-50/50'}`}
               >
                 <View className={`flex-row items-start gap-4 mb-4 ${isRtl ? 'flex-row-reverse' : ''}`}>
@@ -127,16 +129,6 @@ export default function MyRequests() {
                   <View className={`flex-row items-center gap-3 ${isRtl ? 'flex-row-reverse' : ''}`}>
                     <TouchableOpacity
                       activeOpacity={0.7}
-                      onPress={() => router.push({ pathname: "/(screens)/case-detail/[id]", params: { id: item.patientCasePublicId } })}
-                      className={`h-10 px-4 rounded-xl items-center justify-center border ${isDark ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'}`}
-                    >
-                      <Text className={`text-xs font-bold ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>
-                        {isRtl ? "عرض" : "View"}
-                      </Text>
-                    </TouchableOpacity>
-                    
-                    <TouchableOpacity
-                      activeOpacity={0.7}
                       onPress={() => handleCancelRequest(item.id)}
                       disabled={cancellingId === item.id}
                       className={`h-10 px-4 rounded-xl items-center justify-center ${isDark ? 'bg-red-500/10' : 'bg-red-50'}`}
@@ -151,7 +143,7 @@ export default function MyRequests() {
                     </TouchableOpacity>
                   </View>
                 </View>
-              </View>
+              </TouchableOpacity>
             )}
           />
         )}

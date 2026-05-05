@@ -1,63 +1,59 @@
-import { View } from "react-native";
+import React from 'react';
+import { View } from 'react-native';
+import { useThemeLanguage } from '@/store/ThemeLanguageContext';
 
 export default function CaseDetailsSkeleton() {
-    return (
-        <View className="space-y-6">
-            {/* Hero skeleton */}
-            <View className="bg-white/80 dark:bg-slate-900/80 rounded-2xl border border-gray-100/80 dark:border-slate-800 p-5 shadow-sm">
-                <View className="flex-col gap-6">
-                    {/* Image skeleton */}
-                    <View className="space-y-3">
-                        <View className="aspect-square rounded-2xl bg-gray-100 dark:bg-slate-800 animate-pulse" />
-                        <View className="flex-row gap-2 mt-3">
-                            {[1, 2, 3].map(i => (
-                                <View key={i} className="w-[68px] h-[68px] rounded-xl bg-gray-100 dark:bg-slate-800 animate-pulse" />
-                            ))}
-                        </View>
-                    </View>
+    const { theme } = useThemeLanguage();
+    const isDark = theme === 'dark';
 
-                    {/* Info skeleton */}
-                    <View className="space-y-5 mt-4">
-                        <View className="flex-row justify-between">
-                            <View className="h-7 w-24 rounded-full bg-gray-100 dark:bg-slate-800 animate-pulse" />
-                            <View className="h-7 w-16 rounded-lg bg-gray-100 dark:bg-slate-800 animate-pulse" />
-                        </View>
-                        <View className="flex-row items-center gap-3 mt-4">
-                            <View className="w-12 h-12 rounded-2xl bg-gray-100 dark:bg-slate-800 animate-pulse" />
-                            <View className="flex-1">
-                                <View className="h-6 w-48 rounded-lg bg-gray-100 dark:bg-slate-800 animate-pulse" />
-                                <View className="h-4 w-28 rounded bg-gray-50 dark:bg-slate-800/50 animate-pulse mt-2" />
-                            </View>
-                        </View>
-                        <View className="h-[1px] bg-gray-100 dark:bg-slate-800 my-4" />
-                        <View className="space-y-2">
-                            <View className="h-4 w-full rounded bg-gray-50 dark:bg-slate-800/50 animate-pulse" />
-                            <View className="h-4 w-4/5 rounded bg-gray-50 dark:bg-slate-800/50 animate-pulse mt-2" />
-                        </View>
-                        <View className="flex-row flex-wrap gap-3 mt-4">
-                            {[1, 2, 3, 4].map(i => (
-                                <View key={i} className="h-16 w-[47%] rounded-xl bg-gray-50 dark:bg-slate-800/50 border border-gray-100/50 dark:border-slate-700 animate-pulse" />
-                            ))}
-                        </View>
-                        <View className="h-[1px] bg-gray-100 dark:bg-slate-800 my-4" />
-                        <View className="h-12 rounded-xl bg-gray-100 dark:bg-slate-800 animate-pulse" />
+    const shimmer = isDark ? 'bg-slate-800' : 'bg-slate-100';
+    const cardBg = isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100';
+
+    return (
+        <View className="space-y-6 px-5 mt-4">
+            {/* Hero skeleton */}
+            <View className={`rounded-3xl border shadow-sm p-5 ${cardBg}`}>
+                <View className="flex-row justify-between mb-5">
+                    <View className={`h-7 w-24 rounded-full ${shimmer}`} />
+                    <View className={`h-7 w-16 rounded-lg ${shimmer}`} />
+                </View>
+                
+                <View className="flex-row items-center gap-4 mb-6">
+                    <View className={`w-14 h-14 rounded-[22px] ${shimmer}`} />
+                    <View className="flex-1 space-y-2">
+                        <View className={`h-6 w-48 rounded-lg ${shimmer}`} />
+                        <View className={`h-4 w-28 rounded-md ${shimmer}`} />
                     </View>
                 </View>
+
+                <View className={`h-px mb-6 ${isDark ? 'bg-slate-800/80' : 'bg-slate-100'}`} />
+
+                {/* Info grid */}
+                <View className="flex-row flex-wrap justify-between gap-y-3 mb-6">
+                    {[1, 2, 3, 4].map(i => (
+                        <View key={i} className={`w-[48%] h-16 rounded-xl ${shimmer}`} />
+                    ))}
+                </View>
+
+                <View className={`h-px mb-6 ${isDark ? 'bg-slate-800/80' : 'bg-slate-100'}`} />
+
+                {/* Progress bar mock */}
+                <View className={`h-12 rounded-2xl ${shimmer}`} />
             </View>
 
             {/* Tabs skeleton */}
-            <View className="bg-white/80 dark:bg-slate-900/80 rounded-2xl border border-gray-100/80 dark:border-slate-800 p-4 shadow-sm mt-6">
-                <View className="flex-row border-b border-gray-100/80 dark:border-slate-800 pb-2 mb-4">
+            <View className={`rounded-3xl border shadow-sm overflow-hidden ${cardBg}`}>
+                <View className={`flex-row border-b px-2 py-2 ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
                     {[1, 2, 3].map(i => (
-                        <View key={i} className="h-10 w-24 rounded-lg bg-gray-50 dark:bg-slate-800 mx-1 animate-pulse" />
+                        <View key={i} className={`h-10 w-24 rounded-lg mx-1 ${shimmer}`} />
                     ))}
                 </View>
-                <View className="space-y-4">
-                    <View className="h-5 w-40 rounded bg-gray-100 dark:bg-slate-800 animate-pulse" />
-                    <View className="space-y-2 mt-4">
-                        <View className="h-4 w-full rounded bg-gray-50 dark:bg-slate-800/50 animate-pulse" />
-                        <View className="h-4 w-3/4 rounded bg-gray-50 dark:bg-slate-800/50 animate-pulse mt-2" />
-                        <View className="h-4 w-1/2 rounded bg-gray-50 dark:bg-slate-800/50 animate-pulse mt-2" />
+                <View className="p-6 space-y-4">
+                    <View className={`h-5 w-40 rounded-lg ${shimmer}`} />
+                    <View className="space-y-3 mt-4">
+                        <View className={`h-4 w-full rounded-md ${shimmer}`} />
+                        <View className={`h-4 w-3/4 rounded-md ${shimmer}`} />
+                        <View className={`h-4 w-1/2 rounded-md ${shimmer}`} />
                     </View>
                 </View>
             </View>

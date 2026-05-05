@@ -6,14 +6,13 @@ import { useThemeLanguage } from '@/store/ThemeLanguageContext';
 import { useDispatch } from 'react-redux';
 import { showToast } from '@/store/slices/uiSlice';
 
-import { useCaseDetails } from '../hooks/useCaseDetails';
+// import { useCaseDetails } from '../hooks/useCaseDetails';
 import { useSessionDetails } from '../hooks/useSessionDetails';
 
 import ActionModal from '@/components/common/ActionModal';
 import SessionTopBar from '../components/StartSession/SessionTopBar';
-import PatientSummaryCard from '../components/StartSession/PatientSummaryCard';
 import SessionWorkspace from '../components/StartSession/SessionWorkspace';
-import DentalImageGallery from '../components/CaseDetails/Clinical/DentalImageGallery';
+// import DentalImageGallery from '../components/CaseDetails/Clinical/DentalImageGallery';
 
 interface StartSessionScreenProps {
     caseId: string;
@@ -27,7 +26,7 @@ export default function StartSessionScreen({ caseId, sessionId }: StartSessionSc
     const insets = useSafeAreaInsets();
     const dispatch = useDispatch();
 
-    const { patient, isLoading: caseLoading } = useCaseDetails(caseId);
+    // const { patient, isLoading: caseLoading } = useCaseDetails(caseId);
     const { 
         session, 
         notes, 
@@ -40,7 +39,7 @@ export default function StartSessionScreen({ caseId, sessionId }: StartSessionSc
     const [showEndModal, setShowEndModal] = useState(false);
     const [endSessionLoading, setEndSessionLoading] = useState(false);
 
-    const isLoading = caseLoading || sessionLoading;
+    const isLoading = sessionLoading;
 
     const bgClass = isDark ? 'bg-[#020617]' : 'bg-slate-50';
 
@@ -55,11 +54,11 @@ export default function StartSessionScreen({ caseId, sessionId }: StartSessionSc
         );
     }
 
-    if (!patient || !session) {
+    if (!session) {
         return (
             <View className={`flex-1 ${bgClass} justify-center items-center`} style={{ paddingTop: insets.top }}>
                 <Text className={`font-bold text-lg ${isDark ? 'text-white' : 'text-slate-800'}`}>
-                    Session or Case not found.
+                    Session not found.
                 </Text>
             </View>
         );
@@ -71,7 +70,7 @@ export default function StartSessionScreen({ caseId, sessionId }: StartSessionSc
             await updateStatus('Done');
             setShowEndModal(false);
             dispatch(showToast({ message: "Session completed successfully", type: "success" }));
-            router.replace(`/(screens)/case-detail/${caseId}` as any);
+            router.replace('/(tabs)/student-dashboard' as any); // Redirect to dashboard instead of case-detail
         } catch (error) {
             dispatch(showToast({ message: "Failed to end session", type: "error" }));
         } finally {
@@ -90,7 +89,7 @@ export default function StartSessionScreen({ caseId, sessionId }: StartSessionSc
                     <View className="px-5 space-y-6">
                         {/* ═══ Top Bar ═══ */}
                         <SessionTopBar
-                            patientName={patient.patientName || ""}
+                            patientName={session.patientName || ""}
                             sessionId={sessionId}
                             caseId={caseId}
                             onEndSession={() => setShowEndModal(true)}
@@ -100,14 +99,15 @@ export default function StartSessionScreen({ caseId, sessionId }: StartSessionSc
                         />
 
                         {/* ═══ Patient Summary ═══ */}
-                        <PatientSummaryCard patient={patient} isDark={isDark} />
+                        <View className={`rounded-[32px] p-6 border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+                            <Text className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                                {session.patientName}
+                            </Text>
+                            <Text className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                                {session.treatmentType || "Clinical Session"}
+                            </Text>
+                        </View>
 
-                        {/* ═══ Image Gallery ═══ */}
-                        {patient.imageUrls && patient.imageUrls.length > 0 && (
-                            <View className="-mx-5">
-                                <DentalImageGallery images={patient.imageUrls} isDark={isDark} />
-                            </View>
-                        )}
 
                         {/* ═══ Session Workspace ═══ */}
                         <SessionWorkspace

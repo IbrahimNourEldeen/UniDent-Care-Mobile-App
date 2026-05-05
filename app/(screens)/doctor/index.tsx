@@ -253,8 +253,10 @@ export default function DoctorDashboardScreen() {
           </View>
         ) : (
           pendingRequests.map((req) => (
-            <View
+            <TouchableOpacity
               key={req.id}
+              activeOpacity={0.7}
+              onPress={() => router.push(`/case-details/${req.patientCasePublicId || req.id}`)}
               className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm dark:shadow-none mb-3 overflow-hidden"
             >
               <View className={`flex-row items-center p-4 gap-4 ${isRtl ? 'flex-row-reverse' : ''}`}>
@@ -286,7 +288,7 @@ export default function DoctorDashboardScreen() {
                   <CheckCircle2 size={18} color={isDark ? '#34d399' : '#059669'} />
                 </TouchableOpacity>
               </View>
-            </View>
+            </TouchableOpacity>
           ))
         )}
       </ScrollView>

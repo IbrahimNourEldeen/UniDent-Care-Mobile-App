@@ -61,10 +61,8 @@ export const ApprovedRequestsList: React.FC<ApprovedRequestsListProps> = ({ requ
         contentContainerStyle={{ paddingHorizontal: 4, paddingBottom: 8 }}
       >
         {approvedRequests.map((req) => (
-          <TouchableOpacity
+          <View
             key={req.id}
-            activeOpacity={0.8}
-            onPress={() => router.push(`/(screens)/case-detail/${req.id}` as any)} // Note: req.id might be request id or case id? Usually we want case details.
             className={`w-80 bg-white dark:bg-slate-900 rounded-[32px] p-5 ${isRtl ? 'ml-4' : 'mr-4'} border border-slate-100 dark:border-slate-800 shadow-sm`}
           >
             <View className={`flex-row items-center gap-4 mb-4 ${isRtl ? 'flex-row-reverse' : ''}`}>
@@ -95,16 +93,7 @@ export const ApprovedRequestsList: React.FC<ApprovedRequestsListProps> = ({ requ
                 {req.caseName}
               </Text>
             </View>
-
-            <View className={`flex-row items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-3 ${isRtl ? 'flex-row-reverse' : ''}`}>
-              <Text className="text-xs font-bold text-indigo-600 dark:text-indigo-400">
-                {isRtl ? 'عرض التفاصيل' : 'View Details'}
-              </Text>
-              <View className={isRtl ? 'rotate-180' : ''}>
-                <ChevronRight size={14} color={isDark ? '#818cf8' : '#4f46e5'} />
-              </View>
-            </View>
-          </TouchableOpacity>
+          </View>
         ))}
       </ScrollView>
     </View>

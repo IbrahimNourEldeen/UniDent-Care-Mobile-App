@@ -57,10 +57,8 @@ export const EvaluateCases: React.FC<EvaluateCasesProps> = ({ cases, loading, is
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 4, paddingBottom: 8 }}>
         {cases.map((c) => (
-          <TouchableOpacity
+          <View
             key={c.id}
-            activeOpacity={0.8}
-            onPress={() => router.push(`/(screens)/case-detail/${c.id}` as any)}
             className={`w-72 bg-white dark:bg-slate-900 rounded-3xl p-5 ${isRtl ? 'ml-4' : 'mr-4'} border border-purple-100 dark:border-purple-900/30 shadow-sm shadow-purple-100 dark:shadow-none`}
           >
             <View className={`flex-row justify-between items-start mb-3 ${isRtl ? 'flex-row-reverse' : ''}`}>
@@ -90,16 +88,7 @@ export const EvaluateCases: React.FC<EvaluateCasesProps> = ({ cases, loading, is
                 <Text className="font-bold text-slate-700 dark:text-slate-300">{t('student')}: </Text>{c.assignedStudentId ? t('assigned') : t('unknown')}
               </Text>
             </View>
-
-            <View className={`flex-row items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-3 ${isRtl ? 'flex-row-reverse' : ''}`}>
-              <Text className="text-xs font-bold text-purple-600 dark:text-purple-400">
-                {t('review_case')}
-              </Text>
-              <View className={isRtl ? 'rotate-180' : ''}>
-                <ChevronRight size={14} color={isDark ? '#c084fc' : '#9333ea'} />
-              </View>
-            </View>
-          </TouchableOpacity>
+          </View>
         ))}
       </ScrollView>
     </View>

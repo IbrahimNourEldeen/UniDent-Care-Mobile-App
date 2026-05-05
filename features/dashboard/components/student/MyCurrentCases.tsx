@@ -58,8 +58,8 @@ export default function MyCurrentCases() {
             contentContainerStyle={{ gap: 14 }}
             renderItem={({ item }) => (
               <TouchableOpacity
+                onPress={() => router.push(`/case-details/${item.id}`)}
                 activeOpacity={0.7}
-                onPress={() => router.push({ pathname: "/(screens)/case-detail/[id]", params: { id: item.id } })}
                 className={`p-5 rounded-2xl border ${isDark ? 'border-slate-800 bg-slate-800/20' : 'border-slate-100 bg-slate-50/50'}`}
               >
                 <View className={`flex-row items-center gap-4 ${isRtl ? 'flex-row-reverse' : ''}`}>

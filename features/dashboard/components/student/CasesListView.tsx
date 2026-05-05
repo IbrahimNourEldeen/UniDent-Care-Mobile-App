@@ -11,6 +11,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { CaseItem } from '@/features/cases/types/caseTypes';
 import { useThemeLanguage } from '@/store/ThemeLanguageContext';
+import { useRouter } from 'expo-router';
 
 interface CasesListRowProps {
   caseItem: CaseItem;
@@ -21,10 +22,15 @@ function CasesListRow({ caseItem, onRequest }: CasesListRowProps) {
   const { t } = useTranslation();
   const { theme } = useThemeLanguage();
   const isDark = theme === 'dark';
+  const router = useRouter();
   const isAvailable = caseItem.status === 'Available';
 
   return (
-    <View className="bg-white dark:bg-slate-900 px-5 py-4 border-b border-slate-50 dark:border-slate-800/60 flex-row items-center gap-3">
+    <TouchableOpacity 
+      onPress={() => router.push(`/case-details/${caseItem.id}`)}
+      activeOpacity={0.7}
+      className="bg-white dark:bg-slate-900 px-5 py-4 border-b border-slate-50 dark:border-slate-800/60 flex-row items-center gap-3"
+    >
       {/* Icon */}
       <View className="w-11 h-11 rounded-2xl bg-blue-50 dark:bg-blue-900/30 items-center justify-center shrink-0">
         <User size={20} color={isDark ? '#60a5fa' : '#2563eb'} />
@@ -72,7 +78,7 @@ function CasesListRow({ caseItem, onRequest }: CasesListRowProps) {
         <Send size={12} color="white" />
         <Text className="text-white text-xs font-black">{t('apply_action')}</Text>
       </TouchableOpacity>
-    </View>
+    </TouchableOpacity>
   );
 }
 

@@ -147,9 +147,7 @@ export default function MyCasesPatientScreen() {
                         <PatientCaseCard 
                             item={item} 
                             index={index} 
-                            onPress={() => {
-                                router.push(`/(screens)/case-detail/${item.id}` as any);
-                            }} 
+                            onPress={() => router.push(`/case-details/${item.id}`)} 
                         />
                     </Animated.View>
                 )}

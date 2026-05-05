@@ -171,7 +171,7 @@ function PendingCaseCard({
   );
 }
 
-import { PendingCaseDetailModal } from '@/features/dashboard/components/pending-cases/PendingCaseDetailModal';
+
 import { useDoctorCaseCounts } from '@/features/dashboard/hooks/useDoctorQueries';
 
 // ─── Main Screen ─────────────────────────────────────────────────────────────
@@ -385,7 +385,7 @@ export default function CasesScreen() {
                     item={item}
                     isDark={isDark}
                     locale={locale}
-                    onPress={() => setSelectedCase(item)}
+                    onPress={() => router.push(`/case-details/${item.id}`)} 
                   />
                 ))
               )}
@@ -406,11 +406,7 @@ export default function CasesScreen() {
         </View>
       </ScrollView>
 
-      <PendingCaseDetailModal 
-        caseItem={selectedCase}
-        visible={!!selectedCase}
-        onClose={() => setSelectedCase(null)}
-      />
+
     </View>
   );
 }

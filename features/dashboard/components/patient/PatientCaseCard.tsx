@@ -1,5 +1,5 @@
 import { useThemeLanguage } from '@/store/ThemeLanguageContext';
-import { Calendar, ChevronRight, ClipboardList, School } from 'lucide-react-native';
+import { Calendar, ClipboardList, School, User, Hash } from 'lucide-react-native';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Text, TouchableOpacity, View } from 'react-native';
@@ -31,88 +31,105 @@ export default function PatientCaseCard({ item, onPress, index = 0 }: { item: an
     };
 
     const getStatusColors = (status: any) => {
-        if (status === undefined || status === null) return "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-700";
+        if (status === undefined || status === null) return { bg: "bg-slate-100", text: "text-slate-600", dot: "#64748b" };
         
         let text = "";
         if (typeof status === 'number') {
             if (status === 0) text = "pending";
             else if (status === 1) text = "in progress";
             else if (status === 2) text = "completed";
+            else if (status === 4) text = "underreview";
         } else {
             text = status.toLowerCase();
         }
 
         switch(text) {
             case "approved": 
-            case "status_approved":
-                return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/50";
+                return { bg: isDark ? "bg-emerald-500/20" : "bg-emerald-50 border border-emerald-100", text: isDark ? "text-emerald-400" : "text-emerald-700", dot: "#10b981" };
             case "pending": 
-            case "status_pending":
-                return "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200 dark:border-amber-800/50";
+                return { bg: isDark ? "bg-amber-500/20" : "bg-amber-50 border border-amber-100", text: isDark ? "text-amber-400" : "text-amber-700", dot: "#f59e0b" };
             case "in progress": 
             case "inprogress":
-            case "status_in_progress":
-                return "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200 dark:border-blue-800/50";
+                return { bg: isDark ? "bg-blue-500/20" : "bg-blue-50 border border-blue-100", text: isDark ? "text-blue-400" : "text-blue-700", dot: "#3b82f6" };
             case "completed": 
-            case "status_completed":
-                return "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 border-purple-200 dark:border-purple-800/50";
-            default: return "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-700";
+                return { bg: isDark ? "bg-purple-500/20" : "bg-purple-50 border border-purple-100", text: isDark ? "text-purple-400" : "text-purple-700", dot: "#a855f7" };
+            case "underreview":
+            case "under review":
+                return { bg: isDark ? "bg-cyan-500/20" : "bg-cyan-50 border border-cyan-100", text: isDark ? "text-cyan-400" : "text-cyan-700", dot: "#06b6d4" };
+            default: 
+                return { bg: isDark ? "bg-slate-800" : "bg-slate-50 border border-slate-100", text: isDark ? "text-slate-400" : "text-slate-500", dot: "#94a3b8" };
         }
     };
 
-    const statusStyle = getStatusColors(item.processStatus || item.status);
+    const statusConfig = getStatusColors(item.processStatus || item.status);
+    const diagnosis = item.diagnosisdto || (item.diagnoses && item.diagnoses.length > 0 ? item.diagnoses[0] : null) || item.diagnosisDto;
+    // Follow swagger.json naming: caseTypeName or fallback to caseType (string) or caseType.name (object)
+    const caseType = diagnosis?.caseTypeName || diagnosis?.caseType || item.caseType?.name || item.title || t("unknown_type");
+    const patientName = item.patientFullName || item.patientName || t("patient");
+    const initials = patientName.split(' ').slice(0, 2).map((n: string) => n[0]).join('').toUpperCase();
 
     return (
         <Animated.View entering={FadeInUp.delay(index * 100).springify()}>
-            <View className="bg-white dark:bg-slate-900 rounded-3xl p-5 mb-4 border border-slate-100 dark:border-slate-800 shadow-sm dark:shadow-none">
-                {/* Header */}
-                <View className={`flex-row justify-between items-start mb-4 ${isRtl ? 'flex-row-reverse' : ''}`}>
-                    <View className={`flex-1 flex-row items-center ${isRtl ? 'flex-row-reverse' : ''}`}>
-                        <View className={`w-12 h-12 bg-indigo-50 dark:bg-indigo-900/30 rounded-2xl items-center justify-center border border-indigo-100 dark:border-indigo-800/50 ${isRtl ? 'ml-3' : 'mr-3'}`}>
-                            <ClipboardList size={22} color={isDark ? "#818cf8" : "#4f46e5"} />
-                        </View>
-                        <View className={`flex-1 ${isRtl ? 'pl-2 items-end' : 'pr-2'}`}>
-                            <Text className={`text-base font-black text-slate-900 dark:text-white ${isRtl ? 'text-right' : ''}`} numberOfLines={1}>
-                                {item.diagnosisdto?.caseType || item.diagnosisDto?.caseType || item.caseType?.name || item.title || t("unknown_type")}
-                            </Text>
-                            <Text className={`text-xs text-slate-500 dark:text-slate-400 mt-0.5 ${isRtl ? 'text-right' : ''}`} numberOfLines={1}>
-                                #{item.id ? item.id.slice(-6).toUpperCase() : "..."}
-                            </Text>
-                        </View>
-                    </View>
-                    
-                    <View className={`px-3 py-1.5 rounded-full border ${statusStyle}`}>
-                        <Text className="text-[10px] font-black uppercase tracking-wider">{getStatusText(item.processStatus || item.status)}</Text>
-                    </View>
-                </View>
-
-                {/* Content Details */}
-                <View className={`flex-row items-center gap-x-6 gap-y-2 flex-wrap mb-4 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-2xl ${isRtl ? 'flex-row-reverse' : ''}`}>
-                    <View className={`flex-row items-center gap-1.5 ${isRtl ? 'flex-row-reverse' : ''}`}>
-                        <School size={14} color={isDark ? "#94a3b8" : "#64748b"} />
-                        <Text className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                            {item.universityName || t("university")}
+            <TouchableOpacity 
+                activeOpacity={0.85}
+                onPress={onPress}
+                className={`bg-white dark:bg-slate-900 rounded-[32px] p-6 mb-5 border shadow-xl ${isDark ? 'border-slate-800 shadow-black/50' : 'border-slate-100 shadow-indigo-900/5'}`}
+            >
+                {/* Status Bar */}
+                <View className={`flex-row justify-between items-center mb-5 ${isRtl ? 'flex-row-reverse' : ''}`}>
+                    <View className={`px-4 py-1.5 rounded-full flex-row items-center gap-2 ${statusConfig.bg}`}>
+                        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: statusConfig.dot }} />
+                        <Text className={`text-[10px] font-black uppercase tracking-widest ${statusConfig.text}`}>
+                            {getStatusText(item.processStatus || item.status)}
                         </Text>
                     </View>
                     <View className={`flex-row items-center gap-1.5 ${isRtl ? 'flex-row-reverse' : ''}`}>
-                        <Calendar size={14} color={isDark ? "#94a3b8" : "#64748b"} />
-                        <Text className="text-xs font-medium text-slate-600 dark:text-slate-400">
-                            {item.createAt ? new Date(item.createAt).toLocaleDateString(isRtl ? 'ar-EG' : 'en-US') : "N/A"}
-                        </Text>
+                        {/* ID hidden as requested */}
                     </View>
                 </View>
 
-                {/* Footer / Actions */}
-                <TouchableOpacity 
-                    onPress={onPress}
-                    className={`flex-row items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-4 ${isRtl ? 'flex-row-reverse' : ''}`}
-                >
-                    <Text className="text-sm font-bold text-indigo-600 dark:text-indigo-400">{t("view_details")}</Text>
-                    <View className={`bg-indigo-50 dark:bg-indigo-900/30 p-2 rounded-full ${isRtl ? 'rotate-180' : ''}`}>
-                        <ChevronRight size={16} color={isDark ? "#818cf8" : "#4f46e5"} />
+                {/* Main Info: Hero Section */}
+                <View className={`flex-row items-center mb-6 ${isRtl ? 'flex-row-reverse' : ''}`}>
+                    <View className={`w-14 h-14 rounded-[22px] items-center justify-center ${isDark ? 'bg-indigo-600/20' : 'bg-indigo-50 border border-indigo-100'} ${isRtl ? 'ml-4' : 'mr-4'}`}>
+                        <Text className={`text-lg font-black ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`}>{initials}</Text>
                     </View>
-                </TouchableOpacity>
-            </View>
+                    <View className={`flex-1 ${isRtl ? 'items-end' : 'items-start'}`}>
+                        <Text className={`text-lg font-black tracking-tight leading-6 ${isDark ? 'text-white' : 'text-slate-900'}`} numberOfLines={1}>
+                            {patientName}
+                        </Text>
+                        <View className={`flex-row items-center gap-2 mt-1 ${isRtl ? 'flex-row-reverse' : ''}`}>
+                            <Text className={`text-xs font-bold ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`}>{caseType}</Text>
+                            {/* Description/Notes hidden as requested */}
+                        </View>
+                    </View>
+                </View>
+
+                {/* Metadata Grid */}
+                <View className={`flex-row items-center p-4 rounded-[24px] ${isDark ? 'bg-slate-800/50' : 'bg-slate-50 border border-slate-100/50'} ${isRtl ? 'flex-row-reverse' : ''}`}>
+                    <View className={`flex-1 items-center ${isRtl ? 'border-l' : 'border-r'} border-slate-200/20 dark:border-slate-700`}>
+                        <Text className={`text-[9px] font-black uppercase tracking-tight mb-1.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                            {isRtl ? "الجامعة" : "University"}
+                        </Text>
+                        <View className={`flex-row items-center gap-1.5 ${isRtl ? 'flex-row-reverse' : ''}`}>
+                            <School size={12} color={isDark ? "#818cf8" : "#4f46e5"} />
+                            <Text className={`text-xs font-bold ${isDark ? 'text-slate-200' : 'text-slate-800'}`} numberOfLines={1}>
+                                {item.universityName || "__"}
+                            </Text>
+                        </View>
+                    </View>
+                    <View className="flex-1 items-center">
+                        <Text className={`text-[9px] font-black uppercase tracking-tight mb-1.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                            {isRtl ? "تاريخ الحالة" : "Case Date"}
+                        </Text>
+                        <View className={`flex-row items-center gap-1.5 ${isRtl ? 'flex-row-reverse' : ''}`}>
+                            <Calendar size={12} color={isDark ? "#60a5fa" : "#2563eb"} />
+                            <Text className={`text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+                                {item.createAt ? new Date(item.createAt).toLocaleDateString(isRtl ? 'ar-EG' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : "N/A"}
+                            </Text>
+                        </View>
+                    </View>
+                </View>
+            </TouchableOpacity>
         </Animated.View>
     );
 }

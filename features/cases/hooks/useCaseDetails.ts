@@ -1,86 +1,92 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState, useEffect, useCallback } from "react";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store/store";
+import { StudentCaseItem, DiagnosisDto } from "../types/caseTypes";
+import { doctorDashboardService } from "@/features/dashboard/services/doctorDashboardService";
+import { Alert } from "react-native";
 
-import { getCaseById, getCaseStatuses, updateCaseStatus } from '../services/caseService';
-import { caseKeys } from './caseQueryKeys';
+export type CaseStatus = "Pending" | "InProgress" | "Completed" | "Cancelled" | "UnderReview" | "Rejected" | string;
 
-export function useCaseDetails(caseId: string) {
-  const queryClient = useQueryClient();
+interface UseCaseDetailsReturn {
+    patient: StudentCaseItem | null;
+    isLoading: boolean;
+    status: CaseStatus;
+    role: string | null;
+    studentId: string | null;
+    refetch: () => void;
+}
 
-  const { data: patient, isLoading, refetch } = useQuery({
-    queryKey: caseKeys.detail(caseId),
-    queryFn: async () => {
-      const res = await getCaseById(caseId);
-      if (res.success && res.data) return res.data;
-      throw new Error(res.message ?? 'Failed to load case');
-    },
-    enabled: !!caseId,
-  });
+export function useCaseDetails(caseId: string): UseCaseDetailsReturn {
+    const role = useSelector((state: RootState) => state.auth.role);
+    const user = useSelector((state: RootState) => state.auth.user);
+    const studentId = (user as any)?.publicId ?? null;
+    
+    const [patient, setPatient] = useState<StudentCaseItem | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [status, setStatus] = useState<CaseStatus>("Pending");
 
+    const fetchCaseData = useCallback(async () => { 
+        if (!caseId) return;
+        setIsLoading(true);
+        try {
+            const [caseData, diagnosesResponse] = await Promise.all([
+                doctorDashboardService.getCaseById(caseId),
+                doctorDashboardService.getDiagnosesForCase(caseId)
+            ]);
 
+            if (caseData) {
+                // Adapt the data to StudentCaseItem interface
+                let mappedStatus = caseData.status || "Pending";
+                if (mappedStatus.toLowerCase() === 'inprogress') mappedStatus = 'InProgress';
+                if (mappedStatus.toLowerCase() === 'underreview') mappedStatus = 'UnderReview';
 
-  const { data: statuses } = useQuery({
-    queryKey: ['caseStatuses'],
-    queryFn: getCaseStatuses,
-    staleTime: 1000 * 60 * 60, // 1 hour
-  });
+                setStatus(mappedStatus);
 
-  const statusMutation = useMutation({
-    mutationFn: async (newStatus: string) => {
-      // Map string status to numeric Enum
-      // First try to find in fetched statuses
-      let numericStatus: string;
-      
-      const foundStatus = statuses?.find(s => 
-        s.name.toLowerCase() === newStatus.toLowerCase() || 
-        s.value.toString() === newStatus
-      );
+                const diagnoses = diagnosesResponse?.items || [];
 
-      if (foundStatus) {
-        numericStatus = foundStatus.value.toString();
-      } else {
-        // Fallback to hardcoded map if API fails or status not found
-        const statusMap: Record<string, string> = {
-          'Pending': '0',
-          'InProgress': '1',
-          'Completed': '2',
-          'Cancelled': '3',
-          'UnderReview': '4',
-          'Rejected': '5',
-        };
-        numericStatus = statusMap[newStatus] || newStatus;
-      }
-      console.log('--- Case Status Update Request ---');
-      console.log('Case ID:', caseId);
-      console.log('New Status (Name):', newStatus);
-      console.log('Mapped Numeric Status:', numericStatus);
-      console.log('Payload:', JSON.stringify({ status: numericStatus }, null, 2));
+                const mappedPatient: StudentCaseItem = {
+                    ...caseData,
+                    status: mappedStatus,
+                    diagnoses: diagnoses,
+                    diagnosisdto: diagnoses.length > 0 ? diagnoses[0] : null,
+                    // Ensure mandatory fields from StudentCaseItem are present
+                    assignedStudentId: caseData.assignedStudentId || "",
+                    assignedDoctorId: caseData.assignedDoctorId || "",
+                    universityId: caseData.universityId || "",
+                    universityName: caseData.universityName || "",
+                    createdById: caseData.createdById || "",
+                    createdByRole: caseData.createdByRole || "",
+                    imageUrls: caseData.imageUrls || [],
+                    userFlags: caseData.userFlags || {
+                        isOwner: false,
+                        role: "",
+                        isAssignedDoctor: false,
+                        isAssignedStudent: false,
+                        isAssignedToMe: false,
+                        hasRequest: false,
+                        requestId: "",
+                        requestStatus: ""
+                    },
+                    availableActions: caseData.availableActions || [],
+                    totalSessions: caseData.totalSessions || 0,
+                    hasEvaluatedSession: caseData.hasEvaluatedSession || false,
+                    pendingRequests: caseData.pendingRequests || 0,
+                    processStatus: caseData.processStatus || mappedStatus,
+                } as StudentCaseItem;
 
-      const res = await updateCaseStatus(caseId, numericStatus);
+                setPatient(mappedPatient);
+            }
+        } catch (err: any) {
+            console.error('[useCaseDetails] Error:', err);
+            Alert.alert("Error", err.message || "An error occurred while fetching case details.");
+        } finally {
+            setIsLoading(false);
+        }
+    }, [caseId]);
 
-      console.log('--- Case Status Update Response ---');
-      console.log('Response Body:', JSON.stringify(res, null, 2));
+    useEffect(() => {
+        fetchCaseData();
+    }, [fetchCaseData]);
 
-      if (!res.success) {
-        throw new Error(res.message || 'Status update failed');
-      }
-      return res;
-    },
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: caseKeys.detail(caseId) }),
-        queryClient.invalidateQueries({ queryKey: caseKeys.all }),
-        queryClient.refetchQueries({ queryKey: caseKeys.detail(caseId) }),
-      ]);
-      refetch(); // Explicitly call refetch from useQuery
-    },
-  });
-
-  return {
-    patient: patient ?? null,
-    isLoading,
-    refetch,
-    statuses: statuses ?? [],
-    updateStatus: statusMutation.mutateAsync,
-    isUpdatingStatus: statusMutation.isPending,
-  };
+    return { patient, isLoading, status, role: role || null, studentId, refetch: fetchCaseData };
 }

@@ -9,13 +9,13 @@ import { CaseItem } from '@/features/cases/types/caseTypes';
 import api from '@/utils/api';
 import { DoctorPicker } from '@/components/auth/DoctorPicker';
 import { DoctorListDto } from '@/features/dashboard/services/doctorDashboardService';
+import { useRouter } from 'expo-router';
 
 const { width } = Dimensions.get('window');
 
 interface CaseCardProps {
   caseItem: CaseItem;
   onRequestSent?: () => void;
-  onViewDetails?: () => void;
 }
 
 function SendRequestModal({
@@ -157,10 +157,11 @@ function SendRequestModal({
   );
 }
 
-export default function CaseCard({ caseItem, onRequestSent, onViewDetails }: CaseCardProps) {
+export default function CaseCard({ caseItem, onRequestSent }: CaseCardProps) {
   const { t } = useTranslation();
   const { theme } = useThemeLanguage();
   const isDark = theme === 'dark';
+  const router = useRouter();
   const [showModal, setShowModal] = useState(false);
 
   const statusStyles = caseItem.status === 'Available'
@@ -172,8 +173,8 @@ export default function CaseCard({ caseItem, onRequestSent, onViewDetails }: Cas
   return (
     <>
       <TouchableOpacity
+        onPress={() => router.push(`/case-details/${caseItem.id}`)}
         activeOpacity={0.85}
-        onPress={onViewDetails}
         className={`rounded-[32px] p-6 mb-5 border shadow-xl ${isDark ? 'bg-slate-900 border-slate-800 shadow-black/50' : 'bg-white border-slate-100 shadow-indigo-900/5'}`}
       >
         {/* Header: Status + Sessions */}
@@ -230,17 +231,11 @@ export default function CaseCard({ caseItem, onRequestSent, onViewDetails }: Cas
 
         {/* Action Buttons */}
         <View className="flex-row gap-3">
-          <TouchableOpacity
-            onPress={onViewDetails}
-            activeOpacity={0.7}
-            className={`flex-1 py-3.5 rounded-2xl items-center border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}
-          >
-            <Text className={`font-black text-xs ${isDark ? 'text-slate-300' : 'text-indigo-600'}`}>View Details</Text>
-          </TouchableOpacity>
+
           <TouchableOpacity
             onPress={() => setShowModal(true)}
             activeOpacity={0.8}
-            className="flex-[1.5] bg-indigo-600 py-3.5 rounded-2xl flex-row items-center justify-center gap-2 shadow-lg shadow-indigo-600/20"
+            className="flex-1 bg-indigo-600 py-3.5 rounded-2xl flex-row items-center justify-center gap-2 shadow-lg shadow-indigo-600/20"
           >
             <Send size={14} color="white" strokeWidth={2.5} />
             <Text className="text-white text-xs font-black">{t('request_action')}</Text>

@@ -31,7 +31,7 @@ import {
 } from 'react-native';
 import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
 
-import { getCaseById } from '@/features/cases/services/caseService';
+
 import {
   CaseRequest,
   doctorDashboardService,
@@ -138,16 +138,7 @@ export function RequestDetailModal({ request, visible, onClose, onActionDone, is
   const [confirmAction, setConfirmAction] = useState<'approve' | 'reject' | null>(null);
 
   // Fetch full case data from /api/Cases/{patientCasePublicId}
-  const { data: caseData, isLoading: caseLoading } = useQuery({
-    queryKey: ['case-detail-for-request', request?.patientCasePublicId],
-    queryFn: async () => {
-      const res = await getCaseById(request!.patientCasePublicId);
-      if (res.success && res.data) return res.data;
-      return null;
-    },
-    enabled: !!request?.patientCasePublicId && visible,
-    staleTime: 30_000,
-  });
+
 
   // Fetch diagnoses data from /api/Diagnoses/case/{patientCaseId}
   const { data: diagnosesData, isLoading: diagnosesLoading } = useQuery({
@@ -167,12 +158,12 @@ export function RequestDetailModal({ request, visible, onClose, onActionDone, is
   });
 
   // Teeth and Diagnosis data
-  const diag = diagnosesData?.items?.[0] || caseData?.diagnosisdto;
+  const diag = diagnosesData?.items?.[0];
   const allTeethNums: number[] = diag?.teethNumbers ?? [];
-  const caseTypeName = (diag as any)?.caseTypeName || diag?.caseType || caseData?.caseType?.name || request.caseName || '—';
+  const caseTypeName = (diag as any)?.caseTypeName || diag?.caseType || request.caseName || '—';
   const diagNotes = diag?.notes || ''; // Do NOT fall back to description here to avoid duplication
-  const universityName = request.university || caseData?.universityName || '—';
-  const isDataLoading = caseLoading || diagnosesLoading;
+  const universityName = request.university || '—';
+  const isDataLoading = diagnosesLoading;
 
   const handleApprove = async () => {
     try {
@@ -279,9 +270,9 @@ export function RequestDetailModal({ request, visible, onClose, onActionDone, is
                 <View style={{ marginBottom: 16, padding: 16, borderRadius: 24, backgroundColor: isDark ? '#1e293b' : '#ffffff', borderWidth: 1, borderColor: isDark ? '#334155' : '#e2e8f0' }}>
                   <SectionHeader title={t('patient_info', 'Patient Information')} isDark={isDark} />
                   <InfoRow icon={User} label={t('patient', 'Patient')} value={request.patientName} isDark={isDark} color="#6366f1" />
-                  <InfoRow icon={Phone} label={t('phone', 'Phone')} value={caseData?.phone} isDark={isDark} color="#10b981" />
-                  <InfoRow icon={MapPin} label={t('city', 'City')} value={caseData?.city} isDark={isDark} color="#f43f5e" />
-                  <InfoRow icon={User} label={t('age', 'Age')} value={caseData?.patientAge ? `${caseData.patientAge} ${t('years_old', 'years old')}` : null} isDark={isDark} color="#f59e0b" />
+                  <InfoRow icon={Phone} label={t('phone', 'Phone')} value={null} isDark={isDark} color="#10b981" />
+                  <InfoRow icon={MapPin} label={t('city', 'City')} value={null} isDark={isDark} color="#f43f5e" />
+                  <InfoRow icon={User} label={t('age', 'Age')} value={null} isDark={isDark} color="#f59e0b" />
                   <InfoRow icon={Calendar} label={t('date', 'Date')} value={formattedDate} isDark={isDark} color="#3b82f6" />
                 </View>
 
@@ -375,21 +366,7 @@ export function RequestDetailModal({ request, visible, onClose, onActionDone, is
                 )}
 
                 {/* ── Images ── */}
-                {(caseData?.imageUrls ?? []).length > 0 && (
-                  <View style={{ marginBottom: 16, padding: 16, borderRadius: 24, backgroundColor: isDark ? '#1e293b' : '#ffffff', borderWidth: 1, borderColor: isDark ? '#334155' : '#e2e8f0' }}>
-                    <SectionHeader title={t('images', 'Clinical Images')} isDark={isDark} />
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
-                      {(caseData!.imageUrls ?? []).map((url: string, i: number) => (
-                        <Image
-                          key={i}
-                          source={{ uri: url }}
-                          style={{ width: 140, height: 140, borderRadius: 18 }}
-                          resizeMode="cover"
-                        />
-                      ))}
-                    </ScrollView>
-                  </View>
-                )}
+
               </>
             )}
           </ScrollView>

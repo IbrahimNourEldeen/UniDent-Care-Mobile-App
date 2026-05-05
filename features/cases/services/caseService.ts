@@ -1,7 +1,7 @@
 import { ApiResponse } from "@/types/types";
 import api from "@/utils/api";
 import {
-    CaseDetailResponse,
+
     CreateSessionPayload,
     MyStudentCasesResponse,
     MyStudentRequestsResponse,
@@ -104,10 +104,7 @@ export async function cancelCaseRequest(requestId: string, studentId: string): P
     return res.data;
 }
 
-export async function getCaseById(caseId: string): Promise<CaseDetailResponse> {
-    const res = await api.get(`/Cases/${caseId}`);
-    return res.data;
-}
+
 
 export async function updateCaseStatus(
     caseId: string,

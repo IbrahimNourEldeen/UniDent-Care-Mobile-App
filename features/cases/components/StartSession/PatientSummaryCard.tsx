@@ -2,13 +2,23 @@ import React from 'react';
 import { View, Text } from 'react-native';
 import { User, Calendar, GraduationCap, FileText } from 'lucide-react-native';
 import { StudentCaseItem } from '../../types/caseTypes';
-import InfoCard from '../CaseDetails/Shared/InfoCard';
-import ProgressTracker from '../CaseDetails/Tracking/ProgressTracker';
 
 interface PatientSummaryCardProps {
     patient: StudentCaseItem;
     isDark?: boolean;
 }
+
+const InfoCard = ({ icon: Icon, label, value, colorClass }: any) => (
+    <View className="flex-row items-center gap-2">
+        <View className={`w-8 h-8 rounded-lg items-center justify-center bg-slate-50 dark:bg-slate-800`}>
+            <Icon size={16} className={colorClass} />
+        </View>
+        <View>
+            <Text className="text-[10px] uppercase font-bold text-slate-400">{label}</Text>
+            <Text className="text-xs font-bold text-slate-700 dark:text-slate-200" numberOfLines={1}>{value}</Text>
+        </View>
+    </View>
+);
 
 export default function PatientSummaryCard({ patient, isDark = false }: PatientSummaryCardProps) {
     const initials = patient.patientName
@@ -57,11 +67,6 @@ export default function PatientSummaryCard({ patient, isDark = false }: PatientS
                 <View className="w-[48%]">
                     <InfoCard icon={FileText} label="Sessions" value={`${patient.totalSessions || 0}`} colorClass="text-emerald-500" />
                 </View>
-            </View>
-
-            {/* Treatment Progress */}
-            <View className={`pt-4 mt-4 border-t ${isDark ? 'border-slate-800/80' : 'border-slate-100'}`}>
-                <ProgressTracker currentStep={patient.progressStep || 0} processStatus={patient.processStatus} />
             </View>
         </View>
     );

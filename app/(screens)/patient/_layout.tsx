@@ -48,6 +48,13 @@ export default function PatientTabsLayout() {
           tabBarIcon: ({ color, size }) => <SettingsIcon size={size} color={color} /> 
         }} 
       />
+      <Tabs.Screen 
+        name="ai-chatbot" 
+        options={{ 
+          href: null,
+          tabBarStyle: { display: 'none' }
+        }} 
+      />
     </Tabs>
   );
 }

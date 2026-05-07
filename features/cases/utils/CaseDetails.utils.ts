@@ -126,8 +126,10 @@ export interface ToothData {
 export type DiagnosisStage = 'BasicClinic' | 'AI' | '' | 0 | 1;
 
 export interface ToothPanelData {
+    id?: string;
     toothNumber: number;
     caseType: string;
+    caseTypeId?: string;
     diagnosisStage: DiagnosisStage;
     notes: string;
     assignedStudentName?: string | null;
@@ -174,8 +176,10 @@ export function buildDiagnosedTeethMap(
     for (const diagnosis of diagnoses) {
         for (const num of diagnosis.teethNumbers ?? []) {
             map.set(num, {
+                id: diagnosis.id,
                 toothNumber: num,
                 caseType: diagnosis.caseTypeName || '',
+                caseTypeId: diagnosis.caseTypeId,
                 diagnosisStage: diagnosis.stage as DiagnosisStage,
                 notes: diagnosis.notes || '',
                 assignedStudentName: assignedStudentName ?? null,

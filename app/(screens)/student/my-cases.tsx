@@ -98,7 +98,14 @@ function CaseCard({ item, isDark, t }: { item: StudentCaseItem; isDark: boolean;
           </View>
           <View className="flex-1 min-w-0">
             <Text className={`text-base font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-800'}`} numberOfLines={1}>{item.patientName || 'Anonymous'}</Text>
-            <Text className={`text-xs font-medium mt-0.5 ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`} numberOfLines={1}>{item.diagnosisdto?.caseType || t('unknown_type')}</Text>
+            <Text className={`text-xs font-medium mt-0.5 ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`} numberOfLines={1}>
+              {(() => {
+                const dx = item.diagnosisdto || item.diagnoses || item.diagnosisDto;
+                const firstDx = Array.isArray(dx) ? dx[0] : dx;
+                const typeName = firstDx?.caseTypeName || firstDx?.caseType || item.caseType?.name || item.title;
+                return typeName || t('unknown_type');
+              })()}
+            </Text>
           </View>
         </View>
         <View className={`flex-row items-center gap-1.5 px-3 py-1.5 rounded-full ${sc.bg}`}>
@@ -148,7 +155,13 @@ function RequestCard({ item, isDark, t }: { item: StudentRequestItem; isDark: bo
       <View className="flex-row items-start justify-between gap-3 mb-4">
         <View className="flex-1 min-w-0">
           <Text className={`text-base font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-800'}`} numberOfLines={1}>{item.patientName || 'Anonymous'}</Text>
-          <Text className={`text-[11px] font-bold tracking-widest uppercase mt-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} numberOfLines={1}>{item.caseName || 'Unknown Case'}</Text>
+          <Text className={`text-[11px] font-bold tracking-widest uppercase mt-1 ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`} numberOfLines={1}>
+            {(() => {
+                const dx = (item as any).diagnosisdto || (item as any).diagnoses || (item as any).diagnosisDto;
+                const firstDx = Array.isArray(dx) ? dx[0] : dx;
+                return firstDx?.caseTypeName || firstDx?.caseType || item.caseName || t('unknown_case');
+            })()}
+          </Text>
         </View>
         <View className={`flex-row items-center gap-1.5 px-3 py-1.5 rounded-full ${sc.bg}`}>
           <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: sc.dot }} />

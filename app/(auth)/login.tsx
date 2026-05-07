@@ -71,7 +71,7 @@ export default function LoginScreen() {
         }
         
         if (response.data.roles && response.data.roles.length > 0) {
-          await SecureStore.setItemAsync("role", response.data.roles[0]);
+          await SecureStore.setItemAsync("role", response.data.roles[1] || response.data.roles[0]);
         }
         
         // Delay redirect to show success message

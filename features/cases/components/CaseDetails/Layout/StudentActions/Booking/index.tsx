@@ -3,7 +3,7 @@ import {
     Modal, View, Text, TouchableOpacity, KeyboardAvoidingView,
     Platform, ScrollView,
 } from 'react-native';
-import { X } from 'lucide-react-native';
+import { X, Play } from 'lucide-react-native';
 import { useThemeLanguage } from '@/store/ThemeLanguageContext';
 import Bookingstepper from './parts/Bookingstepper';
 import BookingFooter from './parts/BookingFooter';
@@ -47,14 +47,19 @@ const translations: Record<Locale, any> = {
 interface SessionBookingDialogProps {
     open: boolean;
     onOpenChange: (v: boolean) => void;
-    onSubmit: (data: { date: string; startTime: string; endTime: string; location: string }) => Promise<void>;
+    onSubmit: (data: { date: string; startTime: string; endTime: string; location: string }) => Promise<boolean | void>;
     isLoading: boolean;
     locale?: Locale;
     existingSession?: { date: string; startTime: string; endTime: string; location: string } | null;
+    /** True when there is already a scheduled session (Reschedule mode) */
+    hasScheduledSession?: boolean;
+    /** Opens the "Start Now" confirmation modal */
+    onToggleStartNowModal?: (open: boolean) => void;
 }
 
 export default function SessionBookingDialog({
     open, onOpenChange, onSubmit, isLoading, locale = 'en', existingSession = null,
+    hasScheduledSession = false, onToggleStartNowModal,
 }: SessionBookingDialogProps) {
     const { theme } = useThemeLanguage();
     const isDark = theme === 'dark';
@@ -95,10 +100,20 @@ export default function SessionBookingDialog({
             setStep(2);
         } else {
             if (!location.trim()) { setError(t.errorFields); return; }
-            const dateStr = selectedDate!.toISOString().split('T')[0];
-            await onSubmit({ date: dateStr, startTime, endTime, location });
-            reset();
-            onOpenChange(false);
+            // Use local date components (NOT toISOString which converts to UTC)
+            // e.g. Egypt UTC+3: selecting May 7 → toISOString gives May 6!
+            const d = selectedDate!;
+            const dateStr = [
+                d.getFullYear(),
+                String(d.getMonth() + 1).padStart(2, '0'),
+                String(d.getDate()).padStart(2, '0'),
+            ].join('-');
+            const result = await onSubmit({ date: dateStr, startTime, endTime, location });
+            // Only close modal on explicit success (true) or if handler returns void (legacy)
+            if (result === true || result === undefined) {
+                reset();
+                onOpenChange(false);
+            }
         }
     };
 
@@ -133,12 +148,43 @@ export default function SessionBookingDialog({
                     {/* Step Content */}
                     <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 340 }}>
                         {step === 0 && (
-                            <StepDate
-                                selectedDate={selectedDate}
-                                onDateChange={setSelectedDate}
-                                isRTL={isRTL}
-                                dateLabel={t.dateLabel}
-                            />
+                            <View>
+                                {/* Start Now pill — only in Reschedule (update) mode, mirrors web */}
+                                {hasScheduledSession && (
+                                    <View className={`flex-row items-center justify-between mb-3 px-1`}>
+                                        <Text className={`text-xs font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                                            {isRTL ? 'اختر التاريخ' : 'Select Date'}
+                                        </Text>
+                                        <TouchableOpacity
+                                            onPress={() => {
+                                                onOpenChange(false);
+                                                onToggleStartNowModal?.(true);
+                                            }}
+                                            activeOpacity={0.8}
+                                            className={`flex-row items-center gap-1.5 px-3 py-1.5 rounded-full border ${
+                                                isDark
+                                                    ? 'bg-indigo-900/30 border-indigo-700/50'
+                                                    : 'bg-indigo-50 border-indigo-200'
+                                            }`}
+                                        >
+                                            <Play size={10} color={isDark ? '#818cf8' : '#4f46e5'} fill={isDark ? '#818cf8' : '#4f46e5'} />
+                                            <Text className={`text-[11px] font-bold uppercase tracking-wider ${
+                                                isDark ? 'text-indigo-400' : 'text-indigo-600'
+                                            }`}>
+                                                {isRTL ? 'ابدأ الآن' : 'Start Now'}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                )}
+                                <View className={hasScheduledSession ? `rounded-xl border ${isDark ? 'border-slate-700/50 bg-slate-800/30' : 'border-slate-100 bg-slate-50/50'} p-1` : ''}>
+                                    <StepDate
+                                        selectedDate={selectedDate}
+                                        onDateChange={setSelectedDate}
+                                        isRTL={isRTL}
+                                        dateLabel={t.dateLabel}
+                                    />
+                                </View>
+                            </View>
                         )}
                         {step === 1 && (
                             <StepTime

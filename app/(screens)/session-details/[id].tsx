@@ -1,71 +1,159 @@
-import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import React, { useState } from 'react';
+import {
+    View,
+    Text,
+    ScrollView,
+    TouchableOpacity,
+    ActivityIndicator,
+    Modal,
+    Pressable,
+} from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ArrowLeft, Clock, Calendar, User, Stethoscope, FileText, CheckCircle2, Timer, XCircle, MapPin } from 'lucide-react-native';
-import { useTranslation } from 'react-i18next';
+import { ArrowLeft, Stethoscope, User, XCircle, AlertTriangle } from 'lucide-react-native';
 import { useThemeLanguage } from '@/store/ThemeLanguageContext';
 import { useSessionDetails } from '@/features/cases/hooks/useSessionDetails';
 import SessionTopBar from '@/features/cases/components/StartSession/SessionTopBar';
 import SessionWorkspace from '@/features/cases/components/StartSession/SessionWorkspace';
+import PatientSummaryCard from '@/features/cases/components/StartSession/PatientSummaryCard';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
+import { useDispatch } from 'react-redux';
+import { showToast } from '@/store/slices/uiSlice';
+import { updateSessionStatus } from '@/features/cases/services/caseService';
 
 export default function SessionDetailsScreen() {
     const { id } = useLocalSearchParams();
     const router = useRouter();
-    const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const { theme } = useThemeLanguage();
     const isDark = theme === 'dark';
+    const dispatch = useDispatch();
 
-    const { session, notes, isLoading, isError, refetchAll, updateStatus, isUpdatingStatus, addNote, isAddingNote } = useSessionDetails(id as string);
+    const { session, notes, isLoading, isError, refetchAll, addNote, isAddingNote } =
+        useSessionDetails(id as string);
 
     const userRole = useSelector((state: RootState) => state.auth.role);
     const isPatient = userRole?.toLowerCase() === 'patient';
 
-    const bgClass = isDark ? 'bg-[#020617]' : 'bg-slate-50';
-    const textClass = isDark ? 'text-white' : 'text-slate-900';
-    const subTextClass = isDark ? 'text-slate-400' : 'text-slate-500';
+    const [showEndModal, setShowEndModal] = useState(false);
+    const [endSessionLoading, setEndSessionLoading] = useState(false);
 
+    const bgColor = isDark ? '#020617' : '#f8fafc';
+    const cardBg = isDark ? '#0f172a' : '#fff';
+    const textColor = isDark ? '#f1f5f9' : '#0f172a';
+    const subColor = isDark ? '#94a3b8' : '#64748b';
+    const borderColor = isDark ? '#1e293b' : '#e2e8f0';
+
+    // ── End Session Handler ──────────────────────────────────────────────────
+    const handleEndSession = async () => {
+        if (!notes || notes.length === 0) {
+            dispatch(
+                showToast({
+                    message: 'You must add at least one clinical note before ending the session.',
+                    type: 'error',
+                }),
+            );
+            setShowEndModal(false);
+            return;
+        }
+        setEndSessionLoading(true);
+        try {
+            const res = await updateSessionStatus(id as string, {
+                sessionId: id as string,
+                status: 'Done',
+            });
+            if (res.success) {
+                dispatch(showToast({ message: 'Session completed successfully', type: 'success' }));
+                setShowEndModal(false);
+                refetchAll?.();
+                router.back();
+            } else {
+                dispatch(showToast({ message: res.message || 'Failed to end session', type: 'error' }));
+            }
+        } catch (err: any) {
+            dispatch(showToast({ message: err.message || 'Failed to end session', type: 'error' }));
+        } finally {
+            setEndSessionLoading(false);
+        }
+    };
+
+    // ── Loading ──────────────────────────────────────────────────────────────
     if (isLoading) {
         return (
-            <View className={`flex-1 ${bgClass} justify-center items-center`}>
+            <View style={{ flex: 1, backgroundColor: bgColor, justifyContent: 'center', alignItems: 'center' }}>
                 <ActivityIndicator size="large" color="#4f46e5" />
             </View>
         );
     }
 
+    // ── Error ────────────────────────────────────────────────────────────────
     if (isError || !session) {
         return (
-            <View className={`flex-1 ${bgClass} justify-center items-center px-6`} style={{ paddingTop: insets.top }}>
+            <View
+                style={{
+                    flex: 1,
+                    backgroundColor: bgColor,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    paddingHorizontal: 24,
+                    paddingTop: insets.top,
+                }}
+            >
                 <XCircle size={56} color={isDark ? '#f87171' : '#ef4444'} />
-                <Text className={`text-xl font-black mt-5 text-center ${textClass}`}>Session Not Found</Text>
-                <Text className={`text-sm mt-2 text-center ${subTextClass}`}>The session details could not be loaded.</Text>
-                <TouchableOpacity onPress={() => router.back()} className="mt-8 bg-indigo-600 px-8 py-3.5 rounded-2xl shadow-lg shadow-indigo-500/30">
-                    <Text className="text-white font-bold text-sm">Go Back</Text>
+                <Text style={{ fontSize: 20, fontWeight: '900', marginTop: 20, textAlign: 'center', color: textColor }}>
+                    Session Not Found
+                </Text>
+                <Text style={{ fontSize: 14, marginTop: 8, textAlign: 'center', color: subColor }}>
+                    The session details could not be loaded.
+                </Text>
+                <TouchableOpacity
+                    onPress={() => router.back()}
+                    style={{
+                        marginTop: 32,
+                        backgroundColor: '#4f46e5',
+                        paddingHorizontal: 32,
+                        paddingVertical: 14,
+                        borderRadius: 16,
+                    }}
+                >
+                    <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>Go Back</Text>
                 </TouchableOpacity>
             </View>
         );
     }
 
+    // ── Main ─────────────────────────────────────────────────────────────────
     return (
-        <View className={`flex-1 ${bgClass}`}>
-            <View style={{ paddingTop: insets.top }} className="flex-1">
-                <ScrollView className="flex-1" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100, paddingTop: 20 }}>
-                    <View className="px-5 mb-6">
+        <View style={{ flex: 1, backgroundColor: bgColor }}>
+            <View style={{ paddingTop: insets.top, flex: 1 }}>
+                <ScrollView
+                    style={{ flex: 1 }}
+                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={{ paddingBottom: 120, paddingTop: 20 }}
+                >
+                    {/* Top Bar */}
+                    <View style={{ paddingHorizontal: 20, marginBottom: 24 }}>
                         <SessionTopBar
                             patientName={session.patientName || 'Unknown Patient'}
                             sessionId={session.id}
                             caseId={session.caseId}
                             sessionStatus={session.status || undefined}
-                            onEndSession={isPatient ? undefined : () => updateStatus('Done')}
-                            endSessionLoading={isUpdatingStatus}
+                            onEndSession={isPatient ? undefined : () => setShowEndModal(true)}
+                            endSessionLoading={endSessionLoading}
                             isDark={isDark}
                         />
                     </View>
 
-                    <View className="px-5">
+                    {/* Patient Summary Card */}
+                    {!isPatient && (session as any).patientName && (
+                        <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
+                            <PatientSummaryCard patient={session as any} isDark={isDark} />
+                        </View>
+                    )}
+
+                    {/* Session Workspace */}
+                    <View style={{ paddingHorizontal: 20 }}>
                         <SessionWorkspace
                             session={session}
                             notes={notes}
@@ -75,32 +163,197 @@ export default function SessionDetailsScreen() {
                         />
                     </View>
 
-                    {/* Participants Section */}
-                    <View className="px-5 mt-8">
-                        <Text className={`font-black text-lg tracking-tight mb-4 ${textClass}`}>Participants</Text>
-                        
-                        <View className={`p-4 rounded-3xl mb-3 flex-row items-center gap-4 ${isDark ? 'bg-slate-900' : 'bg-white shadow-sm'}`}>
-                            <View className={`w-12 h-12 rounded-2xl items-center justify-center ${isDark ? 'bg-indigo-500/20' : 'bg-indigo-50'}`}>
+                    {/* Participants */}
+                    <View style={{ paddingHorizontal: 20, marginTop: 32 }}>
+                        <Text style={{ fontWeight: '900', fontSize: 17, marginBottom: 16, color: textColor }}>
+                            Participants
+                        </Text>
+
+                        {/* Patient */}
+                        <View
+                            style={{
+                                padding: 16,
+                                borderRadius: 24,
+                                marginBottom: 12,
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                gap: 16,
+                                backgroundColor: cardBg,
+                                borderWidth: 1,
+                                borderColor,
+                            }}
+                        >
+                            <View
+                                style={{
+                                    width: 48,
+                                    height: 48,
+                                    borderRadius: 16,
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    backgroundColor: isDark ? 'rgba(79,70,229,0.2)' : '#eef2ff',
+                                }}
+                            >
                                 <User size={20} color={isDark ? '#818cf8' : '#4f46e5'} />
                             </View>
-                            <View className="flex-1">
-                                <Text className={`text-xs font-bold uppercase tracking-wider mb-1 ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`}>Patient</Text>
-                                <Text className={`text-base font-black ${textClass}`}>{session.patientName || 'Unknown Patient'}</Text>
+                            <View style={{ flex: 1 }}>
+                                <Text
+                                    style={{
+                                        fontSize: 11,
+                                        fontWeight: '700',
+                                        textTransform: 'uppercase',
+                                        letterSpacing: 0.5,
+                                        marginBottom: 4,
+                                        color: isDark ? '#818cf8' : '#4f46e5',
+                                    }}
+                                >
+                                    Patient
+                                </Text>
+                                <Text style={{ fontSize: 15, fontWeight: '900', color: textColor }}>
+                                    {session.patientName || 'Unknown Patient'}
+                                </Text>
                             </View>
                         </View>
 
-                        <View className={`p-4 rounded-3xl flex-row items-center gap-4 ${isDark ? 'bg-slate-900' : 'bg-white shadow-sm'}`}>
-                            <View className={`w-12 h-12 rounded-2xl items-center justify-center ${isDark ? 'bg-teal-500/20' : 'bg-teal-50'}`}>
+                        {/* Student */}
+                        <View
+                            style={{
+                                padding: 16,
+                                borderRadius: 24,
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                gap: 16,
+                                backgroundColor: cardBg,
+                                borderWidth: 1,
+                                borderColor,
+                            }}
+                        >
+                            <View
+                                style={{
+                                    width: 48,
+                                    height: 48,
+                                    borderRadius: 16,
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    backgroundColor: isDark ? 'rgba(13,148,136,0.2)' : '#f0fdfa',
+                                }}
+                            >
                                 <Stethoscope size={20} color={isDark ? '#2dd4bf' : '#0d9488'} />
                             </View>
-                            <View className="flex-1">
-                                <Text className={`text-xs font-bold uppercase tracking-wider mb-1 ${isDark ? 'text-teal-400' : 'text-teal-600'}`}>Student</Text>
-                                <Text className={`text-base font-black ${textClass}`}>{session.studentName || 'Unknown Student'}</Text>
+                            <View style={{ flex: 1 }}>
+                                <Text
+                                    style={{
+                                        fontSize: 11,
+                                        fontWeight: '700',
+                                        textTransform: 'uppercase',
+                                        letterSpacing: 0.5,
+                                        marginBottom: 4,
+                                        color: isDark ? '#2dd4bf' : '#0d9488',
+                                    }}
+                                >
+                                    Student
+                                </Text>
+                                <Text style={{ fontSize: 15, fontWeight: '900', color: textColor }}>
+                                    {session.studentName || 'Unknown Student'}
+                                </Text>
                             </View>
                         </View>
                     </View>
                 </ScrollView>
             </View>
+
+            {/* ── End Session Confirmation Modal ── */}
+            <Modal
+                visible={showEndModal}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setShowEndModal(false)}
+            >
+                <Pressable
+                    onPress={() => setShowEndModal(false)}
+                    style={{
+                        flex: 1,
+                        backgroundColor: 'rgba(0,0,0,0.5)',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        paddingHorizontal: 24,
+                    }}
+                >
+                    <Pressable
+                        onPress={(e) => e.stopPropagation()}
+                        style={{
+                            width: '100%',
+                            backgroundColor: isDark ? '#0f172a' : '#fff',
+                            borderRadius: 24,
+                            padding: 24,
+                            borderWidth: 1,
+                            borderColor: isDark ? '#1e293b' : '#f1f5f9',
+                        }}
+                    >
+                        {/* Icon */}
+                        <View
+                            style={{
+                                width: 56,
+                                height: 56,
+                                borderRadius: 20,
+                                backgroundColor: isDark ? 'rgba(239,68,68,0.15)' : '#fef2f2',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                marginBottom: 16,
+                            }}
+                        >
+                            <AlertTriangle size={28} color="#ef4444" />
+                        </View>
+
+                        <Text style={{ fontSize: 18, fontWeight: '900', color: textColor, marginBottom: 8 }}>
+                            End Session
+                        </Text>
+                        <Text style={{ fontSize: 14, color: subColor, lineHeight: 22, marginBottom: 24 }}>
+                            {!notes || notes.length === 0
+                                ? 'Warning: You haven\'t added any notes yet. Clinical notes are mandatory before ending a session.'
+                                : 'Are you sure you want to end this session? Make sure you have saved all your clinical notes before proceeding.'}
+                        </Text>
+
+                        <View style={{ flexDirection: 'row', gap: 12 }}>
+                            <TouchableOpacity
+                                onPress={() => setShowEndModal(false)}
+                                style={{
+                                    flex: 1,
+                                    paddingVertical: 14,
+                                    borderRadius: 14,
+                                    alignItems: 'center',
+                                    borderWidth: 1,
+                                    borderColor,
+                                    backgroundColor: isDark ? '#1e293b' : '#f8fafc',
+                                }}
+                            >
+                                <Text style={{ fontWeight: '700', color: subColor, fontSize: 14 }}>
+                                    Continue Session
+                                </Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                onPress={handleEndSession}
+                                disabled={endSessionLoading}
+                                style={{
+                                    flex: 1,
+                                    paddingVertical: 14,
+                                    borderRadius: 14,
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    backgroundColor: endSessionLoading ? '#ef4444aa' : '#ef4444',
+                                    flexDirection: 'row',
+                                    gap: 8,
+                                }}
+                            >
+                                {endSessionLoading && <ActivityIndicator size="small" color="#fff" />}
+                                <Text style={{ fontWeight: '700', color: '#fff', fontSize: 14 }}>
+                                    {endSessionLoading ? 'Ending…' : 'End Session'}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    </Pressable>
+                </Pressable>
+            </Modal>
         </View>
     );
 }

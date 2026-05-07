@@ -52,7 +52,12 @@ function CasesListRow({ caseItem, onRequest }: CasesListRowProps) {
           <View className="flex-row items-center gap-1">
             <Stethoscope size={10} color={isDark ? '#818cf8' : '#4f46e5'} />
             <Text className="text-[11px] text-slate-500 dark:text-slate-400">
-              {caseItem.caseType?.name ?? 'General'}
+              {(caseItem as any).diagnoses?.[0]?.caseType || 
+               (caseItem as any).diagnoses?.[0]?.caseTypeName || 
+               (caseItem as any).diagnosisdto?.[0]?.caseType || 
+               (caseItem as any).diagnosisdto?.[0]?.caseTypeName || 
+               caseItem.caseType?.name || 
+               'General'}
             </Text>
           </View>
           <View className="flex-row items-center gap-1">

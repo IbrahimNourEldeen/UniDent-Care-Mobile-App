@@ -1,296 +1,378 @@
-import { DoctorStatsGrid, StatItem } from '@/features/dashboard/components/doctor/DoctorStatsGrid';
-import { WelcomeHeader } from '@/features/dashboard/components/doctor/WelcomeHeader';
-import {
-  useDoctorCaseCounts,
-  useDoctorProfile,
-  useDoctorRequestActions,
-  useDoctorRequests,
-} from '@/features/dashboard/hooks/useDoctorQueries';
+import { doctorDashboardService, SessionDto } from '@/features/dashboard/services/doctorDashboardService';
 import { useAppSelector } from '@/store/hooks';
 import { useThemeLanguage } from '@/store/ThemeLanguageContext';
-import { useQueryClient } from '@tanstack/react-query';
-import Animated, { FadeInUp } from 'react-native-reanimated';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
+import { format } from 'date-fns';
 import {
-  Briefcase,
+  AlertCircle,
+  CalendarDays,
   CheckCircle2,
   Clock,
-  Layers,
+  FileText,
+  FolderOpen,
+  MessageSquare,
+  RefreshCw,
+  Stethoscope,
   Users,
-  XCircle,
-  X,
+  ChevronRight,
 } from 'lucide-react-native';
-import React, { useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
+  ActivityIndicator,
   RefreshControl,
   ScrollView,
   StatusBar,
   Text,
   TouchableOpacity,
   View,
+  Dimensions,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { PieChart } from 'react-native-gifted-charts';
+import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
+import { Calendar } from 'react-native-calendars';
+
+const { width } = Dimensions.get('window');
+
+const PIE_COLORS = [
+  '#6366f1', // indigo
+  '#8b5cf6', // violet
+  '#ec4899', // pink
+  '#14b8a6', // teal
+  '#f59e0b', // amber
+  '#10b981', // emerald
+  '#3b82f6', // blue
+  '#f43f5e', // rose
+];
 
 export default function DoctorDashboardScreen() {
   const { t } = useTranslation();
-  const { user, role } = useAppSelector((s) => s.auth);
+  const { user } = useAppSelector((s) => s.auth);
   const { theme, language } = useThemeLanguage();
   const isDark = theme === 'dark';
   const isRtl = language === 'ar';
-
-  const doctorId = (user as any)?.publicId ?? (user as any)?.id;
   const router = useRouter();
   const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
 
+  const doctorId = (user as any)?.publicId ?? (user as any)?.id;
+  const firstName = (user as any)?.fullName?.split(' ')[0] || (isRtl ? 'دكتور' : 'Doctor');
+
   // ─── Data Fetching ────────────────────────────────────────────────────────
-  const { data: profile, isLoading: statsLoading } = useDoctorProfile(doctorId);
-  const { ongoingCount, completedCount, cancelledCount, underReviewCount, rejectedCount, isLoading: countsLoading } = useDoctorCaseCounts(doctorId);
-  const { data: requestsData, isLoading: reqsLoading } = useDoctorRequests(doctorId, 1, 5, 0); // Pending only
-  const { approveRequest, rejectRequest } = useDoctorRequestActions();
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const { data: stats, isLoading: statsLoading, refetch: refetchStats } = useQuery({
+    queryKey: ['doctor', 'dashboard', 'stats', doctorId],
+    queryFn: async () => {
+      const [casesRes, reqsRes, evalRes, schedRes] = await Promise.all([
+        doctorDashboardService.getCasesByDoctor(doctorId, undefined, 1, 1),
+        doctorDashboardService.getDoctorRequests(doctorId, 1, 1, 0),
+        doctorDashboardService.getSessionsToEvaluate({ pageSize: 1 }),
+        doctorDashboardService.getScheduleSessions({ pageSize: 500 }),
+      ]);
 
-  const isLoading = statsLoading || countsLoading;
+      const today = format(new Date(), 'yyyy-MM-dd');
+      const todayCount = (schedRes?.items ?? []).filter(
+        (s: SessionDto) => s.scheduledAt?.startsWith(today)
+      ).length;
 
-  // ─── Refresh ──────────────────────────────────────────────────────────────
+      return {
+        totalCases: casesRes?.totalCount ?? 0,
+        pendingRequests: reqsRes?.totalCount ?? 0,
+        toEvaluate: evalRes?.totalCount ?? 0,
+        todaySessions: todayCount,
+        allSessions: schedRes?.items ?? [],
+      };
+    },
+    enabled: !!doctorId,
+  });
+
   const onRefresh = async () => {
     setRefreshing(true);
     await queryClient.invalidateQueries({ queryKey: ['doctor'] });
+    await refetchStats();
     setRefreshing(false);
   };
 
-  // ─── Actions ──────────────────────────────────────────────────────────────
-  const handleApprove = async (requestId: string) => {
-    if (actionLoading) return;
-    setActionLoading(requestId);
-    try { await approveRequest(requestId); } catch (e) { /* silent */ }
-    finally { setActionLoading(null); }
-  };
+  // ─── Process Data for UI ──────────────────────────────────────────────────
+  const pieData = useMemo(() => {
+    const sessions = stats?.allSessions ?? [];
+    const counts: Record<string, number> = {};
+    sessions.forEach((s) => {
+      const key = s.treatmentType || (isRtl ? 'أخرى' : 'Other');
+      counts[key] = (counts[key] || 0) + 1;
+    });
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .map(([text, value], idx) => ({
+        value,
+        text,
+        color: PIE_COLORS[idx % PIE_COLORS.length],
+      }));
+  }, [stats?.allSessions, isRtl]);
 
-  const handleReject = async (requestId: string) => {
-    if (actionLoading) return;
-    setActionLoading(requestId);
-    try { await rejectRequest(requestId); } catch (e) { /* silent */ }
-    finally { setActionLoading(null); }
-  };
+  const latestNotes = useMemo(() => {
+    const notes: any[] = [];
+    (stats?.allSessions ?? []).forEach((s) => {
+      // In mobile, we might need to fetch notes separately if not in session object
+      // but let's assume session object might have count or we use placeholder for parity
+    });
+    // For now, let's show upcoming sessions as "Activity" if notes are missing
+    return (stats?.allSessions ?? [])
+      .sort((a, b) => new Date(b.createAt).getTime() - new Date(a.createAt).getTime())
+      .slice(0, 5);
+  }, [stats?.allSessions]);
 
-  // ─── Stat Cards ───────────────────────────────────────────────────────────
-  const statItems: StatItem[] = [
+  const now = new Date();
+  const todayStr = isRtl
+    ? now.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+    : now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+  const statCards = [
     {
+      key: 'totalCases',
+      label: t('total_cases', 'Total Cases'),
+      value: stats?.totalCases ?? 0,
+      icon: FolderOpen,
+      colors: ['#2563eb', '#4f46e5'],
+      bg: isDark ? 'bg-blue-900/20' : 'bg-blue-50/60',
+      text: 'text-blue-600 dark:text-blue-400',
+    },
+    {
+      key: 'pendingRequests',
       label: t('pending_requests'),
-      value: profile?.pendingRequests ?? 0,
+      value: stats?.pendingRequests ?? 0,
       icon: Clock,
-      bgColor: 'bg-amber-50 dark:bg-amber-900/30',
-      iconColor: isDark ? '#fbbf24' : '#d97706',
-      accentColor: 'bg-amber-200 dark:bg-amber-800',
+      colors: ['#f59e0b', '#f97316'],
+      bg: isDark ? 'bg-amber-900/20' : 'bg-amber-50/60',
+      text: 'text-amber-600 dark:text-amber-400',
     },
     {
-      label: t('ongoing_cases'),
-      value: ongoingCount,
-      icon: Layers,
-      bgColor: 'bg-blue-50 dark:bg-blue-900/30',
-      iconColor: isDark ? '#60a5fa' : '#2563eb',
-      accentColor: 'bg-blue-200 dark:bg-blue-800',
+      key: 'toEvaluate',
+      label: t('needs_evaluate'),
+      value: stats?.toEvaluate ?? 0,
+      icon: AlertCircle,
+      colors: ['#e11d48', '#be123c'],
+      bg: isDark ? 'bg-rose-900/20' : 'bg-rose-50/60',
+      text: 'text-rose-600 dark:text-rose-400',
     },
     {
-      label: t('completed_cases'),
-      value: completedCount,
-      icon: CheckCircle2,
-      bgColor: 'bg-emerald-50 dark:bg-emerald-900/30',
-      iconColor: isDark ? '#34d399' : '#059669',
-      accentColor: 'bg-emerald-200 dark:bg-emerald-800',
-    },
-    {
-      label: t('under_review'),
-      value: underReviewCount,
-      icon: Clock,
-      bgColor: 'bg-amber-50 dark:bg-amber-900/30',
-      iconColor: isDark ? '#fbbf24' : '#d97706',
-      accentColor: 'bg-amber-200 dark:bg-amber-800',
-    },
-    {
-      label: t('cancelled_cases', 'Cancelled'),
-      value: cancelledCount,
-      icon: XCircle,
-      bgColor: 'bg-slate-50 dark:bg-slate-900/30',
-      iconColor: isDark ? '#94a3b8' : '#64748b',
-      accentColor: 'bg-slate-200 dark:bg-slate-800',
-    },
-    {
-      label: t('rejected_cases', 'Rejected'),
-      value: rejectedCount,
-      icon: X,
-      bgColor: 'bg-rose-50 dark:bg-rose-900/30',
-      iconColor: isDark ? '#fb7185' : '#e11d48',
-      accentColor: 'bg-rose-200 dark:bg-rose-800',
+      key: 'todaySessions',
+      label: t('todays_agenda'),
+      value: stats?.todaySessions ?? 0,
+      icon: CalendarDays,
+      colors: ['#7c3aed', '#6d28d9'],
+      bg: isDark ? 'bg-violet-900/20' : 'bg-violet-50/60',
+      text: 'text-violet-600 dark:text-violet-400',
     },
   ];
 
-  const userName = (user as any)?.fullName ?? 'Doctor';
-  const initials = userName.split(' ').slice(0, 2).map((n: string) => n[0]).join('').toUpperCase();
-
-  // ─── Pending requests for quick action section ────────────────────────────
-  const pendingRequests = (requestsData?.items ?? []).filter(r => r.status === 'Pending');
-
   return (
     <View className="flex-1 bg-slate-50 dark:bg-slate-950">
-      <StatusBar barStyle="light-content" />
-
-      {/* Fixed Gradient Background */}
-      <View className="absolute top-0 left-0 right-0 h-[280px]">
-        <LinearGradient
-          colors={isDark ? ['#1e1b4b', '#0f172a'] : ['#3b82f6', '#4f46e5']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          className="w-full h-full rounded-b-[48px] shadow-2xl shadow-indigo-500/20"
-        />
-      </View>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
 
       <ScrollView
-        className="flex-1"
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 120, paddingTop: 60 }}
         refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={isDark ? '#818cf8' : 'white'}
-          />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6366f1" />
         }
-        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 64, paddingBottom: 110 }}
       >
-        {/* Welcome Header */}
-        <Animated.View entering={FadeInUp.duration(600).delay(200)}>
-          <WelcomeHeader
-            userName={userName}
-            role={role || ''}
-            initials={initials}
-            isDark={isDark}
-          />
+        {/* Header Section */}
+        <Animated.View entering={FadeInUp.duration(600)} className="px-5 mb-8">
+          <View className={`flex-row justify-between items-start ${isRtl ? 'flex-row-reverse' : ''}`}>
+            <View className={`flex-row items-center gap-4 ${isRtl ? 'flex-row-reverse' : ''}`}>
+              <LinearGradient
+                colors={['#4f46e5', '#7c3aed']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{ width: 56, height: 56, borderRadius: 20, alignItems: 'center', justifyContent: 'center', shadowColor: '#4f46e5', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8 }}
+              >
+                <Stethoscope size={28} color="white" />
+              </LinearGradient>
+              <View className={isRtl ? 'items-end' : 'items-start'}>
+                <Text className="text-2xl font-black text-slate-800 dark:text-white">
+                  {isRtl ? `أهلاً بك، د. ${firstName}! 👋` : `Welcome, Dr. ${firstName}! 👋`}
+                </Text>
+                <Text className="text-xs font-bold text-slate-500 dark:text-slate-400 mt-1">
+                  {todayStr}
+                </Text>
+              </View>
+            </View>
+
+            <TouchableOpacity
+              onPress={onRefresh}
+              className="p-3 bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm"
+            >
+              <RefreshCw size={20} color={isDark ? '#94a3b8' : '#64748b'} className={refreshing ? 'animate-spin' : ''} />
+            </TouchableOpacity>
+          </View>
         </Animated.View>
 
-        {/* 4-Card Stats Grid */}
-        <DoctorStatsGrid stats={statItems} loading={isLoading} />
-
-        {/* Quick Actions Row */}
-        <View className={`flex-row gap-3 mb-6 ${isRtl ? 'flex-row-reverse' : ''}`}>
-          {/* Browse Cases */}
-          <TouchableOpacity
-            onPress={() => router.push('/(screens)/doctor/cases' as any)}
-            activeOpacity={0.85}
-            className="flex-1"
-          >
-            <LinearGradient
-              colors={isDark ? ['#1e1b4b', '#1e293b'] : ['#4f46e5', '#6366f1']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              className="rounded-3xl px-5 py-5 items-center gap-2 shadow-lg shadow-indigo-200/60 dark:shadow-none"
-            >
-              <View className="w-10 h-10 rounded-2xl bg-white/20 items-center justify-center">
-                <Briefcase size={20} color="white" />
-              </View>
-              <Text className="text-white font-black text-xs text-center">
-                {t('browse_cases')}
-              </Text>
-            </LinearGradient>
-          </TouchableOpacity>
-
-          {/* Student List */}
-          <TouchableOpacity
-            onPress={() => router.push('/(screens)/doctor/student-list' as any)}
-            activeOpacity={0.85}
-            className="flex-1"
-          >
-            <LinearGradient
-              colors={isDark ? ['#064e3b', '#1e293b'] : ['#059669', '#10b981']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              className="rounded-3xl px-5 py-5 items-center gap-2 shadow-lg shadow-emerald-200/60 dark:shadow-none"
-            >
-              <View className="w-10 h-10 rounded-2xl bg-white/20 items-center justify-center">
-                <Users size={20} color="white" />
-              </View>
-              <Text className="text-white font-black text-xs text-center">
-                {t('my_students')}
-              </Text>
-            </LinearGradient>
-          </TouchableOpacity>
+        {/* Stats Grid */}
+        <View className="px-5 mb-8">
+          <View className="flex-row flex-wrap justify-between">
+            {statCards.map((card, idx) => (
+              <Animated.View
+                key={card.key}
+                entering={FadeInDown.delay(idx * 100)}
+                style={{ width: (width - 50) / 2 }}
+                className={`p-5 rounded-[32px] mb-4 border border-white/20 dark:border-white/5 ${card.bg} shadow-sm`}
+              >
+                <View className="flex-row justify-between items-start mb-4">
+                  <View className="p-2.5 rounded-xl bg-white dark:bg-slate-800 shadow-sm">
+                    <card.icon size={18} color={card.colors[0]} />
+                  </View>
+                </View>
+                <Text className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-1">
+                  {card.label}
+                </Text>
+                {statsLoading ? (
+                  <ActivityIndicator size="small" color={card.colors[0]} style={{ alignSelf: 'flex-start' }} />
+                ) : (
+                  <Text className={`text-3xl font-black ${card.text}`}>{card.value}</Text>
+                )}
+              </Animated.View>
+            ))}
+          </View>
         </View>
 
-        {/* Pending Requests Section */}
-        <View className={`flex-row items-center justify-between mb-4 px-1 ${isRtl ? 'flex-row-reverse' : ''}`}>
-          <View className={`flex-row items-center gap-2 ${isRtl ? 'flex-row-reverse' : ''}`}>
-            <Text className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest">
-              {t('pending_requests')}
-            </Text>
-            {(profile?.pendingRequests ?? 0) > 0 && (
-              <View className="bg-amber-100 dark:bg-amber-900/30 px-2 py-0.5 rounded-full">
-                <Text className="text-[10px] font-black text-amber-600 dark:text-amber-400">
-                  {profile?.pendingRequests}
-                </Text>
+        {/* Calendar Section */}
+        <View className="px-5 mb-8">
+          <View className={`flex-row justify-between items-center mb-4 ${isRtl ? 'flex-row-reverse' : ''}`}>
+            <View className={`flex-row items-center gap-2 ${isRtl ? 'flex-row-reverse' : ''}`}>
+              <CalendarDays size={20} color="#6366f1" />
+              <Text className="text-lg font-black text-slate-800 dark:text-white uppercase tracking-wider">
+                {t('my_schedule', 'My Schedule')}
+              </Text>
+            </View>
+            <TouchableOpacity onPress={() => router.push('/(screens)/doctor/pending-request' as any)}>
+              <Text className="text-xs font-bold text-indigo-500">{t('view_all')}</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View className="bg-white dark:bg-slate-900 rounded-[32px] p-2 overflow-hidden border border-slate-100 dark:border-slate-800 shadow-sm">
+            <Calendar
+              theme={{
+                backgroundColor: 'transparent',
+                calendarBackground: 'transparent',
+                textSectionTitleColor: isDark ? '#94a3b8' : '#64748b',
+                selectedDayBackgroundColor: '#6366f1',
+                selectedDayTextColor: '#ffffff',
+                todayTextColor: '#6366f1',
+                dayTextColor: isDark ? '#f1f5f9' : '#1e293b',
+                textDisabledColor: isDark ? '#334155' : '#cbd5e1',
+                dotColor: '#6366f1',
+                selectedDotColor: '#ffffff',
+                arrowColor: '#6366f1',
+                monthTextColor: isDark ? '#f8fafc' : '#0f172a',
+                indicatorColor: '#6366f1',
+                textDayFontWeight: '700',
+                textMonthFontWeight: '900',
+                textDayHeaderFontWeight: '700',
+              }}
+              enableSwipeMonths
+            />
+          </View>
+        </View>
+
+        {/* Analytics Section */}
+        <View className="px-5 mb-8">
+          <View className={`flex-row justify-between items-center mb-4 ${isRtl ? 'flex-row-reverse' : ''}`}>
+            <View className={`flex-row items-center gap-2 ${isRtl ? 'flex-row-reverse' : ''}`}>
+              <MessageSquare size={20} color="#10b981" />
+              <Text className="text-lg font-black text-slate-800 dark:text-white uppercase tracking-wider">
+                {t('cases_distribution', 'Case Distribution')}
+              </Text>
+            </View>
+          </View>
+
+          <View className="bg-white dark:bg-slate-900 rounded-[32px] p-6 border border-slate-100 dark:border-slate-800 shadow-sm flex-row items-center">
+            {pieData.length > 0 ? (
+              <>
+                <PieChart
+                  data={pieData}
+                  donut
+                  radius={70}
+                  innerRadius={50}
+                  innerCircleColor={isDark ? '#0f172a' : '#ffffff'}
+                  centerLabelComponent={() => (
+                    <View className="items-center justify-center">
+                      <Text className="text-xl font-black text-slate-800 dark:text-white">
+                        {stats?.totalCases ?? 0}
+                      </Text>
+                      <Text className="text-[8px] font-bold text-slate-400 uppercase">
+                        {t('cases')}
+                      </Text>
+                    </View>
+                  )}
+                />
+                <View className="flex-1 ml-6 gap-3">
+                  {pieData.slice(0, 4).map((item, idx) => (
+                    <View key={idx} className={`flex-row items-center gap-2 ${isRtl ? 'flex-row-reverse' : ''}`}>
+                      <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: item.color }} />
+                      <Text className="text-[10px] font-bold text-slate-600 dark:text-slate-300 flex-1" numberOfLines={1}>
+                        {item.text}
+                      </Text>
+                      <Text className="text-[10px] font-black text-slate-800 dark:text-white">
+                        {item.value}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              </>
+            ) : (
+              <View className="flex-1 py-10 items-center">
+                <Text className="text-slate-400 font-bold">{t('no_data_available', 'No data available')}</Text>
               </View>
             )}
           </View>
-          <TouchableOpacity onPress={() => router.push('/(screens)/doctor/cases' as any)} activeOpacity={0.7}>
-            <Text className="text-xs font-bold text-indigo-500">{t('view_all')}</Text>
-          </TouchableOpacity>
         </View>
 
-        {reqsLoading ? (
-          // Skeleton cards for requests
-          Array.from({ length: 2 }).map((_, i) => (
-            <View
-              key={i}
-              className="h-24 bg-slate-200/50 dark:bg-slate-900/50 rounded-3xl mb-3 border border-dashed border-slate-200 dark:border-slate-800"
-            />
-          ))
-        ) : pendingRequests.length === 0 ? (
-          <View className="py-14 items-center bg-white dark:bg-slate-900 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800">
-            <CheckCircle2 size={36} color={isDark ? '#334155' : '#cbd5e1'} strokeWidth={1.5} />
-            <Text className="text-slate-400 dark:text-slate-500 font-bold mt-3 text-sm">
-              {t('no_requests')}
-            </Text>
+        {/* Recent Activity / Notes */}
+        <View className="px-5">
+          <View className={`flex-row justify-between items-center mb-4 ${isRtl ? 'flex-row-reverse' : ''}`}>
+            <View className={`flex-row items-center gap-2 ${isRtl ? 'flex-row-reverse' : ''}`}>
+              <FileText size={20} color="#f59e0b" />
+              <Text className="text-lg font-black text-slate-800 dark:text-white uppercase tracking-wider">
+                {t('latest_notes', 'Latest Notes')}
+              </Text>
+            </View>
           </View>
-        ) : (
-          pendingRequests.map((req) => (
-            <TouchableOpacity
-              key={req.id}
-              activeOpacity={0.7}
-              onPress={() => router.push(`/case-details/${req.patientCasePublicId || req.id}`)}
-              className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm dark:shadow-none mb-3 overflow-hidden"
-            >
-              <View className={`flex-row items-center p-4 gap-4 ${isRtl ? 'flex-row-reverse' : ''}`}>
-                {/* Avatar */}
-                <View className="w-11 h-11 rounded-2xl bg-indigo-50 dark:bg-indigo-900/30 items-center justify-center">
-                  <Users size={18} color={isDark ? '#818cf8' : '#4f46e5'} />
-                </View>
 
-                {/* Info */}
-                <View className={`flex-1 ${isRtl ? 'items-end' : ''}`}>
-                  <Text
-                    className={`text-sm font-black text-slate-900 dark:text-white leading-tight ${isRtl ? 'text-right' : ''}`}
-                    numberOfLines={1}
-                  >
-                    {req.caseName}
-                  </Text>
-                  <Text className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
-                    {req.studentName}
-                  </Text>
+          {latestNotes.length > 0 ? (
+            latestNotes.map((session, idx) => (
+              <Animated.View
+                key={session.id}
+                entering={FadeInDown.delay(idx * 100)}
+                className="bg-white dark:bg-slate-900 rounded-3xl p-4 mb-3 border border-slate-100 dark:border-slate-800 shadow-sm flex-row items-center gap-4"
+              >
+                <View className="w-12 h-12 rounded-2xl bg-slate-50 dark:bg-slate-800 items-center justify-center">
+                  <FolderOpen size={20} color={isDark ? '#818cf8' : '#4f46e5'} />
                 </View>
-
-                {/* Approve button */}
-                <TouchableOpacity
-                  onPress={() => handleApprove(req.id)}
-                  disabled={!!actionLoading}
-                  style={{ opacity: actionLoading === req.id ? 0.5 : 1 }}
-                  className="w-10 h-10 rounded-full bg-emerald-50 dark:bg-emerald-900/20 items-center justify-center border border-emerald-100 dark:border-emerald-900/30"
-                >
-                  <CheckCircle2 size={18} color={isDark ? '#34d399' : '#059669'} />
-                </TouchableOpacity>
-              </View>
-            </TouchableOpacity>
-          ))
-        )}
+                <View className="flex-1">
+                  <Text className="text-sm font-black text-slate-800 dark:text-white" numberOfLines={1}>
+                    {session.treatmentType || (isRtl ? 'جلسة علاج' : 'Treatment Session')}
+                  </Text>
+                  <Text className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                    {session.patientName || (isRtl ? 'مريض مجهول' : 'Anonymous Patient')}
+                  </Text>
+                  <View className={`flex-row items-center gap-1 mt-1 ${isRtl ? 'flex-row-reverse' : ''}`}>
+                    <Clock size={10} color="#94a3b8" />
+                    <Text className="text-[10px] text-slate-400">
+                      {format(new Date(session.scheduledAt), 'MMM d, h:mm a')}
+                    </Text>
+                  </View>
+                </View>
+                <ChevronRight size={20} color="#cbd5e1" />
+              </Animated.View>
+            ))
+          ) : (
+            <View className="bg-white dark:bg-slate-900 rounded-[32px] p-10 items-center border border-slate-100 dark:border-slate-800 border-dashed">
+              <Text className="text-slate-400 font-bold">{t('no_notes', 'No recent activity')}</Text>
+            </View>
+          )}
+        </View>
       </ScrollView>
     </View>
   );

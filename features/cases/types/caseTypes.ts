@@ -225,3 +225,66 @@ export interface SessionPagedResult {
 }
 
 export type SessionsResponse = ApiResponse<SessionPagedResult>;
+
+/* ─── Session Media ─────────────────────────────────────────────────────────── */
+
+export interface SessionMediaItem {
+    id: string;
+    sessionId: string;
+    noteId: string | null;
+    mediaUrl: string;
+    createAt: string;
+}
+
+/* ─── Session Notes ─────────────────────────────────────────────────────────── */
+
+export interface SessionNoteBody {
+    sessionId: string;
+    note: string;
+}
+
+export interface SessionNoteItem {
+    id: string;
+    sessionId: string;
+    note: string;
+    createAt: string;
+    medias: SessionMediaItem[];
+}
+
+export type AddSessionNoteResponse = ApiResponse<SessionNoteItem>;
+export type GetSessionNotesResponse = ApiResponse<SessionNoteItem[]>;
+export type AddNoteMediaResponse = ApiResponse<SessionMediaItem>;
+
+/* ─── Session Evaluation ────────────────────────────────────────────────────── */
+
+export interface EvaluateSessionBody {
+    grade: number;
+    note: string;
+    isFinalSession: boolean;
+}
+
+export type EvaluateSessionResponse = ApiResponse<boolean>;
+
+/**
+ * Extended session item returned by the timeline endpoint.
+ * Includes evaluation data on top of the base SessionDto.
+ */
+export interface TimelineSessionItem extends SessionDto {
+    grade: number;
+    doctorNote: string | '';
+    evaluteDoctorId: string | null;
+    evaluteDoctorName: string | null;
+    updateAt: string;
+    notes: SessionNoteItem[];
+}
+
+export interface TimelinePagedResult {
+    totalCount: number;
+    currentPage: number;
+    totalPages: number;
+    hasPreviousPage: boolean;
+    hasNextPage: boolean;
+    items: TimelineSessionItem[];
+}
+
+export type TimelineSessionsResponse = ApiResponse<TimelinePagedResult>;

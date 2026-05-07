@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
 import { getStudentMyCases, getStudentMyRequests, getSessionsByStudent, getUpcomingSessions } from "@/features/cases/services/caseService";
+import { getCaseDiagnoses } from "@/features/patient/services/patientService";
 import { studentDashboardService } from "../services/studentDashboardService";
 
 export const useStudentDashboardData = () => {
@@ -28,7 +29,26 @@ export const useStudentDashboardData = () => {
 
   const myCasesQuery = useQuery({
     queryKey: ["student-my-cases", studentId],
-    queryFn: () => getStudentMyCases({ pageSize: 100 }),
+    queryFn: async () => {
+        const res = await getStudentMyCases({ pageSize: 100 });
+        if (res?.success && res?.data?.items) {
+            // Fetch diagnoses for each current case to ensure case type name is visible
+            const itemsWithDiagnoses = await Promise.all(res.data.items.map(async (c: any) => {
+                if (c.status === "InProgress") {
+                    try {
+                        const dxRes = await getCaseDiagnoses(c.id);
+                        const dxData = dxRes?.data?.items || dxRes?.data || [];
+                        return { ...c, diagnosisdto: Array.isArray(dxData) ? dxData : [dxData] };
+                    } catch {
+                        return c;
+                    }
+                }
+                return c;
+            }));
+            return { ...res, data: { ...res.data, items: itemsWithDiagnoses } };
+        }
+        return res;
+    },
     enabled: !!studentId,
   });
 

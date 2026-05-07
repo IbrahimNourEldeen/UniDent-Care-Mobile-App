@@ -11,8 +11,10 @@ import PersonRow from './PersonRow';
 export type DiagnosisStage = 'BasicClinic' | 'AI' | '' | 0 | 1;
 
 export interface ToothPanelData {
+    id?: string;
     toothNumber: number;
     caseType: string;
+    caseTypeId?: string;
     diagnosisStage: DiagnosisStage;
     notes: string;
     assignedStudentName?: string | null;

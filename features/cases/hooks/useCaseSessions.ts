@@ -39,22 +39,34 @@ export function useCaseSessions(caseId: string, patientCaseId: string) {
         setIsSubmitting(true);
         try {
             const res = await createSession({ studentId, patientCaseId, sessionDate, location });
-            const isSuccess = (res as any) === '' || (res && ((res as any).success === true || (res as any).data));
+            // Handle 204 No Content (empty string) or success flag
+            const isSuccess =
+                (res as any) === '' ||
+                (res as any) === null ||
+                (res as any) === undefined ||
+                ((res as any)?.success === true);
 
             if (isSuccess) {
                 dispatch(showToast({ message: 'Session scheduled successfully', type: 'success' }));
-                // Invalidate all related queries so every screen updates automatically
                 await queryClient.invalidateQueries({ queryKey: caseKeys.sessions(caseId) });
                 await queryClient.invalidateQueries({ queryKey: caseKeys.detail(caseId) });
                 await queryClient.invalidateQueries({ queryKey: caseKeys.studentStats(studentId) });
                 return true;
             }
 
-            const errorMsg = res?.message || 'The server rejected this session.';
+            const errorMsg = (res as any)?.message || 'The server rejected this session.';
             dispatch(showToast({ message: errorMsg, type: 'error' }));
             return false;
         } catch (err: any) {
-            const msg = err.response?.data?.message || err.response?.data?.error?.errors?.[0] || err.message || 'An unexpected error occurred.';
+            const data = err?.response?.data;
+            console.error('[addSession] API error:', JSON.stringify(data ?? err?.message));
+            const msg =
+                data?.message ||
+                data?.errors?.[0] ||
+                data?.error?.errors?.[0] ||
+                (Array.isArray(data?.errors) ? data.errors.join(', ') : null) ||
+                err?.message ||
+                'An unexpected error occurred.';
             dispatch(showToast({ message: msg, type: 'error' }));
             return false;
         } finally {

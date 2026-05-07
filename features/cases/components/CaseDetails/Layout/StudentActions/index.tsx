@@ -9,6 +9,7 @@ import PendingRequestSection from './PendingRequestSection';
 import ScheduleSessionSection from './ScheduleSessionSection';
 import { showToast } from '@/store/slices/uiSlice';
 import api from '@/utils/api';
+import { SendRequestModal } from '@/features/dashboard/components/student/CaseCard';
 
 interface StudentActionsProps {
     patient: any;
@@ -28,8 +29,8 @@ export default function StudentActions({ patient, onRefetch }: StudentActionsPro
     const requestStatus = userFlags?.requestStatus ?? '';
     const requestId = userFlags?.requestId ?? '';
 
-    // Send request loading state
-    const [sendRequestLoading, setSendRequestLoading] = useState(false);
+    // Send request modal state
+    const [showRequestModal, setShowRequestModal] = useState(false);
     const [cancelLoading, setCancelLoading] = useState(false);
 
     const {
@@ -38,31 +39,15 @@ export default function StudentActions({ patient, onRefetch }: StudentActionsPro
         handleCreateSession,
         isAddingSession,
         scheduledSession,
+        inProgressSession,
         showStartNowModal, setShowStartNowModal,
         startNowLoading, handleStartNow,
         showCancelSessionModal, setShowCancelSessionModal,
         cancelSessionLoading,
         handleCancelSession,
+        handleGoToActiveSession,
         refetchSessions: refetchSessionsHook,
     } = useStudentActions(patient?.id ?? '', patient?.id ?? '');
-
-    const handleSendRequest = async () => {
-        if (!studentId || !patient?.id) return;
-        setSendRequestLoading(true);
-        try {
-            await api.post('/CaseRequests', {
-                studentId,
-                patientCaseId: patient.id,
-                description: '',
-            });
-            dispatch(showToast({ message: 'Request sent successfully', type: 'success' }));
-            onRefetch();
-        } catch (err: any) {
-            dispatch(showToast({ message: err?.response?.data?.message || 'Failed to send request', type: 'error' }));
-        } finally {
-            setSendRequestLoading(false);
-        }
-    };
 
     const handleCancelRequest = async () => {
         if (!requestId) return;
@@ -83,7 +68,7 @@ export default function StudentActions({ patient, onRefetch }: StudentActionsPro
             {!isAssignedToMe && (
                 <>
                     {!hasRequest && (
-                        <SendRequestSection onSendRequest={handleSendRequest} />
+                        <SendRequestSection onSendRequest={() => setShowRequestModal(true)} />
                     )}
                     {hasRequest && (
                         <PendingRequestSection
@@ -102,6 +87,7 @@ export default function StudentActions({ patient, onRefetch }: StudentActionsPro
                     onToggleForm={setShowSessionForm}
                     onSubmit={handleCreateSession}
                     scheduledSession={scheduledSession}
+                    inProgressSession={inProgressSession}
                     showStartNowModal={showStartNowModal}
                     onToggleStartNowModal={setShowStartNowModal}
                     onStartNow={handleStartNow}
@@ -110,6 +96,18 @@ export default function StudentActions({ patient, onRefetch }: StudentActionsPro
                     onToggleCancelSessionModal={setShowCancelSessionModal}
                     onCancelSession={handleCancelSession}
                     cancelSessionLoading={cancelSessionLoading}
+                    onGoToActiveSession={handleGoToActiveSession}
+                />
+            )}
+
+            {showRequestModal && (
+                <SendRequestModal
+                    caseItem={patient}
+                    onClose={() => setShowRequestModal(false)}
+                    onSuccess={() => {
+                        setShowRequestModal(false);
+                        onRefetch();
+                    }}
                 />
             )}
         </View>

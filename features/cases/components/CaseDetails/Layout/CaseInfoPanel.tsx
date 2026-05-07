@@ -127,7 +127,7 @@ export default function CaseInfoPanel({ role, onRefetch }: PatientInfoPanelProps
 
             {/* Treatment Progress */}
             <View className={`mt-4 pt-6 border-t ${isDark ? 'border-slate-800/80' : 'border-slate-100'}`}>
-                <ProgressTracker status={patient.status} createdByRole={patient.createdByRole} diagnoses={patient.diagnoses} />
+                <ProgressTracker status={patient.status} createdByRole={patient.createdByRole} diagnosisdto={patient.diagnoses ?? (patient.diagnosisdto ? [patient.diagnosisdto] : null)} />
             </View>
 
             {/* Divider */}

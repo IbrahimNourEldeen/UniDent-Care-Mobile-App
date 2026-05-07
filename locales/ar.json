@@ -1,4 +1,5 @@
 {
+  "all_tab": "الكل",
   "profile": "الملف الشخصي",
   "dark_mode": "الوضع الداكن",
   "light_mode": "الوضع الفاتح",
@@ -124,6 +125,7 @@
   "no_pending_cases": "لا توجد طلبات حالات",
   "no_pending_cases_desc": "عندما يُرسل الطلاب طلباتهم، ستظهر هنا.",
   "student_list": "قائمة الطلاب",
+  "student_cases": "حالات الطلاب",
   "students_found": "{{students}} طالب · {{requests}} طلب إجمالاً",
   "no_students_yet": "لا يوجد طلاب بعد",
   "no_students_desc": "الطلاب الذين يرسلون إليك طلبات الحالات سيظهرون هنا.",
@@ -282,10 +284,11 @@
   "reject_request": "رفض الطلب",
   "approve_request_confirm": "هل أنت متأكد من قبول هذا الطلب؟",
   "reject_request_confirm": "هل أنت متأكد من رفض هذا الطلب؟",
-  "approve": "قبول",
-  "reject": "رفض",
   "error": "خطأ",
   "action_failed": "فشل الإجراء",
   "loading": "جاري التحميل...",
-  "cancel": "إلغاء"
+  "todays_agenda": "مواعيد اليوم",
+  "latest_notes": "آخر الملاحظات",
+  "cancel": "إلغاء",
+  "error_student_motiv":"يرجى كتابة وصف أكثر تفصيلاً (على الأقل 20 حرفاً)"
 }

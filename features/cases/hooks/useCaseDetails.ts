@@ -54,8 +54,9 @@ export function useCaseDetails(caseId: string): UseCaseDetailsReturn {
                     assignedDoctorId: caseData.assignedDoctorId || "",
                     universityId: caseData.universityId || "",
                     universityName: caseData.universityName || "",
-                    createdById: caseData.createdById || "",
-                    createdByRole: caseData.createdByRole || "",
+                    createdById: (caseData as any).createdById || '',
+                    createdByRole: (caseData as any).createdByRole || '',
+
                     imageUrls: caseData.imageUrls || [],
                     userFlags: caseData.userFlags || {
                         isOwner: false,

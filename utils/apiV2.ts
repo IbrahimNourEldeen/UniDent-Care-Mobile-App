@@ -3,11 +3,11 @@ import * as SecureStore from 'expo-secure-store';
 import { store } from '@/store/store';
 import { logout } from '@/store/slices/authSlice';
 
-const axiosInstance = axios.create({
-    baseURL: "https://dental-hup1.runasp.net/api/v1/",
+const apiV2 = axios.create({
+    baseURL: "https://dental-hup1.runasp.net/api/v2/",
 });
 
-axiosInstance.interceptors.request.use(
+apiV2.interceptors.request.use(
     async (config) => {
         try {
             const token = await SecureStore.getItemAsync("token");
@@ -24,11 +24,11 @@ axiosInstance.interceptors.request.use(
     }
 );
 
-axiosInstance.interceptors.response.use(
+apiV2.interceptors.response.use(
     (response) => response,
     async (error) => {
         if (error.response?.status === 401) {
-            console.warn(`[API] 401 Unauthorized for: ${error.config?.url}`);
+            console.warn(`[API V2] 401 Unauthorized for: ${error.config?.url}`);
             await SecureStore.deleteItemAsync("token");
             await SecureStore.deleteItemAsync("publicId");
             await SecureStore.deleteItemAsync("role");
@@ -38,4 +38,4 @@ axiosInstance.interceptors.response.use(
     }
 );
 
-export default axiosInstance;
+export default apiV2;

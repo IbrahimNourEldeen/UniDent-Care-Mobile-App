@@ -83,7 +83,11 @@ export default function MyCurrentCases() {
                       <View className={`flex-row items-center gap-1.5 ${isRtl ? 'flex-row-reverse' : ''}`}>
                         <View className="w-1.5 h-1.5 rounded-full bg-slate-400" />
                         <Text className={`text-xs font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                          {item.diagnosisdto?.caseType || (isRtl ? "غير محدد" : "Not specified")}
+                          {(() => {
+                            const dx = item.diagnosisdto || item.diagnoses || item.diagnosisDto;
+                            const firstDx = Array.isArray(dx) ? dx[0] : dx;
+                            return firstDx?.caseTypeName || firstDx?.caseType || (isRtl ? "غير محدد" : "Not specified");
+                          })()}
                         </Text>
                       </View>
                     </View>

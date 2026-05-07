@@ -36,16 +36,21 @@ export default function AuthBoundary() {
         return;
       }
 
-      if (!user) {
+      if (!user && decoded.role !== "ClinicalDoctor") {
         const userData = await getProfileByRole(decoded.role, decoded.publicId);
         dispatch(setUserFromReload({ user: userData, role: decoded.role, token: token }));
+      } else if (!user && decoded.role === "ClinicalDoctor") {
+        dispatch(setUserFromReload({ user: null, role: decoded.role, token: token }));
       }
 
       const role = (decoded as any).role.toLowerCase();
-      if (role === "doctor") router.replace("/(screens)/doctor");
-      else if (role === "student") router.replace("/(screens)/student");
-      else if (role === "patient") router.replace("/(screens)/patient");
-      else router.replace("/(auth)/login");
+      if (role === 'doctor') router.replace('/(screens)/doctor');
+      else if (role === 'student') router.replace('/(screens)/student');
+      else if (role === 'patient') router.replace('/(screens)/patient');
+      else if (role === 'clinicaldoctor' || role === 'clinical-doctor' || role === 'clinical doctor')
+        router.replace('/(screens)/clinical-doctor');
+      else router.replace('/(auth)/login');
+
     } catch (error) {
       console.error("Auth Boundary Error:", error);
       router.replace("/(auth)/login");

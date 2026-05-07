@@ -33,22 +33,12 @@ import { useThemeLanguage } from '@/store/ThemeLanguageContext';
 import { useAppSelector } from '@/store/hooks';
 import { doctorDashboardService, CaseRequest, PatientCaseDto, PagedResult } from '@/features/dashboard/services/doctorDashboardService';
 import { useQuery } from '@tanstack/react-query';
-import { RequestDetailModal } from '@/features/dashboard/components/student-list/RequestDetailModal';
 
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 // RequestStatus enum: 0=Pending, 1=Approved, 2=Rejected, 3=Cancelled, 4=Taken, 5=Completed
 const TABS = [
-  {
-    id: 'under_review',
-    labelKey: 'under_review',
-    label: 'Under Review',
-    icon: Clock,
-    statusNum: 0,
-    source: 'requests' as const,
-    color: { active: '#f59e0b', bg: '#fef3c7', bgDark: '#451a03', text: '#92400e', textDark: '#fbbf24' },
-  },
   {
     id: 'in_progress',
     labelKey: 'in_progress',
@@ -75,152 +65,7 @@ type TabId = typeof TABS[number]['id'];
 
 const PAGE_SIZE = 30;
 
-// ─── Request Card ─────────────────────────────────────────────────────────────
 
-function RequestCard({
-  req,
-  isDark,
-  locale,
-  t,
-  tabColor,
-  onPress,
-}: {
-  req: CaseRequest;
-  isDark: boolean;
-  locale: string;
-  t: (k: string, fallback?: string) => string;
-  tabColor: typeof TABS[number]['color'];
-  onPress: () => void;
-}) {
-  const isRtl = I18nManager.isRTL;
-  const initials = (req.studentName ?? 'S')
-    .split(' ')
-    .slice(0, 2)
-    .map((n: string) => n[0])
-    .join('')
-    .toUpperCase();
-
-  const formattedDate = new Date(req.createAt).toLocaleDateString(locale, {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
-
-  return (
-    <Animated.View entering={FadeInDown.duration(300)}>
-      <TouchableOpacity
-        onPress={onPress}
-        activeOpacity={0.85}
-        className={`mb-4 rounded-[28px] overflow-hidden border ${
-          isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100 shadow-sm shadow-slate-200/60'
-        }`}
-      >
-        {/* Color accent top stripe */}
-        <View style={{ height: 3, backgroundColor: tabColor.active }} />
-
-        <View className="p-5">
-          {/* Header row */}
-          <View className={`flex-row items-start gap-4 ${isRtl ? 'flex-row-reverse' : ''}`}>
-            {/* Avatar */}
-            <LinearGradient
-              colors={isDark ? ['#3730a3', '#1e1b4b'] : ['#6366f1', '#4f46e5']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={{ width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center' }}
-            >
-              <Text style={{ color: 'white', fontWeight: '900', fontSize: 16 }}>{initials}</Text>
-            </LinearGradient>
-
-            {/* Info */}
-            <View className={`flex-1 ${isRtl ? 'items-end' : ''}`}>
-              <Text
-                className={`font-black text-slate-900 dark:text-white text-base leading-tight ${isRtl ? 'text-right' : ''}`}
-                numberOfLines={1}
-              >
-                {req.studentName}
-              </Text>
-
-              {/* Case name */}
-              {req.caseName ? (
-                <View className={`flex-row items-center gap-1.5 mt-1 ${isRtl ? 'flex-row-reverse' : ''}`}>
-                  <Stethoscope size={11} color={isDark ? '#64748b' : '#94a3b8'} />
-                  <Text
-                    className="text-xs font-bold text-slate-400 dark:text-slate-500"
-                    numberOfLines={1}
-                  >
-                    {req.caseName}
-                  </Text>
-                </View>
-              ) : null}
-            </View>
-          </View>
-
-          {/* Divider */}
-          <View className={`h-px mt-4 mb-4 ${isDark ? 'bg-slate-800' : 'bg-slate-50'}`} />
-
-          {/* Meta row */}
-          <View className={`flex-row flex-wrap gap-4 ${isRtl ? 'flex-row-reverse' : ''}`}>
-            {/* Patient */}
-            <View className={`flex-row items-center gap-1.5 ${isRtl ? 'flex-row-reverse' : ''}`}>
-              <View
-                className="w-6 h-6 rounded-lg items-center justify-center"
-                style={{ backgroundColor: isDark ? '#1e293b' : '#f1f5f9' }}
-              >
-                <User size={11} color={isDark ? '#94a3b8' : '#64748b'} />
-              </View>
-              <View>
-                <Text className="text-[9px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
-                  {t('patient', 'Patient')}
-                </Text>
-                <Text className="text-xs font-black text-slate-700 dark:text-slate-300" numberOfLines={1}>
-                  {req.patientName ?? '—'}
-                </Text>
-              </View>
-            </View>
-
-            {/* Level */}
-            {req.level ? (
-              <View className={`flex-row items-center gap-1.5 ${isRtl ? 'flex-row-reverse' : ''}`}>
-                <View
-                  className="w-6 h-6 rounded-lg items-center justify-center"
-                  style={{ backgroundColor: isDark ? '#1e293b' : '#f1f5f9' }}
-                >
-                  <BookOpen size={11} color={isDark ? '#94a3b8' : '#64748b'} />
-                </View>
-                <View>
-                  <Text className="text-[9px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
-                    {t('level', 'Level')}
-                  </Text>
-                  <Text className="text-xs font-black text-slate-700 dark:text-slate-300">
-                    {req.level}
-                  </Text>
-                </View>
-              </View>
-            ) : null}
-
-            {/* Date */}
-            <View className={`flex-row items-center gap-1.5 ${isRtl ? 'flex-row-reverse' : ''}`}>
-              <View
-                className="w-6 h-6 rounded-lg items-center justify-center"
-                style={{ backgroundColor: isDark ? '#1e293b' : '#f1f5f9' }}
-              >
-                <Calendar size={11} color={isDark ? '#94a3b8' : '#64748b'} />
-              </View>
-              <View>
-                <Text className="text-[9px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
-                  {t('date', 'Date')}
-                </Text>
-                <Text className="text-xs font-black text-slate-700 dark:text-slate-300">
-                  {formattedDate}
-                </Text>
-              </View>
-            </View>
-          </View>
-        </View>
-      </TouchableOpacity>
-    </Animated.View>
-  );
-}
 
 function CaseCard({
   item,
@@ -251,7 +96,17 @@ function CaseCard({
     year: 'numeric',
   });
 
-  const resolvedCaseType = item.caseType?.name || item.diagnosisdto?.caseType || (item as any).diagnosisDto?.caseType || (item.diagnosisdto as any)?.caseTypeName || (item as any).caseName || (item as any).title || '—';
+  const diagArray = item.diagnoses || item.diagnosisdto || (item as any).diagnosisDto;
+  const diag = Array.isArray(diagArray) ? diagArray[0] : diagArray;
+  const resolvedCaseType =
+    diag?.caseTypeName ||
+    diag?.caseType ||
+    item.caseType?.name ||
+    (item as any).caseTypeName ||
+    (item as any).caseName ||
+    (item as any).title ||
+    (typeof item.caseType === 'string' ? item.caseType : '') ||
+    '—';
 
   return (
     <Animated.View entering={FadeInDown.duration(300)}>
@@ -334,7 +189,7 @@ function CaseCard({
 
 // ─── Main Screen ─────────────────────────────────────────────────────────────
 
-export default function MyStudentListScreen() {
+export default function MyStudentsCasesScreen() {
   const { t } = useTranslation();
   const { user } = useAppSelector((s) => s.auth);
   const { theme, language } = useThemeLanguage();
@@ -346,10 +201,9 @@ export default function MyStudentListScreen() {
   const doctorId = (user as any)?.publicId ?? (user as any)?.id;
   const router = useRouter();
 
-  const [activeTab, setActiveTab] = useState<TabId>('under_review');
+  const [activeTab, setActiveTab] = useState<TabId>('in_progress');
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedRequest, setSelectedRequest] = useState<CaseRequest | null>(null);
   const [selectedCase, setSelectedCase] = useState<PatientCaseDto | null>(null);
 
   const currentTab = TABS.find((t) => t.id === activeTab)!;
@@ -358,11 +212,7 @@ export default function MyStudentListScreen() {
   const { data: resData, isLoading: loading, refetch } = useQuery({
     queryKey: ['doctor-student-data', doctorId, activeTab],
     queryFn: async () => {
-      if (currentTab.source === 'requests') {
-        return doctorDashboardService.getDoctorRequests(doctorId, 1, PAGE_SIZE, currentTab.statusNum);
-      } else {
         return doctorDashboardService.getCasesByDoctor(doctorId, currentTab.statusStr, 1, PAGE_SIZE);
-      }
     },
     enabled: !!doctorId,
   });
@@ -371,7 +221,22 @@ export default function MyStudentListScreen() {
 
   const filteredItems = items.filter((item: any) => {
     const q = searchQuery.toLowerCase();
-    const nameToMatch = item.studentName || item.patientName || item.caseName || (item as any).assignedStudentName || '';
+    const dArray = item.diagnoses || item.diagnosisdto || (item as any).diagnosisDto;
+    const d = Array.isArray(dArray) ? dArray[0] : dArray;
+    const caseTypeStr =
+      d?.caseTypeName ||
+      d?.caseType ||
+      item.caseType?.name ||
+      (item as any).caseTypeName ||
+      (item as any).caseName ||
+      (item as any).title ||
+      (typeof item.caseType === 'string' ? item.caseType : '') ||
+      '';
+    const nameToMatch =
+      (item.studentName || '') +
+      (item.patientName || '') +
+      (item as any).assignedStudentName +
+      caseTypeStr;
     return nameToMatch.toLowerCase().includes(q);
   });
 
@@ -382,11 +247,6 @@ export default function MyStudentListScreen() {
   }, [refetch]);
 
   // Count badge per tab
-  const { data: underReviewData } = useQuery({
-    queryKey: ['doctor-requests-count', doctorId, 0],
-    queryFn: () => doctorDashboardService.getDoctorRequests(doctorId, 1, 1, 0),
-    enabled: !!doctorId,
-  });
   const { data: inProgressData } = useQuery({
     queryKey: ['doctor-requests-count-v2', doctorId, 'InProgress'],
     queryFn: () => doctorDashboardService.getCasesByDoctor(doctorId, 'InProgress', 1, 1),
@@ -399,7 +259,6 @@ export default function MyStudentListScreen() {
   });
 
   const counts: Record<TabId, number> = {
-    under_review: underReviewData?.totalCount ?? 0,
     in_progress: inProgressData?.totalCount ?? 0,
     completed: completedData?.totalCount ?? 0,
   };
@@ -436,9 +295,17 @@ export default function MyStudentListScreen() {
               <Text className="text-white/60 text-xs font-bold uppercase tracking-widest mb-1">
                 {t('doctor_panel', 'Doctor Panel')}
               </Text>
-              <Text className="text-white text-3xl font-black" numberOfLines={1}>
-                {t('student_list', 'Student List')}
-              </Text>
+              <View className="flex-row items-center gap-3">
+                <Text className="text-white text-3xl font-black" numberOfLines={1}>
+                  {t('student_cases', 'Student Cases')}
+                </Text>
+                {loading && (
+                  <View className="bg-white/20 px-2 py-1 rounded-full flex-row items-center gap-1.5">
+                    <ActivityIndicator size="small" color="white" />
+                    <Text className="text-[8px] font-bold text-white uppercase tracking-tighter">Syncing</Text>
+                  </View>
+                )}
+              </View>
             </View>
 
             {/* Total badge */}
@@ -447,8 +314,7 @@ export default function MyStudentListScreen() {
                 {t('total', 'Total')}
               </Text>
               <Text className="text-white text-2xl font-black text-center">
-                {(underReviewData?.totalCount ?? 0) +
-                  (inProgressData?.totalCount ?? 0) +
+                {(inProgressData?.totalCount ?? 0) +
                   (completedData?.totalCount ?? 0)}
               </Text>
             </View>
@@ -600,17 +466,6 @@ export default function MyStudentListScreen() {
             </Animated.View>
           ) : (
             filteredItems.map((item: any) => (
-              currentTab.source === 'requests' ? (
-                <RequestCard
-                  key={item.id}
-                  req={item}
-                  isDark={isDark}
-                  locale={locale}
-                  t={t as any}
-                  tabColor={currentTab.color}
-                  onPress={() => setSelectedRequest(item)}
-                />
-              ) : (
                 <CaseCard
                   key={item.id}
                   item={item}
@@ -620,19 +475,12 @@ export default function MyStudentListScreen() {
                   tabColor={currentTab.color}
                   onPress={() => router.push(`/case-details/${item.id}`)} 
                 />
-              )
             ))
           )}
         </View>
       </ScrollView>
 
-      <RequestDetailModal
-        request={selectedRequest}
-        visible={!!selectedRequest}
-        onClose={() => setSelectedRequest(null)}
-        onActionDone={() => refetch()}
-        isUnderReview={activeTab === 'under_review'}
-      />
+
 
 
     </View>

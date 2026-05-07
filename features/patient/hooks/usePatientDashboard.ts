@@ -1,6 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { patientKeys } from './patientQueryKeys';
-import { getPatientCases, getPatientSessions, getPatientUpcomingSessions, getCaseDiagnoses } from '../services/patientService';
+import { 
+    getPatientCases, 
+    getPatientSessions, 
+    getPatientUpcomingSessions, 
+    getCaseDiagnoses,
+    getStudentDetails,
+    getDoctorDetails
+} from '../services/patientService';
 import { generatePatientDashboardData, DashboardData } from '../../dashboard/services/patientDashboardAnalytics';
 
 export function usePatientDashboard(patientId: string) {
@@ -57,7 +64,42 @@ export function usePatientDashboard(patientId: string) {
         enabled: !!patientId && !!casesQuery.data,
     });
 
-    const isLoading = casesQuery.isLoading || sessionsQuery.isLoading || upcomingSessionsQuery.isLoading || (!!casesQuery.data && diagnosesQuery.isLoading);
+    // 5. Fetch User Names (Students/Doctors assigned to cases)
+    const userNamesQuery = useQuery({
+        queryKey: ['patient', patientId, 'userNames'],
+        queryFn: async () => {
+            const cases = casesQuery.data || [];
+            const studentIds = [...new Set(cases.map((c: any) => c.assignedStudentId).filter((id: any) => !!id))];
+            const doctorIds = [...new Set(cases.map((c: any) => c.assignedDoctorId).filter((id: any) => !!id))];
+            
+            const userNamesMap: Record<string, string> = {};
+            
+            await Promise.all([
+                ...studentIds.map(async (id: any) => {
+                    try {
+                        const res = await getStudentDetails(id);
+                        const name = res?.data?.fullName || res?.fullName;
+                        if (name) userNamesMap[id] = name;
+                    } catch {}
+                }),
+                ...doctorIds.map(async (id: any) => {
+                    try {
+                        const res = await getDoctorDetails(id);
+                        const name = res?.data?.fullName || res?.fullName;
+                        if (name) userNamesMap[id] = name;
+                    } catch {}
+                })
+            ]);
+            return userNamesMap;
+        },
+        enabled: !!patientId && !!casesQuery.data,
+    });
+
+    const isLoading = casesQuery.isLoading || 
+                      sessionsQuery.isLoading || 
+                      upcomingSessionsQuery.isLoading || 
+                      (!!casesQuery.data && (diagnosesQuery.isLoading || userNamesQuery.isLoading));
+    
     const isError = casesQuery.isError || sessionsQuery.isError || upcomingSessionsQuery.isError || diagnosesQuery.isError;
 
     // Transform data once all queries are done
@@ -66,7 +108,8 @@ export function usePatientDashboard(patientId: string) {
             casesQuery.data,
             sessionsQuery.data,
             upcomingSessionsQuery.data,
-            diagnosesQuery.data || []
+            diagnosesQuery.data || [],
+            userNamesQuery.data || {}
         )
         : null;
 
@@ -75,13 +118,13 @@ export function usePatientDashboard(patientId: string) {
             casesQuery.refetch(),
             sessionsQuery.refetch(),
             upcomingSessionsQuery.refetch(),
-            diagnosesQuery.refetch()
+            diagnosesQuery.refetch(),
+            userNamesQuery.refetch()
         ]);
     };
 
     return {
         dashboardData,
-        // Legacy fields for backward compatibility if needed during migration
         cases: casesQuery.data || [],
         sessions: sessionsQuery.data || [],
         upcomingSessions: upcomingSessionsQuery.data || [],

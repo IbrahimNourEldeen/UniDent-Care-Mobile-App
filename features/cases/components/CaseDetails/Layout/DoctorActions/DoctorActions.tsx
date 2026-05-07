@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { ChevronLeft, ChevronRight } from 'lucide-react-native';
 import PendingRequestCard from './PendingRequestCard';
+import EvaluationCard from './EvaluationCard';
 import { useCase } from '@/features/cases/context/CaseContext';
 import { useThemeLanguage } from '@/store/ThemeLanguageContext';
 import api from '@/utils/api';
 import { useDispatch } from 'react-redux';
 import { showToast } from '@/store/slices/uiSlice';
+
 
 interface DoctorActionsProps {
     patient: any;
@@ -101,6 +103,9 @@ export default function DoctorActions({ patient, onRefetch }: DoctorActionsProps
                     />
                 </View>
             ) : null}
+
+            {/* ── Session needs evaluation (matches web DoctorActions) ── */}
+            <EvaluationCard />
         </View>
     );
 }

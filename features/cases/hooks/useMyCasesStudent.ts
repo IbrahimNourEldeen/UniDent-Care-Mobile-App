@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Alert } from 'react-native';
 import { StudentCaseItem, StudentRequestItem } from '../types/caseTypes';
 import { getStudentMyCases, getStudentMyRequests } from '../services/caseService';
+import { getCaseDiagnoses } from '@/features/patient/services/patientService';
 
 export type MyCasesTab = 'cases' | 'requests';
 
@@ -36,7 +37,17 @@ export function useMyCasesStudent() {
                 pageSize: PAGE_SIZE,
             });
             if (res.success && res.data) {
-                setCases(res.data.items);
+                // Fetch diagnoses for each case to ensure case type is available
+                const casesWithDiagnoses = await Promise.all(res.data.items.map(async (c: any) => {
+                    try {
+                        const dxRes = await getCaseDiagnoses(c.id);
+                        const dxData = dxRes?.data?.items || dxRes?.data || [];
+                        return { ...c, diagnosisdto: Array.isArray(dxData) ? dxData : [dxData] };
+                    } catch {
+                        return c;
+                    }
+                }));
+                setCases(casesWithDiagnoses);
                 setCasesTotalPages(res.data.totalPages);
                 setCasesTotalCount(res.data.totalCount);
             }
@@ -57,7 +68,17 @@ export function useMyCasesStudent() {
                 pageSize: PAGE_SIZE,
             });
             if (res.success && res.data) {
-                setRequests(res.data.items);
+                // Fetch diagnoses for each request to ensure case type is available
+                const requestsWithDiagnoses = await Promise.all(res.data.items.map(async (r: any) => {
+                    try {
+                        const dxRes = await getCaseDiagnoses(r.patientCasePublicId || r.patientCaseId);
+                        const dxData = dxRes?.data?.items || dxRes?.data || [];
+                        return { ...r, diagnosisdto: Array.isArray(dxData) ? dxData : [dxData] };
+                    } catch {
+                        return r;
+                    }
+                }));
+                setRequests(requestsWithDiagnoses);
                 setRequestsTotalPages(res.data.totalPages);
                 setRequestsTotalCount(res.data.totalCount);
             }

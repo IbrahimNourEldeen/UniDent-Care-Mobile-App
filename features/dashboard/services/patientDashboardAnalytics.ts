@@ -14,7 +14,7 @@ export interface PatientCaseDto {
   id: string;
   patientId: string;
   patientName?: string | null;
-  status?: number | string; // Handled as number in CaseStatus or string
+  status?: number | string; 
   caseType?: string | null;
   caseTypeName?: string | null;
   description?: string | null;
@@ -26,7 +26,7 @@ export interface PatientCaseDto {
   assignedDoctorId?: string | null;
   createAt: string;
   imageUrls?: string[] | null;
-  diagnosisdto?: DiagnosisDto | null; // Some responses have this nested
+  diagnosisdto?: DiagnosisDto | null; 
 }
 
 export interface SessionDto {
@@ -37,9 +37,11 @@ export interface SessionDto {
   patientName?: string | null;
   studentId?: string | null;
   studentName?: string | null;
+  assignedDoctorId?: string | null;
+  assignedDoctorName?: string | null;
   scheduledAt: string;
   endAt?: string | null;
-  status?: string | number | null; // e.g. "Completed", "Pending", "Scheduled"
+  status?: string | number | null; 
   totalNotes: number;
   totalMedia: number;
   createAt: string;
@@ -121,21 +123,19 @@ export interface DashboardData {
 // 3. Transformation Service
 // ---------------------------------------------------------
 
-/**
- * Generates the full Patient Dashboard payload by aggregating raw API data.
- */
 export function generatePatientDashboardData(
   cases: PatientCaseDto[],
   sessions: SessionDto[],
   upcomingSessions: SessionDto[],
-  diagnoses: DiagnosisDto[]
+  diagnoses: DiagnosisDto[],
+  userNamesMap: Record<string, string> = {}
 ): DashboardData {
   // --- 1. Cases KPIs ---
   const totalCases = cases.length;
   
   const completedCases = cases.filter(c => {
-    const status = typeof c.status === 'string' ? parseInt(c.status) : c.status;
-    return status === CaseStatus.Completed;
+    const status = typeof c.status === 'string' ? (isNaN(parseInt(c.status)) ? c.status : parseInt(c.status)) : c.status;
+    return status === CaseStatus.Completed || status === 'Completed';
   }).length;
   
   const activeCases = totalCases - completedCases;
@@ -147,7 +147,7 @@ export function generatePatientDashboardData(
   const totalSessions = sessions.length;
   const completedSessions = sessions.filter(s => {
     const status = typeof s.status === 'string' ? s.status.toLowerCase() : s.status;
-    return status === 'completed' || status === 2; // Assuming 2 is Completed for sessions
+    return status === 'completed' || status === 'done' || status === 2; 
   }).length;
   const pendingSessions = totalSessions - completedSessions;
 
@@ -169,36 +169,64 @@ export function generatePatientDashboardData(
   const activities: RecentActivityWidget[] = [];
 
   sessions.forEach(s => {
+    const isCompleted = s.status && (s.status.toString().toLowerCase() === 'completed' || s.status.toString().toLowerCase() === 'done' || s.status === 2);
+    const doctorDisplay = s.studentName ? `with ${s.studentName}` : (s.assignedDoctorName ? `with Dr. ${s.assignedDoctorName}` : '');
+    const activityDate = isCompleted ? (s.createAt || s.scheduledAt) : (s.scheduledAt || s.createAt);
+
     activities.push({
       id: s.id,
       type: 'session',
-      date: s.scheduledAt || s.createAt,
-      description: s.status === 'Completed' || s.status === 2
-        ? `Session completed: ${s.treatmentType || 'Treatment'}` 
-        : `Session scheduled: ${s.treatmentType || 'Treatment'}`
+      date: activityDate,
+      description: isCompleted
+        ? `Session completed ${doctorDisplay}: ${s.treatmentType || 'Treatment'}` 
+        : `Session scheduled ${doctorDisplay}: ${s.treatmentType || 'Treatment'}`
     });
   });
 
   diagnoses.forEach(d => {
+    const relatedCase = cases.find(c => c.id === d.patientCaseId);
+    let assignedInfo = '';
+    if (relatedCase) {
+      if (relatedCase.assignedStudentId && userNamesMap[relatedCase.assignedStudentId]) {
+        assignedInfo = ` (Student: ${userNamesMap[relatedCase.assignedStudentId]})`;
+      } else if (relatedCase.assignedDoctorId && userNamesMap[relatedCase.assignedDoctorId]) {
+        assignedInfo = ` (Doctor: ${userNamesMap[relatedCase.assignedDoctorId]})`;
+      }
+    }
+
     activities.push({
       id: d.id,
       type: 'diagnosis',
       date: d.createAt || new Date().toISOString(), 
-      description: `New Diagnosis: ${d.caseTypeName || d.caseType || 'General'}`
+      description: `New Diagnosis: ${d.caseTypeName || d.caseType || 'General'}${assignedInfo}`
     });
   });
 
   cases.forEach(c => {
+    let assignedName = '';
+    if (c.assignedStudentId && userNamesMap[c.assignedStudentId]) {
+      assignedName = ` (Assigned to: ${userNamesMap[c.assignedStudentId]})`;
+    } else if (c.assignedDoctorId && userNamesMap[c.assignedDoctorId]) {
+      assignedName = ` (Assigned to: Dr. ${userNamesMap[c.assignedDoctorId]})`;
+    }
+
     activities.push({
       id: c.id,
       type: 'case',
       date: c.createAt,
-      description: `Case Created: ${c.caseTypeName || 'New Dental Case'}`
+      description: `Case Opened: New file created${assignedName}`
     });
   });
 
-  activities.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  const recentActivity = activities.slice(0, 15); // Show more on mobile if scrollable
+  activities.sort((a, b) => {
+    const dateA = new Date(a.date).getTime();
+    const dateB = new Date(b.date).getTime();
+    if (isNaN(dateA)) return 1;
+    if (isNaN(dateB)) return -1;
+    return dateB - dateA;
+  });
+
+  const recentActivity = activities.slice(0, 15);
 
   // --- 5. Diagnoses Count ---
   const diagnosesCount = diagnoses.length;

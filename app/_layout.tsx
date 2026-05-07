@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+  import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack, useRouter, useSegments } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { useEffect, useState } from "react";
@@ -45,11 +45,15 @@ function InitialRootNavigation() {
 
           if (publicId && role) {
             try {
-              const user = await getProfileByRole(role, publicId);
-              if (user) {
-                dispatch(setUserFromReload({ user, role, token }));
+              if (role !== "ClinicalDoctor") {
+                const user = await getProfileByRole(role, publicId);
+                if (user) {
+                  dispatch(setUserFromReload({ user, role, token }));
+                } else {
+                  throw new Error("User profile not found");
+                }
               } else {
-                throw new Error("User profile not found");
+                dispatch(setUserFromReload({ user: null, role, token }));
               }
             } catch (apiError) {
               console.error("Failed to fetch profile during restoration:", apiError);

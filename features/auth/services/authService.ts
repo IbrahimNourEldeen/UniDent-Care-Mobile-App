@@ -48,7 +48,21 @@ export const authService = {
 };
 
 export const getProfileByRole = async (role: string, publicId: string) => {
-    const endpoint = role === "Student" ? "Students" : role === "Doctor" ? "Doctors" : "Patients";
-    const res = await api.get(`/${endpoint}/${publicId}`);
-    return res.data.data;
+    switch (role) {
+        case "Student": {
+            const res = await api.get(`/Students/${publicId}`);
+            return res.data.data;
+        }
+        case "Doctor":
+        case "ClinicalDoctor": {
+            const res = await api.get(`/Doctors/${publicId}`);
+            return res.data.data;
+        }
+        case "Patient": {
+            const res = await api.get(`/Patients/${publicId}`);
+            return res.data.data;
+        }
+        default:
+            throw new Error("Unknown role");
+    }
 };

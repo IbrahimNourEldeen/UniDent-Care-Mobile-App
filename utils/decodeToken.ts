@@ -16,10 +16,14 @@ export const getDecodedToken = (token: string | null): UserPayload | null => {
             decoded["sub"] || 
             decoded["id"];
         
-        const role = 
+        let role = 
             decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] || 
             decoded["role"] || 
-            decoded["roles"]?.[0];
+            decoded["roles"];
+            
+        if (Array.isArray(role)) {
+            role = role[1] || role[0];
+        }
 
         if (!publicId || !role) {
             console.warn("Decoded token is missing publicId or role:", { publicId, role });

@@ -1,4 +1,5 @@
 {
+  "all_tab": "All",
   "profile": "Profile",
   "dark_mode": "Dark Mode",
   "light_mode": "Light Mode",
@@ -124,6 +125,7 @@
   "no_pending_cases": "No case requests found",
   "no_pending_cases_desc": "When students submit requests, they will appear here.",
   "student_list": "Student List",
+  "student_cases": "Student Cases",
   "students_found": "{{students}} students · {{requests}} total requests",
   "no_students_yet": "No students yet",
   "no_students_desc": "Students who send you case requests will appear here.",
@@ -287,5 +289,8 @@
   "error": "Error",
   "action_failed": "Action failed",
   "loading": "Loading...",
-  "cancel": "Cancel"
+  "todays_agenda": "Today's Agenda",
+  "latest_notes": "Latest Notes",
+  "cancel": "Cancel",
+  "error_student_motiv":"Please provide a more detailed motivation (at least 20 characters)"
 }

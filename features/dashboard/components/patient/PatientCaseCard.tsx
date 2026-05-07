@@ -62,9 +62,18 @@ export default function PatientCaseCard({ item, onPress, index = 0 }: { item: an
     };
 
     const statusConfig = getStatusColors(item.processStatus || item.status);
-    const diagnosis = item.diagnosisdto || (item.diagnoses && item.diagnoses.length > 0 ? item.diagnoses[0] : null) || item.diagnosisDto;
+    const diagnosisArray = item.diagnosisdto || item.diagnoses || item.diagnosisDto;
+    const diagnosis = Array.isArray(diagnosisArray) ? diagnosisArray[0] : diagnosisArray;
+    
     // Follow swagger.json naming: caseTypeName or fallback to caseType (string) or caseType.name (object)
-    const caseType = diagnosis?.caseTypeName || diagnosis?.caseType || item.caseType?.name || item.title || t("unknown_type");
+    let caseType = diagnosis?.caseTypeName || diagnosis?.caseType || item.caseType?.name || item.title;
+    
+    // Fallback logic for pending cases
+    if (!caseType && (item.processStatus === 'Pending' || item.status === 0)) {
+        caseType = isRtl ? "قيد الانتظار" : "Pending";
+    }
+    
+    caseType = caseType || t("unknown_type");
     const patientName = item.patientFullName || item.patientName || t("patient");
     const initials = patientName.split(' ').slice(0, 2).map((n: string) => n[0]).join('').toUpperCase();
 

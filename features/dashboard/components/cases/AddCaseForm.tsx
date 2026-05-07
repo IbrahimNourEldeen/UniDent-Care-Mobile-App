@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { CheckCircle2, Search, X, ChevronDown, Check } from 'lucide-react-native';
 import { doctorDashboardService, CaseTypeDto } from '../../services/doctorDashboardService';
 import { createCase } from '@/features/cases/services/caseService';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store/store';
 
 interface AddCaseFormProps {
   isDark: boolean;
@@ -15,9 +17,9 @@ interface AddCaseFormProps {
 export function AddCaseForm({ isDark, locale, universityId, onSuccess }: AddCaseFormProps) {
   const { t } = useTranslation();
   const isRtl = I18nManager.isRTL;
+  const user = useSelector((state: RootState) => state.auth.user as any);
 
   // Form State
-  const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [selectedCaseType, setSelectedCaseType] = useState<CaseTypeDto | null>(null);
   const [selectedPatient, setSelectedPatient] = useState<any | null>(null);
@@ -75,18 +77,22 @@ export function AddCaseForm({ isDark, locale, universityId, onSuccess }: AddCase
   }, [showPatientModal, patientSearch]);
 
   const handleSubmit = async () => {
-    if (!title || !description || !selectedPatient || !selectedCaseType) return;
+    if (!description || !selectedPatient || !selectedCaseType) return;
     setIsSubmitting(true);
     try {
       await createCase({
-        Title: title,
+        NationalId: selectedPatient.nationalId || "",
         Description: description,
-        PatientId: selectedPatient.id || selectedPatient.publicId, // Depending on patient dto
-        CaseTypeId: selectedCaseType.publicId,
         IsPublic: true,
-        UniversityId: universityId,
+        UniversityId: universityId || "11111111-1111-1111-1111-111111111111",
+        CreatedById: user?.publicId || "",
+        CreatedByRole: user?.role || "Doctor",
+        InitialDiagnosis: {
+          Stage: 1,
+          CaseTypeId: selectedCaseType.publicId,
+          TeethNumbers: [],
+        }
       });
-      setTitle('');
       setDescription('');
       setSelectedCaseType(null);
       setSelectedPatient(null);
@@ -99,23 +105,11 @@ export function AddCaseForm({ isDark, locale, universityId, onSuccess }: AddCase
     }
   };
 
-  const isFormValid = title.trim() !== '' && description.trim() !== '' && selectedPatient && selectedCaseType;
+  const isFormValid = description.trim() !== '' && selectedPatient && selectedCaseType;
 
   return (
     <View className="px-6 py-6 pb-20">
       <View className={`p-5 rounded-[32px] border shadow-sm ${isDark ? 'bg-slate-900 border-slate-800 shadow-none' : 'bg-white border-slate-100 shadow-slate-200/50'}`}>
-        
-        {/* Title */}
-        <Text className="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-2">{t('case_title')}</Text>
-        <TextInput
-          value={title}
-          onChangeText={setTitle}
-          placeholder={t('case_title_placeholder', 'Enter case title')}
-          placeholderTextColor={isDark ? '#475569' : '#94a3b8'}
-          className={`px-4 py-3.5 rounded-2xl border text-sm font-medium mb-4 ${isDark ? 'text-white bg-slate-800 border-slate-700' : 'text-slate-900 bg-slate-50 border-slate-200'}`}
-          style={{ writingDirection: isRtl ? 'rtl' : 'ltr' }}
-        />
-
         {/* Patient Selection */}
         <Text className="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-2">{t('patient')}</Text>
         <TouchableOpacity

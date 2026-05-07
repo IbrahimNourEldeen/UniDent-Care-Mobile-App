@@ -19,6 +19,7 @@ export interface CaseRequest {
   patientCasePublicId: string;
   caseName: string;
   patientName: string;
+  diagnosisdto?: DiagnosisDto[];
   studentName: string;
   studentPublicId: string;
   university: string;
@@ -27,6 +28,7 @@ export interface CaseRequest {
   status: string; // 'Pending' | 'Approved' | 'Rejected'
   description?: string;
   createAt: string;
+  imageUrls?: string[];
 }
 
 export interface PaginatedRequests {
@@ -59,6 +61,7 @@ export interface DiagnosisDto {
   stage: number; // 0=Initial 1=Intermediate 2=Final
   caseTypeId: string;
   caseType: string;
+  caseTypeName?: string;
   notes: string;
   createdById?: string;
   role: string;
@@ -101,7 +104,7 @@ export interface PatientCaseDto {
   pendingRequests: number;
   assignedStudentId?: string;
   assignedDoctorId?: string;
-  diagnosisdto?: DiagnosisDto;
+  diagnosisdto?: DiagnosisDto | DiagnosisDto[];
   diagnoses?: DiagnosisDto[];
   imageUrls?: string[];
   createdByRole?: string;
@@ -418,6 +421,42 @@ export const doctorDashboardService = {
         items: data.items ?? [],
         totalCount: data.totalCount ?? 0,
         currentPage: data.currentPage ?? 1,
+        totalPages: data.totalPages ?? 1,
+        hasPreviousPage: data.hasPreviousPage ?? false,
+        hasNextPage: data.hasNextPage ?? false,
+      };
+    }
+    return { items: Array.isArray(data) ? data : [], totalCount: 0, currentPage: 1, totalPages: 1, hasPreviousPage: false, hasNextPage: false };
+  },
+
+  /** GET /api/Sessions/schedule — all sessions, optional status filter */
+  getScheduleSessions: async (params: { page?: number; pageSize?: number; status?: string } = {}): Promise<PagedResult<SessionDto>> => {
+    const { page = 1, pageSize = 200, status } = params;
+    const res = await api.get('/Sessions/schedule', { params: { page, pageSize, status } });
+    const data = res.data.data ?? res.data;
+    if (data && !Array.isArray(data)) {
+      return {
+        items: data.items ?? [],
+        totalCount: data.totalCount ?? 0,
+        currentPage: data.currentPage ?? page,
+        totalPages: data.totalPages ?? 1,
+        hasPreviousPage: data.hasPreviousPage ?? false,
+        hasNextPage: data.hasNextPage ?? false,
+      };
+    }
+    return { items: Array.isArray(data) ? data : [], totalCount: 0, currentPage: 1, totalPages: 1, hasPreviousPage: false, hasNextPage: false };
+  },
+
+  /** GET /api/Doctors/sessions-to-evaluate — sessions needing evaluation */
+  getSessionsToEvaluate: async (params: { page?: number; pageSize?: number } = {}): Promise<PagedResult<SessionDto>> => {
+    const { page = 1, pageSize = 200 } = params;
+    const res = await api.get('/Doctors/sessions-to-evaluate', { params: { page, pageSize } });
+    const data = res.data.data ?? res.data;
+    if (data && !Array.isArray(data)) {
+      return {
+        items: data.items ?? [],
+        totalCount: data.totalCount ?? 0,
+        currentPage: data.currentPage ?? page,
         totalPages: data.totalPages ?? 1,
         hasPreviousPage: data.hasPreviousPage ?? false,
         hasNextPage: data.hasNextPage ?? false,

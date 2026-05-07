@@ -24,11 +24,11 @@ const authSlice = createSlice({
             state.role = action.payload.roles[0];
             state.isAuthenticated = true;
         },
-        setUserFromReload: (state, action: PayloadAction<{ user: User; role: string; token: string }>) => {
+        setUserFromReload: (state, action: PayloadAction<{ user: User | null; role: string; token: string }>) => {
             state.user = action.payload.user;
             state.role = action.payload.role;
             state.token = action.payload.token;
-            state.isAuthenticated = !!action.payload.user;
+            state.isAuthenticated = true;
         }, updateUser: (state, action: PayloadAction<User>) => {
             state.user = action.payload;
             state.isAuthenticated = !!action.payload;

@@ -44,8 +44,10 @@ export default function MyCasesPatientScreen() {
 
     const filteredCases = useMemo(() => {
         return cases.filter((c: any) => {
-            const diagnosis = c.diagnosisdto || c.diagnosisDto;
-            const caseTypeStr = diagnosis?.caseType || c.title || c.caseType?.name || "General Case";
+            const diagnosisArray = c.diagnosisdto || c.diagnoses || c.diagnosisDto;
+            const diagnosis = Array.isArray(diagnosisArray) ? diagnosisArray[0] : diagnosisArray;
+            const caseTypeStr = diagnosis?.caseTypeName || diagnosis?.caseType || c.caseType?.name || c.title || "General Case";
+            
             const title = caseTypeStr.toLowerCase();
             const query = searchQuery.toLowerCase();
             const university = (c.universityName || "").toLowerCase();

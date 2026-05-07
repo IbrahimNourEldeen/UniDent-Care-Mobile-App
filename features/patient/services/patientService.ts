@@ -33,3 +33,18 @@ export const getCaseDiagnoses = async (caseId: string) => {
     const res = await api.get(`/Diagnoses/case/${caseId}`);
     return res.data;
 };
+
+// User Details (for names in timeline)
+export const getStudentDetails = async (id: string) => {
+    const res = await api.get(`/Students/${id}`);
+    return res.data;
+};
+
+export const getDoctorDetails = async (id: string) => {
+    const res = await api.get(`/Doctors/${id}`);
+    return res.data;
+};
+export const updatePatientProfile = async (patientId: string, data: any) => {
+    const res = await api.put(`/Patients/${patientId}`, data);
+    return res.data;
+};

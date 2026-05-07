@@ -20,14 +20,14 @@ export default function DoctorTabsLayout() {
         }} 
       />
       <Tabs.Screen 
-        name="cases" 
+        name="pending-request" 
         options={{ 
-          title: t("cases"),
+          title: t("case_requests"),
           tabBarIcon: ({ color, size }) => <Clock size={size} color={color} /> 
         }} 
       />
       <Tabs.Screen 
-        name="student-list" 
+        name="my-students-cases" 
         options={{ 
           title: t("students"),
           tabBarIcon: ({ color, size }) => <Users size={size} color={color} /> 

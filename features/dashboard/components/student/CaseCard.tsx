@@ -18,12 +18,12 @@ interface CaseCardProps {
   onRequestSent?: () => void;
 }
 
-function SendRequestModal({
+export function SendRequestModal({
   caseItem,
   onClose,
   onSuccess,
 }: {
-  caseItem: CaseItem;
+  caseItem: any;
   onClose: () => void;
   onSuccess: () => void;
 }) {
@@ -37,8 +37,10 @@ function SendRequestModal({
   const [error, setError] = useState('');
 
   const handleSubmit = async () => {
-    if (!description.trim()) {
-      setError(t('error_short_desc'));
+    const minLength = 20;
+    if (!description.trim() || description.trim().length < minLength) {
+      
+      setError(t('error_student_motiv'));
       return;
     }
     if (!doctorUsername) {
@@ -207,7 +209,14 @@ export default function CaseCard({ caseItem, onRequestSent }: CaseCardProps) {
                     <Text className={`text-[10px] font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{t('age_label', { age: caseItem.patientAge })}</Text>
                 </View>
                 <View className="w-1 h-1 rounded-full bg-slate-400 opacity-30" />
-                <Text className={`text-xs font-medium ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`}>{caseItem.caseType?.name || 'General'}</Text>
+                <Text className={`text-xs font-medium ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`}>
+                  {(caseItem as any).diagnoses?.[0]?.caseType || 
+                   (caseItem as any).diagnoses?.[0]?.caseTypeName || 
+                   (caseItem as any).diagnosisdto?.[0]?.caseType || 
+                   (caseItem as any).diagnosisdto?.[0]?.caseTypeName || 
+                   caseItem.caseType?.name || 
+                   'General'}
+                </Text>
             </View>
           </View>
         </View>

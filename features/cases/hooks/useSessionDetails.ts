@@ -18,7 +18,7 @@ async function fetchSessionNotes(id: string): Promise<SessionNoteItem[]> {
 }
 
 async function updateStatusApi(sessionId: string, status: string) {
-  const res = await api.put(`/Sessions/${sessionId}/status`, { sessionId, status });
+  const res = await api.patch(`/Sessions/${sessionId}/status`, { sessionId, status });
   return res.data;
 }
 

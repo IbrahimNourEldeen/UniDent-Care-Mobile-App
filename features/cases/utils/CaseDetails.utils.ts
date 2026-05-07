@@ -11,8 +11,10 @@ export function formatTimestamp(ts: string) {
 
 type TabDef = { key: string; label: string };
 
-export function getTabsForStatus(status: CaseStatus): TabDef[] {
+export function getTabsForStatus(status: CaseStatus, role?: string): TabDef[] {
     const s = status?.toLowerCase();
+    const isPatient = role?.toLowerCase() === 'patient';
+    
     switch (s) {
         case "pending":
             return [
@@ -32,7 +34,8 @@ export function getTabsForStatus(status: CaseStatus): TabDef[] {
                 { key: "medical", label: "Medical Info" },
                 { key: "gallery", label: "Gallery" },
                 { key: "beforeAfter", label: "Before/After" },
-                { key: "timeline", label: "Timeline" },
+                // Hide timeline from patients
+                ...(!isPatient ? [{ key: "timeline", label: "Timeline" }] : []),
             ];
         case "completed":
             return [
@@ -40,7 +43,8 @@ export function getTabsForStatus(status: CaseStatus): TabDef[] {
                 { key: "medical", label: "Medical Info" },
                 { key: "gallery", label: "Gallery" },
                 { key: "beforeAfter", label: "Before/After" },
-                { key: "timeline", label: "Timeline" },
+                // Hide timeline from patients
+                ...(!isPatient ? [{ key: "timeline", label: "Timeline" }] : []),
             ];
         default:
             return [

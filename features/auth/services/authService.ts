@@ -1,4 +1,3 @@
-import axios from "axios";
 import api from "../../../utils/api";
 import { PatientSignupValues } from "../schemas/patientSignupSchema";
 import { DoctorSignupValues } from "../schemas/doctorSignupSchema";
@@ -42,8 +41,14 @@ export const authService = {
         return response.data;
     },
     getCitiesLookup: async (): Promise<City[]> => {
-        const response = await axios.get("https://raw.githubusercontent.com/Tech-Labs/egypt-governorates-and-cities-db/master/cities.json");
-        return response.data[2].data;
+        const response = await api.get<{ value: number; name: string }[]>("/Enum/cities");
+        console.log("Cities API Response:", response.data);
+        // Transform the API response to match the expected City format
+        return response.data.map(city => ({
+            id: city.value,
+            name_ar: city.name,
+            name_en: city.name
+        }));
     },
 };
 

@@ -1,9 +1,10 @@
-  import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack, useRouter, useSegments } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { Provider } from "react-redux";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { store } from "../store/store";
 
 import { logout, setUserFromReload } from "@/store/slices/authSlice";
@@ -114,14 +115,15 @@ function InitialRootNavigation() {
 
 export default function RootLayout() {
   return (
-    <Provider store={store}>
-      <QueryClientProvider client={queryClient}>
-        <ThemeLanguageProvider>
-          <Toast />
-          <InitialRootNavigation />
-        </ThemeLanguageProvider>
-
-      </QueryClientProvider>
-    </Provider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <Provider store={store}>
+        <QueryClientProvider client={queryClient}>
+          <ThemeLanguageProvider>
+            <Toast />
+            <InitialRootNavigation />
+          </ThemeLanguageProvider>
+        </QueryClientProvider>
+      </Provider>
+    </GestureHandlerRootView>
   );
 }

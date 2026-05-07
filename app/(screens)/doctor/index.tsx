@@ -2,37 +2,35 @@ import { doctorDashboardService, SessionDto } from '@/features/dashboard/service
 import { useAppSelector } from '@/store/hooks';
 import { useThemeLanguage } from '@/store/ThemeLanguageContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { format } from 'date-fns';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { format } from 'date-fns';
 import {
   AlertCircle,
   CalendarDays,
-  CheckCircle2,
+  ChevronRight,
   Clock,
   FileText,
   FolderOpen,
   MessageSquare,
   RefreshCw,
-  Stethoscope,
-  Users,
-  ChevronRight,
+  Stethoscope
 } from 'lucide-react-native';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
+  Dimensions,
   RefreshControl,
   ScrollView,
   StatusBar,
   Text,
   TouchableOpacity,
   View,
-  Dimensions,
 } from 'react-native';
+import { Calendar } from 'react-native-calendars';
 import { PieChart } from 'react-native-gifted-charts';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
-import { Calendar } from 'react-native-calendars';
 
 const { width } = Dimensions.get('window');
 
@@ -131,7 +129,7 @@ export default function DoctorDashboardScreen() {
   const statCards = [
     {
       key: 'totalCases',
-      label: t('total_cases', 'Total Cases'),
+      label: t('total_cases', 'إجمالي الحالات'),
       value: stats?.totalCases ?? 0,
       icon: FolderOpen,
       colors: ['#2563eb', '#4f46e5'],

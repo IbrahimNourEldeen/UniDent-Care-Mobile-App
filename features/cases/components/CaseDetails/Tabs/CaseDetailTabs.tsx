@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/store/store';
-import Odontogram from '../Clinical/Odontogram';
-import ActivityTimeline from '../Tracking/ActivityTimeline';
-import MedicalInfoTab from './parts/MedicalInfoTab';
-import BeforeAfterTab from './parts/BeforeAfterTab';
-import DentalImageGallery from '../Clinical/DentalImageGallery';
 import { useCase } from '@/features/cases/context/CaseContext';
 import { getTabsForStatus } from '@/features/cases/utils/CaseDetails.utils';
+import { RootState } from '@/store/store';
 import { useThemeLanguage } from '@/store/ThemeLanguageContext';
+import React, { useEffect, useState } from 'react';
+import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { useSelector } from 'react-redux';
+import DentalImageGallery from '../Clinical/DentalImageGallery';
+import Odontogram from '../Clinical/Odontogram';
+import ActivityTimeline from '../Tracking/ActivityTimeline';
+import BeforeAfterTab from './parts/BeforeAfterTab';
+import MedicalInfoTab from './parts/MedicalInfoTab';
 
 export default function CaseDetailTabs() {
     const role = useSelector((state: RootState) => state.auth.role);
@@ -18,15 +18,15 @@ export default function CaseDetailTabs() {
     const { theme } = useThemeLanguage();
     const isDark = theme === 'dark';
 
-    const tabs = getTabsForStatus(patient.status);
+    const tabs = getTabsForStatus(patient.status, role);
     const [activeTab, setActiveTab] = useState(tabs[0]?.key || 'odontogram');
 
     useEffect(() => {
-        const newTabs = getTabsForStatus(patient.status);
+        const newTabs = getTabsForStatus(patient.status, role);
         if (newTabs.length > 0) {
             setActiveTab(newTabs[0].key);
         }
-    }, [patient.status]);
+    }, [patient.status, role]);
 
     return (
         <View className={`rounded-2xl border overflow-hidden mt-2 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>

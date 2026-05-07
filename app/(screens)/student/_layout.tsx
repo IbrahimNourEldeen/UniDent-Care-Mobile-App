@@ -1,7 +1,7 @@
-import React from "react";
-import { Home, Search, Briefcase, User, Settings as SettingsIcon } from "lucide-react-native";
-import { Tabs } from "expo-router";
 import { CustomTabBar } from "@/components/ui/CustomTabBar";
+import { Tabs } from "expo-router";
+import { Briefcase, Home, Search, Settings as SettingsIcon, User } from "lucide-react-native";
+import React from "react";
 import { useTranslation } from "react-i18next";
 
 export default function TabsLayout() {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
@@ -45,6 +45,22 @@ export default function SessionDetailsScreen() {
     const subColor = isDark ? '#94a3b8' : '#64748b';
     const borderColor = isDark ? '#1e293b' : '#e2e8f0';
 
+    // ── Auto-update Scheduled → InProgress ────────────────────────────────────
+    useEffect(() => {
+        if (!session) return;
+        const status = session.status?.toLowerCase();
+        if (status === 'scheduled') {
+            updateSessionStatus(id as string, {
+                sessionId: id as string,
+                status: 'InProgress',
+            })
+                .then(() => refetchAll?.())
+                .catch(() => {
+                    // silently ignore — user can still work
+                });
+        }
+    }, [session?.id, id, refetchAll]);
+
     // ── End Session Handler ──────────────────────────────────────────────────
     const handleEndSession = async () => {
         if (!notes || notes.length === 0) {
@@ -63,16 +79,23 @@ export default function SessionDetailsScreen() {
                 sessionId: id as string,
                 status: 'Done',
             });
+            
             if (res.success) {
                 dispatch(showToast({ message: 'Session completed successfully', type: 'success' }));
                 setShowEndModal(false);
                 refetchAll?.();
-                router.back();
+                // Navigate to case details page
+                const caseId = session?.caseId;
+                if (caseId) {
+                    router.push(`/case-details/${caseId}` as any);
+                } else {
+                    router.push('/(tabs)/student-dashboard' as any);
+                }
             } else {
                 dispatch(showToast({ message: res.message || 'Failed to end session', type: 'error' }));
             }
         } catch (err: any) {
-            dispatch(showToast({ message: err.message || 'Failed to end session', type: 'error' }));
+            dispatch(showToast({ message: err.response?.data?.message || err.message || 'Failed to end session', type: 'error' }));
         } finally {
             setEndSessionLoading(false);
         }

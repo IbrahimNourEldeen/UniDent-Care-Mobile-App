@@ -1,38 +1,35 @@
-import * as ImagePicker from "expo-image-picker";
+import { useFocusEffect } from "@react-navigation/native";
 import axios from "axios";
+import * as ImagePicker from "expo-image-picker";
+import { useRouter } from "expo-router";
 import {
-  Bot,
-  CheckCircle,
-  ChevronLeft,
-  ChevronRight,
-  Image as ImageIcon,
-  Send,
-  Sparkles,
-  User,
-  X,
-  RefreshCcw,
-  Paperclip,
-  PlusCircle,
-  MessageCircle
+    Bot,
+    CheckCircle,
+    ChevronLeft,
+    ChevronRight,
+    Paperclip,
+    RefreshCcw,
+    Send,
+    Sparkles,
+    User,
+    X
 } from "lucide-react-native";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  Image,
-  KeyboardAvoidingView,
-  LayoutAnimation,
-  Platform,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  UIManager,
-  View,
+    ActivityIndicator,
+    Alert,
+    FlatList,
+    Image,
+    KeyboardAvoidingView,
+    LayoutAnimation,
+    Platform,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    UIManager,
+    View
 } from "react-native";
-import { useFocusEffect } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
 import { useSelector } from "react-redux";
 
 import { getCaseTypes } from "@/features/cases/server/caseTypes.action";
@@ -104,6 +101,7 @@ export default function AIChatbotScreen() {
   const [diagnosisData, setDiagnosisData] = useState<any>(null);
   const [files, setFiles] = useState<any[]>([]);
   const [collectingImages, setCollectingImages] = useState(false);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
 
   useEffect(() => {
     setTimeout(() => {
@@ -111,9 +109,21 @@ export default function AIChatbotScreen() {
     }, 100);
   }, [messages, isTyping]);
 
-  const chatWithAI = async (history: ChatMessage[]) => {
-    const res = await axios.post(`${AI_API_BASE_URL}/chat`, { history });
-    return res.data;
+  const chatWithAI = async (history: ChatMessage[], retryCount = 0): Promise<any> => {
+    try {
+      const res = await axios.post(`${AI_API_BASE_URL}/chat`, { history }, {
+        timeout: 30000, // 30 seconds timeout
+      });
+      return res.data;
+    } catch (error: any) {
+      // If server error (500) and haven't retried too many times, retry
+      if (error.response?.status === 500 && retryCount < 2) {
+        console.log(`AI server error, retrying... (${retryCount + 1}/2)`);
+        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
+        return chatWithAI(history, retryCount + 1);
+      }
+      throw error;
+    }
   };
 
   useFocusEffect(
@@ -145,20 +155,24 @@ export default function AIChatbotScreen() {
   const handleSend = async (retryText?: string) => {
     const isRetry = typeof retryText === 'string';
     const textToSend = isRetry ? retryText : inputText.trim();
+    console.log("handleSend triggered with:", { textToSend, retryText, isTyping, isSubmitting, completed });
     
     if ((!isRetry && !textToSend) || isTyping || isSubmitting || completed) {
+      console.log("handleSend returned early due to condition");
       return;
     }
 
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    
+    // Prepare history for AI
     let historyForAI: ChatMessage[] = [...chatHistory];
     
     if (isRetry) {
+      // If it's a retry, we use the history as it was BEFORE the failure
+      // (The failure bot message is usually the last one, we remove it to retry the user message)
       if (historyForAI.length > 0 && historyForAI[historyForAI.length - 1].role === "MODEL") {
         historyForAI.pop();
       }
     } else {
+      // Normal send: update display and history
       setInputText("");
       setMessages(prev => [...prev, { id: Date.now() + "_u", sender: "user", content: textToSend }]);
       
@@ -167,6 +181,8 @@ export default function AIChatbotScreen() {
       setChatHistory(historyForAI);
     }
 
+    // Call AI
+    console.log("Calling AI with history:", historyForAI);
     setIsTyping(true);
     try {
       const aiResponse = await chatWithAI(historyForAI);
@@ -180,11 +196,14 @@ export default function AIChatbotScreen() {
         responseString = aiResponse;
       } else if (aiResponse && typeof aiResponse === "object") {
         const data = aiResponse as any;
-        responseString = data.reply || JSON.stringify(data);
+        responseString = data.reply || data.message || JSON.stringify(data);
+        
+        // Check if diagnosis is completed
         if (data.diagnosis_status === "completed" && data.show_side_panel) {
           isCompleted = true;
           aiDiagnosis = data.diagnosis;
         } else if (data.diagnosis && Array.isArray(data.diagnosis) && data.diagnosis.length > 0) {
+          // Diagnosis available, collect images
           aiDiagnosis = data.diagnosis;
           shouldCollectImages = true;
           setDiagnosisData(aiDiagnosis);
@@ -192,7 +211,7 @@ export default function AIChatbotScreen() {
         }
       }
 
-      const isServerBusy = responseString.includes("ضغط") || responseString.includes("السيرفر");
+      const isServerBusy = responseString.includes("ضغط") || responseString.includes("السيرفر") || responseString.includes("busy");
 
       const updatedHistory: ChatMessage[] = [...historyForAI, { role: "MODEL", content: responseString }];
       setChatHistory(updatedHistory);
@@ -213,13 +232,41 @@ export default function AIChatbotScreen() {
           newMessages.push({
             id: Date.now() + "_img",
             sender: "bot",
-            content: isRtl ? "من فضلك ارسل صور الاسنان" : "Please send pictures of the teeth",
+            content: isRtl ? "من فضلك أرفق صور الأسنان (اختياري)" : "Please attach pictures of the teeth (optional)",
           });
         }
         return newMessages;
       });
     } catch (err: any) {
-      Alert.alert("خطأ", err.message || t(tUI.error));
+      console.error("AI chat error:", err);
+      
+      let errorMsg = t(tUI.error);
+      let canRetry = false;
+      
+      if (err.response?.status === 500) {
+        errorMsg = isRtl 
+          ? "عذراً، السيرفر مشغول حالياً. يرجى المحاولة مرة أخرى" 
+          : "Sorry, the server is busy. Please try again";
+        canRetry = true;
+      } else if (err.code === 'ECONNABORTED' || err.message.includes('timeout')) {
+        errorMsg = isRtl 
+          ? "انتهت مهلة الاتصال. يرجى المحاولة مرة أخرى" 
+          : "Connection timeout. Please try again";
+        canRetry = true;
+      } else if (err.message === "Network Error") {
+        errorMsg = isRtl 
+          ? "خطأ في الاتصال. تحقق من الإنترنت" 
+          : "Network error. Check your internet";
+        canRetry = true;
+      }
+      
+      // Add error message with retry option
+      setMessages(prev => [...prev, { 
+        id: Date.now() + "_err", 
+        sender: "bot", 
+        content: errorMsg,
+        canRetry: canRetry
+      }]);
     } finally {
       setIsTyping(false);
     }
@@ -232,11 +279,18 @@ export default function AIChatbotScreen() {
       quality: 0.7,
     });
     if (!result.canceled) {
-      const newImages = result.assets.map((asset) => ({
-        uri: asset.uri,
-        name: asset.fileName || `img_${Date.now()}.jpg`,
-        type: "image/jpeg",
-      }));
+      const newImages = result.assets.map((asset, index) => {
+        // Extract file extension from URI or use jpg as default
+        const uriParts = asset.uri.split('.');
+        const fileExtension = uriParts[uriParts.length - 1].toLowerCase();
+        const mimeType = fileExtension === 'png' ? 'image/png' : 'image/jpeg';
+        
+        return {
+          uri: asset.uri,
+          name: asset.fileName || `dental_image_${Date.now()}_${index}.${fileExtension}`,
+          type: mimeType,
+        };
+      });
       setFiles((prev) => [...prev, ...newImages]);
     }
   };
@@ -256,41 +310,71 @@ export default function AIChatbotScreen() {
         const available = (res as any).data?.items || (res as any).items || [];
         const general = available.find((i: any) => (i.name || "").toLowerCase().includes("general"));
         caseTypeId = general?.publicId || available[0]?.publicId || "";
-      } catch {}
+      } catch (err) {
+        console.error("Error fetching case types:", err);
+      }
 
-      const title = isRtl ? "حالة جديدة" : "New Case";
+      const title = isRtl ? "حالة جديدة من الشات بوت" : "New Case from Chatbot";
+      
+      // Prepare images for FormData
+      const imagesToSend = files.length > 0 ? files.map(file => ({
+        uri: file.uri,
+        name: file.name,
+        type: file.type,
+      })) : undefined;
+
       const caseRes = await createCaseAI({
         PatientId: patientId,
         Title: title,
         Description: description,
         CaseTypeId: caseTypeId,
-        Images: files.length > 0 ? files : undefined,
+        Images: imagesToSend,
         CreatedById: patientId,
         CreatedByRole: role,
+        IsPublic: false,
       });
 
-      const newCaseId = caseRes.data?.data?.publicId || caseRes.data?.publicId || caseRes.data?.data?.id;
+      const newCaseId = caseRes.data?.data?.publicId || caseRes.data?.publicId || caseRes.data?.data?.id || caseRes.data?.data;
 
-      if (diagnosisData && Array.isArray(diagnosisData)) {
+      if (!newCaseId) {
+        throw new Error("Failed to get case ID from response");
+      }
+
+      // Create diagnoses if available
+      if (diagnosisData && Array.isArray(diagnosisData) && diagnosisData.length > 0) {
         for (const diag of diagnosisData) {
-          await createDiagnosisAI({
-             patientCaseId: newCaseId,
-             stage: 1,
-             caseTypeId: caseTypeId,
-             notes: diag.note || diag.description || "",
-             createdById: patientId,
-             role: role,
-             teethNumbers: diag.teethNumbers || [],
-          });
+          try {
+            await createDiagnosisAI({
+              patientCaseId: newCaseId,
+              stage: 1,
+              caseTypeId: caseTypeId,
+              notes: diag.note || diag.description || diag.notes || "",
+              createdById: patientId,
+              role: role,
+              teethNumbers: diag.teethNumbers || diag.teeth_numbers || [],
+            });
+          } catch (diagErr) {
+            console.error("Error creating diagnosis:", diagErr);
+          }
         }
       }
 
       setCompleted(true);
       setMessages(prev => [...prev, { id: "final", sender: "bot", content: t(tUI.success) }]);
-      Alert.alert("نجاح", t(tUI.success));
-      setTimeout(() => router.push("/(screens)/patient/my_cases"), 2000);
+      
+      // Show success popup with animation
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.spring);
+      setShowSuccessPopup(true);
+      
+      setTimeout(() => {
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+        setShowSuccessPopup(false);
+        setTimeout(() => router.push("/(screens)/patient/my_cases"), 300);
+      }, 2500);
     } catch (err: any) {
-      Alert.alert("خطأ", err.message || t(tUI.error));
+      console.error("Error creating case:", err);
+      const errorMessage = err.response?.data?.message || err.message || t(tUI.error);
+      Alert.alert(isRtl ? "خطأ" : "Error", errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -326,17 +410,36 @@ export default function AIChatbotScreen() {
                 {(item.canRetry || item.content.includes("ضغط") || item.content.includes("السيرفر")) && (
                   <TouchableOpacity
                     onPress={() => {
+                      console.log("Attempting retry. History:", chatHistory, "Messages:", messages);
+                      
+                      // 1. Try to find in chatHistory
                       let msgToRetry = [...chatHistory]
                         .reverse()
-                        .find(h => h.role === "USER" && h.content?.trim())?.content;
+                        .find(h => h.role?.toUpperCase() === "USER" && h.content?.trim())?.content;
                       
+                      // 2. Fallback to messages state if history is empty
                       if (!msgToRetry) {
                         msgToRetry = [...messages]
                           .reverse()
                           .find(m => m.sender === "user" && m.content?.trim())?.content;
                       }
+
+                      // 3. Fallback to current input if nothing else found
+                      if (!msgToRetry) {
+                        msgToRetry = inputText.trim();
+                      }
+
+                      console.log("Final message selected for retry:", msgToRetry);
                       
-                      if (msgToRetry) handleSend(msgToRetry);
+                      if (msgToRetry) {
+                        // Remove error message first
+                        setMessages(prev => prev.filter(m => m.id !== item.id));
+                        setIsTyping(false);
+                        setTimeout(() => handleSend(msgToRetry), 50);
+                      } else {
+                        console.log("No message found to retry");
+                        setIsTyping(false);
+                      }
                     }}
                     activeOpacity={0.8}
                     className={`flex-row items-center justify-center gap-2 bg-indigo-600 px-4 py-2.5 rounded-xl`}
@@ -440,14 +543,46 @@ export default function AIChatbotScreen() {
         />
 
         <View className="px-4 py-3 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800">
+          {/* Display attached images */}
+          {files.length > 0 && (
+            <View className="mb-3">
+              <View className={`flex-row flex-wrap gap-2 ${isRtl ? 'flex-row-reverse' : ''}`}>
+                {files.map((file, index) => (
+                  <View key={index} className="relative">
+                    <Image 
+                      source={{ uri: file.uri }} 
+                      className="w-16 h-16 rounded-lg"
+                      resizeMode="cover"
+                    />
+                    <TouchableOpacity
+                      onPress={() => removeImage(index)}
+                      className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full items-center justify-center shadow-md"
+                      activeOpacity={0.8}
+                    >
+                      <X size={14} color="white" />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+
           {collectingImages && !completed && (
             <View className={`flex-row gap-2 mb-3 ${isRtl ? 'flex-row-reverse' : ''}`}>
               <TouchableOpacity onPress={pickImage} className={`flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 rounded-xl px-5 py-3 items-center justify-center flex-row gap-2 ${isRtl ? 'flex-row-reverse' : ''}`}>
                 <Paperclip size={18} color="#475569" />
                 <Text className="text-slate-600 font-bold text-sm">{t(tUI.attachPhotos)} ({files.length})</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={handleCreateCase} className="px-6 h-12 bg-indigo-600 rounded-xl items-center justify-center">
-                <Send size={16} color="white" />
+              <TouchableOpacity 
+                onPress={handleCreateCase} 
+                disabled={isSubmitting}
+                className="px-6 h-12 bg-indigo-600 rounded-xl items-center justify-center"
+              >
+                {isSubmitting ? (
+                  <ActivityIndicator size="small" color="white" />
+                ) : (
+                  <Send size={16} color="white" />
+                )}
               </TouchableOpacity>
             </View>
           )}
@@ -457,18 +592,48 @@ export default function AIChatbotScreen() {
                 <TextInput
                   className={`text-slate-800 dark:text-white min-h-[40px] ${isRtl ? 'text-right' : 'text-left'}`}
                   placeholder={t(tUI.placeholder)}
+                  placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
                   multiline
                   value={inputText}
                   onChangeText={setInputText}
+                  editable={!isTyping && !isSubmitting}
                 />
               </View>
-              <TouchableOpacity onPress={() => handleSend()} disabled={!inputText.trim()} className="w-12 h-12 bg-indigo-600 rounded-xl items-center justify-center">
+              <TouchableOpacity 
+                onPress={() => handleSend()} 
+                disabled={!inputText.trim() || isTyping || isSubmitting} 
+                className={`w-12 h-12 rounded-xl items-center justify-center ${
+                  !inputText.trim() || isTyping || isSubmitting ? 'bg-slate-300 dark:bg-slate-700' : 'bg-indigo-600'
+                }`}
+              >
                 <Send size={18} color="white" />
               </TouchableOpacity>
             </View>
           )}
         </View>
       </KeyboardAvoidingView>
+
+      {/* Success Popup */}
+      {showSuccessPopup && (
+        <View className="absolute inset-0 items-center justify-center bg-black/50" style={{ zIndex: 9999 }}>
+          <View className="bg-white dark:bg-slate-900 rounded-3xl p-8 mx-8 shadow-2xl border-2 border-emerald-500">
+            <View className="items-center">
+              <View className="w-20 h-20 bg-emerald-100 dark:bg-emerald-900/30 rounded-full items-center justify-center mb-4">
+                <CheckCircle size={48} color="#10b981" />
+              </View>
+              <Text className="text-2xl font-black text-slate-800 dark:text-white mb-2 text-center">
+                {isRtl ? "تم بنجاح! 🎉" : "Success! 🎉"}
+              </Text>
+              <Text className="text-base text-slate-600 dark:text-slate-400 text-center font-bold">
+                {t(tUI.success)}
+              </Text>
+              <Text className="text-sm text-slate-500 dark:text-slate-500 text-center mt-2">
+                {t(tUI.redirecting)}
+              </Text>
+            </View>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }

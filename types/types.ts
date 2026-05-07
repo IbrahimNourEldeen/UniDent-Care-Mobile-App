@@ -26,10 +26,9 @@ export interface UniversityLookup {
 export type UniversityLookupResponse = ApiResponse<UniversityLookup[]>;
 
 export interface City {
-    id: string;
-    governorate_id: string;
-    city_name_ar: string;
-    city_name_en: string;
+    id: number;
+    name_ar: string;
+    name_en: string;
 }
 
 export interface UniversityMembersResponse extends ApiResponse<{

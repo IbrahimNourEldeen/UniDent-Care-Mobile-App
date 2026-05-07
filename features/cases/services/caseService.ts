@@ -1,7 +1,6 @@
 import { ApiResponse } from "@/types/types";
 import api from "@/utils/api";
 import {
-
     CreateSessionPayload,
     MyStudentCasesResponse,
     MyStudentRequestsResponse,
@@ -91,9 +90,16 @@ export const createCaseAI = (data: {
         formData.append("UniversityId", data.UniversityId);
     }
     
+    // Append images correctly for React Native
     if (data.Images && data.Images.length > 0) {
         data.Images.forEach((image) => {
-            formData.append("Images", image as any);
+            // React Native FormData expects an object with uri, name, and type
+            const imageFile = {
+                uri: image.uri,
+                name: image.name || `image_${Date.now()}.jpg`,
+                type: image.type || 'image/jpeg',
+            };
+            formData.append("Images", imageFile as any);
         });
     }
 
@@ -203,7 +209,7 @@ export async function updateSessionStatus(
     sessionId: string,
     body: { sessionId: string; status: string },
 ): Promise<ApiResponse<boolean>> {
-    const res = await api.put(`/Sessions/${sessionId}/status`, body);
+    const res = await api.patch(`/Sessions/${sessionId}/status`, body);
     return res.data;
 }
 
@@ -213,7 +219,7 @@ export async function evaluateSession(
     sessionId: string,
     body: { grade: number; note: string; isFinalSession: boolean },
 ): Promise<ApiResponse<boolean>> {
-    const res = await api.put(`/Sessions/${sessionId}/evaluate`, body);
+    const res = await api.post(`/Sessions/${sessionId}/evaluate`, body);
     return res.data;
 }
 

@@ -5,7 +5,14 @@ import Animated, { FadeIn, FadeOut, LinearTransition } from "react-native-reanim
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { useThemeLanguage } from "../../store/ThemeLanguageContext";
 
-export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
+interface CustomTabBarProps {
+  state: BottomTabBarProps['state'];
+  descriptors: BottomTabBarProps['descriptors'];
+  navigation: BottomTabBarProps['navigation'];
+  onTabPress?: (index: number) => void;
+}
+
+export function CustomTabBar({ state, descriptors, navigation, onTabPress }: CustomTabBarProps) {
   const { theme, language } = useThemeLanguage();
   const isDark = theme === "dark";
   const isRtl = language === "ar";
@@ -84,7 +91,12 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
             });
 
             if (!isFocused && !event.defaultPrevented) {
-              navigation.navigate(route.name, route.params);
+              // If onTabPress callback is provided, use it (for swipeable tabs)
+              if (onTabPress) {
+                onTabPress(index);
+              } else {
+                navigation.navigate(route.name, route.params);
+              }
             }
           };
 

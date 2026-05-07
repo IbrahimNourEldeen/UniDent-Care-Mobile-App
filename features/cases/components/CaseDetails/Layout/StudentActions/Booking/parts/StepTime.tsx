@@ -1,7 +1,8 @@
-import React from 'react';
-import { View, Text, TextInput } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { Clock } from 'lucide-react-native';
 import { useThemeLanguage } from '@/store/ThemeLanguageContext';
+import CustomTimePicker from './CustomTimePicker';
 
 function calcDuration(start: string, end: string): string {
     const [sh, sm] = start.split(':').map(Number);
@@ -11,6 +12,15 @@ function calcDuration(start: string, end: string): string {
     const h = Math.floor(diff / 60);
     const m = diff % 60;
     return h > 0 ? `${h}h${m > 0 ? ` ${m}m` : ''}` : `${m}m`;
+}
+
+// Convert 24-hour to 12-hour format for display
+function format12Hour(time24: string): string {
+    if (!time24) return '';
+    const [h, m] = time24.split(':').map(Number);
+    const hour12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+    const period = h >= 12 ? 'PM' : 'AM';
+    return `${hour12}:${String(m).padStart(2, '0')} ${period}`;
 }
 
 interface StepTimeProps {
@@ -36,33 +46,61 @@ export function StepTime({
     const durationStr = calcDuration(startTime, endTime);
     const showError = startTime && endTime && !timeValid;
 
+    const [showStartPicker, setShowStartPicker] = useState(false);
+    const [showEndPicker, setShowEndPicker] = useState(false);
+
     const fields = [
-        { label: startTimeLabel, value: startTime, onChange: onStartChange },
-        { label: endTimeLabel, value: endTime, onChange: onEndChange },
+        { 
+            label: startTimeLabel, 
+            value: startTime, 
+            displayValue: format12Hour(startTime),
+            showPicker: showStartPicker,
+            setShowPicker: setShowStartPicker,
+            onChange: onStartChange,
+        },
+        { 
+            label: endTimeLabel, 
+            value: endTime, 
+            displayValue: format12Hour(endTime),
+            showPicker: showEndPicker,
+            setShowPicker: setShowEndPicker,
+            onChange: onEndChange,
+        },
     ];
 
     return (
         <View>
             <View className="flex-row gap-3 mb-4">
-                {fields.map(({ label, value, onChange }) => (
+                {fields.map(({ label, value, displayValue, showPicker, setShowPicker, onChange }) => (
                     <View key={label} className="flex-1">
                         <Text className={`text-[11px] mb-1.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                             {label}
                         </Text>
-                        <View className={`flex-row items-center gap-2 rounded-xl border px-3 py-2.5 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                        <TouchableOpacity
+                            onPress={() => !isLoading && setShowPicker(true)}
+                            disabled={isLoading}
+                            activeOpacity={0.7}
+                            className={`flex-row items-center gap-2 rounded-xl border px-3 py-2.5 ${
+                                isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'
+                            }`}
+                        >
                             <Clock size={13} color={isDark ? '#64748b' : '#94a3b8'} />
-                            <TextInput
-                                value={value}
-                                onChangeText={onChange}
-                                placeholder="HH:MM"
-                                placeholderTextColor={isDark ? '#475569' : '#94a3b8'}
-                                editable={!isLoading}
-                                keyboardType="numbers-and-punctuation"
-                                maxLength={5}
-                                textAlign={isRTL ? 'right' : 'left'}
-                                className={`flex-1 text-[13px] ${isDark ? 'text-slate-200' : 'text-slate-800'}`}
-                            />
-                        </View>
+                            <Text className={`flex-1 text-[13px] ${
+                                value 
+                                    ? (isDark ? 'text-slate-200' : 'text-slate-800')
+                                    : (isDark ? 'text-slate-500' : 'text-slate-400')
+                            }`}>
+                                {displayValue || 'Select time'}
+                            </Text>
+                        </TouchableOpacity>
+
+                        <CustomTimePicker
+                            visible={showPicker}
+                            onClose={() => setShowPicker(false)}
+                            onConfirm={onChange}
+                            initialTime={value}
+                            title={label}
+                        />
                     </View>
                 ))}
             </View>

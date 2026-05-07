@@ -28,7 +28,7 @@ export const CityPicker: React.FC<CityPickerProps> = ({ value, onSelect, error }
                 setCities(data);
                 
                 if (value) {
-                    const found = data.find(c => Number(c.id) === value);
+                    const found = data.find(c => c.id === value);
                     if (found) setSelectedCity(found);
                 }
             } catch (err) {
@@ -45,8 +45,8 @@ export const CityPicker: React.FC<CityPickerProps> = ({ value, onSelect, error }
         if (!searchQuery) return cities;
         const query = searchQuery.toLowerCase();
         return cities.filter(city => 
-            city.city_name_en.toLowerCase().includes(query) || 
-            city.city_name_ar.includes(query)
+            city.name_en.toLowerCase().includes(query) || 
+            city.name_ar.includes(query)
         );
     }, [cities, searchQuery]);
 
@@ -62,7 +62,7 @@ export const CityPicker: React.FC<CityPickerProps> = ({ value, onSelect, error }
             >
                 <MapPin color={isDark ? "#64748b" : "#94a3b8"} size={20} />
                 <Text className={`flex-1 ml-3 font-medium ${selectedCity ? 'text-slate-900 dark:text-white' : 'text-slate-400 dark:text-slate-600'}`} numberOfLines={1}>
-                    {selectedCity ? selectedCity.city_name_en : "Choose city..."}
+                    {selectedCity ? selectedCity.name_en : "Choose city..."}
                 </Text>
                 <ChevronDown color={isDark ? "#64748b" : "#94a3b8"} size={20} />
             </TouchableOpacity>
@@ -129,8 +129,7 @@ export const CityPicker: React.FC<CityPickerProps> = ({ value, onSelect, error }
                                             <MapPin size={20} color="#4f46e5" />
                                         </View>
                                         <View className="ml-3 flex-1">
-                                            <Text className="text-slate-900 dark:text-white font-bold">{item.city_name_en}</Text>
-                                            <Text className="text-slate-500 dark:text-slate-400 text-xs">{item.city_name_ar}</Text>
+                                            <Text className="text-slate-900 dark:text-white font-bold">{item.name_en}</Text>
                                         </View>
                                         {selectedCity?.id === item.id && (
                                             <View className="bg-indigo-500 rounded-full p-1">

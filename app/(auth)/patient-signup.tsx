@@ -317,7 +317,7 @@ export default function PatientSignupScreen() {
                     <CityPicker 
                       value={value}
                       error={errors.city?.message}
-                      onSelect={(city: City) => onChange(Number(city.id))}
+                      onSelect={(city: City) => onChange(city.id)}
                     />
                   )}
                 />

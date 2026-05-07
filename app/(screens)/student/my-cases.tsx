@@ -1,16 +1,15 @@
 import { useRouter } from 'expo-router';
-import { Activity, AlertCircle, ArrowRight, BookOpen, Briefcase, Calendar, CheckCircle, ChevronLeft, ChevronRight, Clock3, Send, Stethoscope, User } from 'lucide-react-native';
-import React from 'react';
+import { Activity, AlertCircle, ArrowRight, BookOpen, Briefcase, Calendar, CheckCircle, ChevronLeft, ChevronRight, Clock3, Search, Send, Stethoscope, User } from 'lucide-react-native';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Dimensions, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Modal, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useMyCasesStudent } from '@/features/cases/hooks/useMyCasesStudent';
-import { StudentCaseItem, StudentRequestItem } from '@/features/cases/types/caseTypes';
+import { getCaseTypes } from '@/features/cases/server/caseTypes.action';
+import { CaseType, StudentCaseItem, StudentRequestItem } from '@/features/cases/types/caseTypes';
 import { useThemeLanguage } from '@/store/ThemeLanguageContext';
 
-
-const { width } = Dimensions.get('window');
 
 function getCaseStatusConfig(status: string, isDark: boolean) {
   const s = status?.toLowerCase();
@@ -58,24 +57,115 @@ function EmptyState({ message, subMessage, isDark }: { message: string, subMessa
   );
 }
 
-function FilterRow({ options, selected, onSelect, isDark }: { options: { label: string; value: string }[], selected: string, onSelect: (v: string) => void, isDark: boolean }) {
+function SearchableSelect({ 
+  options, 
+  selected, 
+  onSelect, 
+  isDark, 
+  placeholder 
+}: { 
+  options: { label: string; value: string }[], 
+  selected: string, 
+  onSelect: (v: string) => void, 
+  isDark: boolean,
+  placeholder: string 
+}) {
+  const [isOpen, setIsOpen] = React.useState(false);
+  const [searchQuery, setSearchQuery] = React.useState('');
+
+  const selectedOption = options.find(opt => opt.value === selected);
+  const filteredOptions = options.filter(opt => 
+    opt.label.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingHorizontal: 20, paddingBottom: 6 }} className="mb-2">
-      {options.map((opt) => {
-        const active = selected === opt.value;
-        return (
-          <TouchableOpacity
-            key={opt.value}
-            onPress={() => onSelect(opt.value)}
-            className={`px-5 py-2.5 rounded-full border shadow-sm ${active ? (isDark ? 'bg-indigo-600 border-indigo-500' : 'bg-indigo-600 border-indigo-600 shadow-indigo-200') : (isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200')}`}
-          >
-            <Text className={`text-xs font-bold ${active ? 'text-white' : (isDark ? 'text-slate-300' : 'text-slate-600')}`}>
-              {opt.label}
-            </Text>
+    <View className="px-5 mb-4">
+      {/* Select Button */}
+      <TouchableOpacity
+        onPress={() => setIsOpen(true)}
+        className={`flex-row items-center justify-between px-4 py-3.5 rounded-2xl border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}
+      >
+        <Text className={`text-sm font-semibold ${selectedOption?.value ? (isDark ? 'text-white' : 'text-slate-800') : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>
+          {selectedOption?.label || placeholder}
+        </Text>
+        <ChevronRight size={18} color={isDark ? '#94a3b8' : '#64748b'} style={{ transform: [{ rotate: isOpen ? '90deg' : '0deg' }] }} />
+      </TouchableOpacity>
+
+      {/* Modal */}
+      <Modal
+        visible={isOpen}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setIsOpen(false)}
+      >
+        <TouchableOpacity 
+          activeOpacity={1} 
+          onPress={() => setIsOpen(false)}
+          className="flex-1 bg-black/50 justify-center px-5"
+        >
+          <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
+            <View className={`rounded-3xl overflow-hidden shadow-2xl ${isDark ? 'bg-slate-900 border border-slate-800' : 'bg-white border border-slate-100'}`}>
+              {/* Search Input */}
+              <View className={`p-4 border-b ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
+                <View className={`flex-row items-center px-4 py-3 rounded-2xl ${isDark ? 'bg-slate-950' : 'bg-slate-50'}`}>
+                  <Search size={18} color={isDark ? '#64748b' : '#94a3b8'} />
+                  <TextInput
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                    placeholder="Search..."
+                    placeholderTextColor={isDark ? '#64748b' : '#94a3b8'}
+                    className={`flex-1 ml-2 text-sm font-medium ${isDark ? 'text-white' : 'text-slate-800'}`}
+                  />
+                </View>
+              </View>
+
+              {/* Options List */}
+              <ScrollView style={{ maxHeight: 300 }} showsVerticalScrollIndicator={false}>
+                {filteredOptions.map((opt) => {
+                  const isSelected = selected === opt.value;
+                  return (
+                    <TouchableOpacity
+                      key={opt.value}
+                      onPress={() => {
+                        onSelect(opt.value);
+                        setIsOpen(false);
+                        setSearchQuery('');
+                      }}
+                      className={`px-5 py-4 border-b ${isDark ? 'border-slate-800' : 'border-slate-100'} ${isSelected ? (isDark ? 'bg-indigo-900/30' : 'bg-indigo-50') : ''}`}
+                    >
+                      <View className="flex-row items-center justify-between">
+                        <Text className={`text-sm font-semibold ${isSelected ? (isDark ? 'text-indigo-400' : 'text-indigo-600') : (isDark ? 'text-slate-300' : 'text-slate-700')}`}>
+                          {opt.label}
+                        </Text>
+                        {isSelected && (
+                          <CheckCircle size={18} color={isDark ? '#818cf8' : '#4f46e5'} />
+                        )}
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+                {filteredOptions.length === 0 && (
+                  <View className="py-8 items-center">
+                    <Text className={`text-sm ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>No results found</Text>
+                  </View>
+                )}
+              </ScrollView>
+
+              {/* Close Button */}
+              <TouchableOpacity
+                onPress={() => {
+                  setIsOpen(false);
+                  setSearchQuery('');
+                }}
+                className={`p-4 border-t ${isDark ? 'border-slate-800 bg-slate-950' : 'border-slate-100 bg-slate-50'}`}
+              >
+                <Text className={`text-center text-sm font-bold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Close</Text>
+              </TouchableOpacity>
+            </View>
           </TouchableOpacity>
-        );
-      })}
-    </ScrollView>
+        </TouchableOpacity>
+      </Modal>
+    </View>
   );
 }
 
@@ -100,7 +190,7 @@ function CaseCard({ item, isDark, t }: { item: StudentCaseItem; isDark: boolean;
             <Text className={`text-base font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-800'}`} numberOfLines={1}>{item.patientName || 'Anonymous'}</Text>
             <Text className={`text-xs font-medium mt-0.5 ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`} numberOfLines={1}>
               {(() => {
-                const dx = item.diagnosisdto || item.diagnoses || item.diagnosisDto;
+                const dx = item.diagnosisdto || (item as any).diagnoses || (item as any).diagnosisDto;
                 const firstDx = Array.isArray(dx) ? dx[0] : dx;
                 const typeName = firstDx?.caseTypeName || firstDx?.caseType || item.caseType?.name || item.title;
                 return typeName || t('unknown_type');
@@ -222,15 +312,39 @@ export default function MyCasesScreen() {
   const insets = useSafeAreaInsets();
   const isDark = theme === 'dark';
 
+  // State for case types from API
+  const [caseTypes, setCaseTypes] = useState<CaseType[]>([]);
+  const [caseTypesLoading, setCaseTypesLoading] = useState(true);
+
   const {
     activeTab, setActiveTab,
-    cases, casesLoading, caseType, setCaseType, casesPage, setCasesPage, casesTotalPages, casesTotalCount, refetchCases,
+    cases, casesLoading, caseType, setCaseType, casesPage, setCasesPage, casesTotalPages, casesTotalCount,
     requests, requestsLoading, requestStatus, setRequestStatus, requestsPage, setRequestsPage, requestsTotalPages, requestsTotalCount,
   } = useMyCasesStudent();
 
+  // Fetch case types from API
+  useEffect(() => {
+    const fetchCaseTypes = async () => {
+      try {
+        setCaseTypesLoading(true);
+        const response = await getCaseTypes(1, 100);
+        if (response.success && response.data?.items) {
+          setCaseTypes(response.data.items);
+        }
+      } catch (error) {
+        console.error('Failed to fetch case types:', error);
+      } finally {
+        setCaseTypesLoading(false);
+      }
+    };
+
+    fetchCaseTypes();
+  }, []);
+
+  // Build case type filter options dynamically from API
   const CASE_TYPE_OPTIONS = [
-    { label: t('all_case_types'), value: '' }, { label: 'Restorative', value: 'Restorative' }, { label: 'Orthodontic', value: 'Orthodontic' },
-    { label: 'Surgical', value: 'Surgical' }, { label: 'Endodontic', value: 'Endodontic' }, { label: 'Periodontic', value: 'Periodontic' }, { label: 'Prosthodontic', value: 'Prosthodontic' }
+    { label: t('all_case_types'), value: '' },
+    ...caseTypes.map((ct: CaseType) => ({ label: ct.name, value: ct.name }))
   ];
 
   const REQUEST_STATUS_OPTIONS = [
@@ -289,10 +403,16 @@ export default function MyCasesScreen() {
             {activeTab === 'cases' && (
               <View>
                 <View className="flex-row items-center justify-between px-6 mb-3">
-                  <Text className={`text-sm font-black uppercase tracking-widest ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Filter by Case</Text>
-                  {casesLoading && <ActivityIndicator size="small" color="#4f46e5" />}
+                  <Text className={`text-sm font-black uppercase tracking-widest ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Filter by Case Type</Text>
+                  {(casesLoading || caseTypesLoading) && <ActivityIndicator size="small" color="#4f46e5" />}
                 </View>
-                <FilterRow options={CASE_TYPE_OPTIONS} selected={caseType} onSelect={setCaseType} isDark={isDark} />
+                <SearchableSelect 
+                  options={CASE_TYPE_OPTIONS} 
+                  selected={caseType} 
+                  onSelect={setCaseType} 
+                  isDark={isDark}
+                  placeholder={t('select_case_type')}
+                />
                 
                 <View className="mt-2">
                   {casesLoading ? <View className="px-5"><CardSkeleton isDark={isDark} /><CardSkeleton isDark={isDark} /></View>
@@ -306,10 +426,16 @@ export default function MyCasesScreen() {
             {activeTab === 'requests' && (
               <View>
                 <View className="flex-row items-center justify-between px-6 mb-3">
-                  <Text className={`text-sm font-black uppercase tracking-widest ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Filter Status</Text>
+                  <Text className={`text-sm font-black uppercase tracking-widest ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Filter by Status</Text>
                   {requestsLoading && <ActivityIndicator size="small" color="#4f46e5" />}
                 </View>
-                <FilterRow options={REQUEST_STATUS_OPTIONS} selected={requestStatus} onSelect={setRequestStatus} isDark={isDark} />
+                <SearchableSelect 
+                  options={REQUEST_STATUS_OPTIONS} 
+                  selected={requestStatus} 
+                  onSelect={setRequestStatus} 
+                  isDark={isDark}
+                  placeholder={t('select_status')}
+                />
 
                 <View className="mt-2">
                   {requestsLoading ? <View className="px-5"><CardSkeleton isDark={isDark} /><CardSkeleton isDark={isDark} /></View>

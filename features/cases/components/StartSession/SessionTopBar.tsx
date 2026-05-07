@@ -47,58 +47,58 @@ export default function SessionTopBar({
     }, [hideTimerAndButton]);
 
     return (
-        <View className="flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
-            <View className="flex-row items-center justify-between">
-                <View className="flex-row items-center gap-3">
-                    <TouchableOpacity
-                        activeOpacity={0.7}
-                        onPress={() => router.back()}
-                        className="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-center"
-                    >
-                        <ArrowLeft size={17} color="#475569" />
-                    </TouchableOpacity>
-                    <View>
-                        <Text className="text-lg sm:text-xl font-bold text-slate-800 dark:text-white tracking-tight">
-                            Session — {patientName}
-                        </Text>
-                        <Text className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-                            {isDone ? "Session completed" : isCancelled ? "Session cancelled" : "Active clinical session"}
+        <View className="gap-4 mb-4">
+            {/* Row 1: Back button + Title */}
+            <View className="flex-row items-center gap-3">
+                <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={() => router.back()}
+                    className="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-center"
+                >
+                    <ArrowLeft size={17} color="#475569" />
+                </TouchableOpacity>
+                <View className="flex-1">
+                    <Text className="text-lg font-bold text-slate-800 dark:text-white tracking-tight">
+                        Session — {patientName}
+                    </Text>
+                    <Text className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                        {isDone ? "Session completed" : isCancelled ? "Session cancelled" : "Active clinical session"}
+                    </Text>
+                </View>
+            </View>
+
+            {/* Row 2: Timer + Status Badge + End Session Button */}
+            <View className="flex-row items-center gap-3 flex-wrap">
+                {/* Live Timer */}
+                {!hideTimerAndButton && (
+                    <View className="flex-row items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 shadow-sm">
+                        <Clock size={14} color="#6366f1" />
+                        <Text className="text-sm font-semibold text-slate-700 dark:text-slate-200 tracking-wide">
+                            {formatElapsed(elapsed)}
                         </Text>
                     </View>
-                </View>
+                )}
 
                 {/* Status Badge */}
                 {isDone ? (
-                    <View className="flex-row items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-800/40 shadow-sm">
+                    <View className="flex-row items-center gap-2 px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-800/40 shadow-sm">
                         <View className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                         <Text className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 tracking-wide uppercase">
                             Completed
                         </Text>
                     </View>
                 ) : isCancelled ? (
-                    <View className="flex-row items-center gap-2 px-3 py-1.5 rounded-xl bg-red-50 border border-red-200 dark:bg-red-900/20 dark:border-red-800/40 shadow-sm">
+                    <View className="flex-row items-center gap-2 px-3 py-2 rounded-xl bg-red-50 border border-red-200 dark:bg-red-900/20 dark:border-red-800/40 shadow-sm">
                         <View className="w-1.5 h-1.5 rounded-full bg-red-500" />
                         <Text className="text-[10px] font-bold text-red-600 dark:text-red-400 tracking-wide uppercase">
                             Cancelled
                         </Text>
                     </View>
                 ) : (
-                    <View className="flex-row items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200 dark:bg-amber-900/20 dark:border-amber-800/40 shadow-sm">
+                    <View className="flex-row items-center gap-2 px-3 py-2 rounded-xl bg-amber-50 border border-amber-200 dark:bg-amber-900/20 dark:border-amber-800/40 shadow-sm">
                         <View className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
                         <Text className="text-[10px] font-bold text-amber-600 dark:text-amber-400 tracking-wide uppercase">
                             In Progress
-                        </Text>
-                    </View>
-                )}
-            </View>
-
-            <View className="flex-row items-center gap-3">
-                {/* Live Timer */}
-                {!hideTimerAndButton && (
-                    <View className="flex-row flex-1 items-center justify-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 shadow-sm">
-                        <Clock size={14} color="#6366f1" />
-                        <Text className="text-sm font-semibold text-slate-700 dark:text-slate-200 tracking-wide">
-                            {formatElapsed(elapsed)}
                         </Text>
                     </View>
                 )}

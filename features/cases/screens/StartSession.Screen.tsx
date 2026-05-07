@@ -115,12 +115,18 @@ export default function StartSessionScreen({ caseId, sessionId }: StartSessionSc
   const handleEndSession = async () => {
     setEndSessionLoading(true);
     try {
+      console.log('🔄 Ending session from StartSession.Screen:', sessionId);
       await updateStatus('Done');
       setShowEndModal(false);
       dispatch(showToast({ message: 'Session completed successfully', type: 'success' }));
       router.replace('/(tabs)/student-dashboard' as any);
-    } catch {
-      dispatch(showToast({ message: 'Failed to end session', type: 'error' }));
+    } catch (error: any) {
+      console.error('❌ Error ending session:', error);
+      console.error('❌ Error response:', error.response?.data);
+      dispatch(showToast({ 
+        message: error.response?.data?.message || error.message || 'Failed to end session', 
+        type: 'error' 
+      }));
     } finally {
       setEndSessionLoading(false);
     }

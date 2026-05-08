@@ -4,7 +4,7 @@
     "slug": "unident-care",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.jpeg",
+    "icon": "./assets/images/icon.png",
     "scheme": "unidentcare",
     "userInterfaceStyle": "automatic",
     "android": {
@@ -49,6 +49,8 @@
       "checkAutomatically": "ON_LOAD",
       "fallbackToCacheTimeout": 0
     },
-    "ios": {}
+    "ios": {
+      "bundleIdentifier": "com.ibrahim.unidentcare"
+    }
   }
 }

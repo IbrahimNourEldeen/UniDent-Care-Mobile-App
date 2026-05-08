@@ -1,34 +1,28 @@
-import React, { useState, useCallback } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  FlatList,
-  ActivityIndicator,
-  Platform,
-  Dimensions,
-  ScrollView,
-} from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { useSelector } from "react-redux";
 import {
+  ArrowRight,
   Bot,
+  Calendar,
   ChevronLeft,
   ChevronRight,
-  MessageCircle,
-  Plus,
-  Calendar,
   Clock,
-  ArrowRight,
   MessageSquare,
-  Sparkles
+  Plus
 } from "lucide-react-native";
+import React, { useCallback, useState } from "react";
+import {
+  ActivityIndicator,
+  Dimensions,
+  FlatList,
+  Text,
+  TouchableOpacity,
+  View
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { RootState } from "@/store/store";
+import { getConversationDetails, getConversations } from "@/features/chat/services/chatService";
 import { useThemeLanguage } from "@/store/ThemeLanguageContext";
-import { getConversations, getConversationDetails } from "@/features/chat/services/chatService";
 
 const { width } = Dimensions.get('window');
 

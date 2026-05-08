@@ -1,10 +1,10 @@
 import { useFocusEffect } from "@react-navigation/native";
+import { useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import {
     Bot,
-    CheckCircle,
     ChevronLeft,
     ChevronRight,
     Paperclip,
@@ -21,28 +21,20 @@ import {
     FlatList,
     Image,
     KeyboardAvoidingView,
-    LayoutAnimation,
     Platform,
     Text,
     TextInput,
     TouchableOpacity,
-    UIManager,
     View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 
 import { getCaseTypes } from "@/features/cases/server/caseTypes.action";
 import { createCaseAI, createDiagnosisAI } from "@/features/cases/services/caseService";
+import { showToast } from "@/store/slices/uiSlice";
 import { RootState } from "@/store/store";
 import { useThemeLanguage } from "@/store/ThemeLanguageContext";
-
-if (
-  Platform.OS === "android" &&
-  UIManager.setLayoutAnimationEnabledExperimental
-) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 const AI_API_BASE_URL = "https://omarhany-chat-ai-dental.hf.space";
 
@@ -64,6 +56,8 @@ interface ChatMessage {
 }
 
 export default function AIChatbotScreen() {
+  const dispatch = useDispatch();
+  const queryClient = useQueryClient();
   const patientId = useSelector((s: RootState) => (s.auth.user as any)?.publicId || "");
   const role = useSelector((s: RootState) => (s.auth.user as any)?.role || "Patient");
   const { theme, language } = useThemeLanguage();
@@ -101,7 +95,6 @@ export default function AIChatbotScreen() {
   const [diagnosisData, setDiagnosisData] = useState<any>(null);
   const [files, setFiles] = useState<any[]>([]);
   const [collectingImages, setCollectingImages] = useState(false);
-  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
 
   useEffect(() => {
     setTimeout(() => {
@@ -129,7 +122,17 @@ export default function AIChatbotScreen() {
   useFocusEffect(
     useCallback(() => {
       const init = async () => {
+        // Reset all states when screen is focused
+        setMessages([]);
+        setChatHistory([]);
+        setInputText("");
         setIsTyping(true);
+        setIsSubmitting(false);
+        setCompleted(false);
+        setDiagnosisData(null);
+        setFiles([]);
+        setCollectingImages(false);
+        
         try {
           const initHistory: ChatMessage[] = [{ role: "USER", content: "أهلاً، أريد استشارة طبية بخصوص أسناني" }];
           const firstMsgObj = await chatWithAI(initHistory);
@@ -146,9 +149,19 @@ export default function AIChatbotScreen() {
         }
       };
       
-      if (chatHistory.length === 0) {
-        init();
-      }
+      // Always initialize on focus
+      init();
+      
+      // Cleanup function when screen loses focus
+      return () => {
+        setMessages([]);
+        setChatHistory([]);
+        setInputText("");
+        setFiles([]);
+        setCollectingImages(false);
+        setCompleted(false);
+        setDiagnosisData(null);
+      };
     }, [])
   );
 
@@ -188,7 +201,6 @@ export default function AIChatbotScreen() {
       const aiResponse = await chatWithAI(historyForAI);
       
       let responseString = "";
-      let isCompleted = false;
       let aiDiagnosis: any = null;
       let shouldCollectImages = false;
 
@@ -198,11 +210,8 @@ export default function AIChatbotScreen() {
         const data = aiResponse as any;
         responseString = data.reply || data.message || JSON.stringify(data);
         
-        // Check if diagnosis is completed
-        if (data.diagnosis_status === "completed" && data.show_side_panel) {
-          isCompleted = true;
-          aiDiagnosis = data.diagnosis;
-        } else if (data.diagnosis && Array.isArray(data.diagnosis) && data.diagnosis.length > 0) {
+        // Check if diagnosis is available
+        if (data.diagnosis && Array.isArray(data.diagnosis) && data.diagnosis.length > 0) {
           // Diagnosis available, collect images
           aiDiagnosis = data.diagnosis;
           shouldCollectImages = true;
@@ -223,7 +232,6 @@ export default function AIChatbotScreen() {
           sender: "bot" as const, 
           content: responseString,
           canRetry: isServerBusy,
-          isEndConversationBtn: isCompleted,
           diagnosisData: aiDiagnosis
         };
         newMessages.push(botMsg);
@@ -362,15 +370,19 @@ export default function AIChatbotScreen() {
       setCompleted(true);
       setMessages(prev => [...prev, { id: "final", sender: "bot", content: t(tUI.success) }]);
       
-      // Show success popup with animation
-      LayoutAnimation.configureNext(LayoutAnimation.Presets.spring);
-      setShowSuccessPopup(true);
+      // Invalidate patient cases query to refresh the list
+      queryClient.invalidateQueries({ queryKey: ['patient', 'cases', patientId] });
       
+      // Show toast and navigate directly
+      dispatch(showToast({ 
+        message: t(tUI.success), 
+        type: "success" 
+      }));
+      
+      // Navigate to my cases after a short delay
       setTimeout(() => {
-        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-        setShowSuccessPopup(false);
-        setTimeout(() => router.push("/(screens)/patient/my_cases"), 300);
-      }, 2500);
+        router.push("/(screens)/patient/my_cases");
+      }, 500);
     } catch (err: any) {
       console.error("Error creating case:", err);
       const errorMessage = err.response?.data?.message || err.message || t(tUI.error);
@@ -405,61 +417,47 @@ export default function AIChatbotScreen() {
               </Text>
             </View>
             
-            {(item.canRetry || item.content.includes("ضغط") || item.content.includes("السيرفر") || item.isEndConversationBtn) && (
+            {(item.canRetry || item.content.includes("ضغط") || item.content.includes("السيرفر")) && (
               <View className="mt-3 gap-2">
-                {(item.canRetry || item.content.includes("ضغط") || item.content.includes("السيرفر")) && (
-                  <TouchableOpacity
-                    onPress={() => {
-                      console.log("Attempting retry. History:", chatHistory, "Messages:", messages);
-                      
-                      // 1. Try to find in chatHistory
-                      let msgToRetry = [...chatHistory]
+                <TouchableOpacity
+                  onPress={() => {
+                    console.log("Attempting retry. History:", chatHistory, "Messages:", messages);
+                    
+                    // 1. Try to find in chatHistory
+                    let msgToRetry = [...chatHistory]
+                      .reverse()
+                      .find(h => h.role?.toUpperCase() === "USER" && h.content?.trim())?.content;
+                    
+                    // 2. Fallback to messages state if history is empty
+                    if (!msgToRetry) {
+                      msgToRetry = [...messages]
                         .reverse()
-                        .find(h => h.role?.toUpperCase() === "USER" && h.content?.trim())?.content;
-                      
-                      // 2. Fallback to messages state if history is empty
-                      if (!msgToRetry) {
-                        msgToRetry = [...messages]
-                          .reverse()
-                          .find(m => m.sender === "user" && m.content?.trim())?.content;
-                      }
+                        .find(m => m.sender === "user" && m.content?.trim())?.content;
+                    }
 
-                      // 3. Fallback to current input if nothing else found
-                      if (!msgToRetry) {
-                        msgToRetry = inputText.trim();
-                      }
+                    // 3. Fallback to current input if nothing else found
+                    if (!msgToRetry) {
+                      msgToRetry = inputText.trim();
+                    }
 
-                      console.log("Final message selected for retry:", msgToRetry);
-                      
-                      if (msgToRetry) {
-                        // Remove error message first
-                        setMessages(prev => prev.filter(m => m.id !== item.id));
-                        setIsTyping(false);
-                        setTimeout(() => handleSend(msgToRetry), 50);
-                      } else {
-                        console.log("No message found to retry");
-                        setIsTyping(false);
-                      }
-                    }}
-                    activeOpacity={0.8}
-                    className={`flex-row items-center justify-center gap-2 bg-indigo-600 px-4 py-2.5 rounded-xl`}
-                  >
-                    <RefreshCcw size={14} color="white" />
-                    <Text className="text-white text-xs font-bold">{t(tUI.retry)}</Text>
-                  </TouchableOpacity>
-                )}
-
-                {item.isEndConversationBtn && !completed && (
-                  <TouchableOpacity
-                    onPress={() => handleCreateCase()}
-                    disabled={isSubmitting}
-                    activeOpacity={0.8}
-                    className="flex-row items-center justify-center gap-2 bg-emerald-600 px-4 py-2.5 rounded-xl"
-                  >
-                    {isSubmitting ? <ActivityIndicator size="small" color="white" /> : <CheckCircle size={14} color="white" />}
-                    <Text className="text-white text-xs font-bold">{isSubmitting ? t(tUI.endingConv) : t(tUI.endConv)}</Text>
-                  </TouchableOpacity>
-                )}
+                    console.log("Final message selected for retry:", msgToRetry);
+                    
+                    if (msgToRetry) {
+                      // Remove error message first
+                      setMessages(prev => prev.filter(m => m.id !== item.id));
+                      setIsTyping(false);
+                      setTimeout(() => handleSend(msgToRetry), 50);
+                    } else {
+                      console.log("No message found to retry");
+                      setIsTyping(false);
+                    }
+                  }}
+                  activeOpacity={0.8}
+                  className={`flex-row items-center justify-center gap-2 bg-indigo-600 px-4 py-2.5 rounded-xl`}
+                >
+                  <RefreshCcw size={14} color="white" />
+                  <Text className="text-white text-xs font-bold">{t(tUI.retry)}</Text>
+                </TouchableOpacity>
               </View>
             )}
           </View>
@@ -612,28 +610,6 @@ export default function AIChatbotScreen() {
           )}
         </View>
       </KeyboardAvoidingView>
-
-      {/* Success Popup */}
-      {showSuccessPopup && (
-        <View className="absolute inset-0 items-center justify-center bg-black/50" style={{ zIndex: 9999 }}>
-          <View className="bg-white dark:bg-slate-900 rounded-3xl p-8 mx-8 shadow-2xl border-2 border-emerald-500">
-            <View className="items-center">
-              <View className="w-20 h-20 bg-emerald-100 dark:bg-emerald-900/30 rounded-full items-center justify-center mb-4">
-                <CheckCircle size={48} color="#10b981" />
-              </View>
-              <Text className="text-2xl font-black text-slate-800 dark:text-white mb-2 text-center">
-                {isRtl ? "تم بنجاح! 🎉" : "Success! 🎉"}
-              </Text>
-              <Text className="text-base text-slate-600 dark:text-slate-400 text-center font-bold">
-                {t(tUI.success)}
-              </Text>
-              <Text className="text-sm text-slate-500 dark:text-slate-500 text-center mt-2">
-                {t(tUI.redirecting)}
-              </Text>
-            </View>
-          </View>
-        </View>
-      )}
     </SafeAreaView>
   );
 }

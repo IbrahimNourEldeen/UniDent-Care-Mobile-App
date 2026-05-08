@@ -1,49 +1,47 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  ScrollView, 
-  TouchableOpacity, 
-  ActivityIndicator, 
-  Dimensions,
-  RefreshControl,
-  Modal,
-  TextInput,
-  KeyboardAvoidingView,
-  Platform,
-  Alert
-} from 'react-native';
-import { SafeAreaView } from "react-native-safe-area-context";
-import { 
-  User as UserIcon, 
-  Phone, 
-  Mail, 
-  CreditCard, 
-  Calendar, 
-  MapPin, 
-  HeartPulse, 
-  GraduationCap, 
-  Award, 
-  Stethoscope,
-  Edit3,
-  ChevronRight,
-  ShieldCheck,
-  X,
-  Save,
-  ChevronDown
-} from 'lucide-react-native';
-import { useTranslation } from 'react-i18next';
-import { useSelector, useDispatch } from 'react-redux';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { RootState } from '@/store/store';
-import { useThemeLanguage } from '@/store/ThemeLanguageContext';
-import { getProfileByRole, authService } from '@/features/auth/services/authService';
-import { studentDashboardService } from '@/features/dashboard/services/studentDashboardService';
+import { authService, getProfileByRole } from '@/features/auth/services/authService';
 import { doctorDashboardService } from '@/features/dashboard/services/doctorDashboardService';
+import { studentDashboardService } from '@/features/dashboard/services/studentDashboardService';
 import { updatePatientProfile } from '@/features/patient/services/patientService';
 import { updateUser } from '@/store/slices/authSlice';
+import { RootState } from '@/store/store';
+import { useThemeLanguage } from '@/store/ThemeLanguageContext';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeInUp, FadeInDown, SlideInDown, SlideOutDown } from 'react-native-reanimated';
+import {
+    Award,
+    Calendar,
+    ChevronRight,
+    CreditCard,
+    Edit3,
+    GraduationCap,
+    HeartPulse,
+    MapPin,
+    Phone,
+    Save,
+    ShieldCheck,
+    Stethoscope,
+    User as UserIcon,
+    X
+} from 'lucide-react-native';
+import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import {
+    ActivityIndicator,
+    Alert,
+    Dimensions,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    RefreshControl,
+    ScrollView,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
+} from 'react-native';
+import Animated, { FadeInDown, FadeInUp, SlideInDown, SlideOutDown } from 'react-native-reanimated';
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useDispatch, useSelector } from 'react-redux';
 
 const { width, height } = Dimensions.get('window');
 
@@ -180,7 +178,6 @@ export default function ProfileScreen() {
 
   const personalFields = [
     { icon: Phone, bg: 'bg-blue-50 dark:bg-blue-900/20', color: '#3b82f6', label: t('phone'), value: profile?.phone || profile?.phoneNumber },
-    { icon: Mail, bg: 'bg-violet-50 dark:bg-violet-900/20', color: '#8b5cf6', label: t('email'), value: profile?.email },
     { icon: CreditCard, bg: 'bg-indigo-50 dark:bg-indigo-900/20', color: '#6366f1', label: isRtl ? "الرقم القومي" : "National ID", value: profile?.nationalId },
     { icon: Calendar, bg: 'bg-amber-50 dark:bg-amber-900/20', color: '#f59e0b', label: t('age'), value: profile?.age ? `${profile.age} ${isRtl ? "سنة" : "years old"}` : (profile?.dateOfBirth ? new Date(profile.dateOfBirth).toLocaleDateString() : null) },
     { icon: HeartPulse, bg: 'bg-rose-50 dark:bg-rose-900/20', color: '#f43f5e', label: isRtl ? "الجنس" : "Gender", value: getGenderText(profile?.gender) },

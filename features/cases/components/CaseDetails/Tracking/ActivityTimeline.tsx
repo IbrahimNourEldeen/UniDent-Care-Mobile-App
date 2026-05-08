@@ -1,21 +1,19 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, ActivityIndicator, TouchableOpacity, ScrollView } from 'react-native';
-import {
-    MessageSquareText,
-    Star,
-    ClipboardList,
-    MapPin,
-    CalendarDays,
-    Clock,
-    Stethoscope,
-} from 'lucide-react-native';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/store/store';
-import { useThemeLanguage } from '@/store/ThemeLanguageContext';
-import { useDispatch } from 'react-redux';
-import { showToast } from '@/store/slices/uiSlice';
 import { getSessionTimeline } from '@/features/cases/services/caseService';
 import { TimelineSessionItem } from '@/features/cases/types/caseTypes';
+import { showToast } from '@/store/slices/uiSlice';
+import { RootState } from '@/store/store';
+import { useThemeLanguage } from '@/store/ThemeLanguageContext';
+import {
+    CalendarDays,
+    ClipboardList,
+    Clock,
+    MapPin,
+    MessageSquareText,
+    Star
+} from 'lucide-react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Text, TouchableOpacity, View } from 'react-native';
+import { useDispatch, useSelector } from 'react-redux';
 import DoctorEvalComment from './DoctorEvalComment';
 import SessionGradePanel from './SessionGradePanel';
 
@@ -297,34 +295,18 @@ function SessionCard({
                         onEdit={() => setShowEvalForm(true)}
                     />
 
-                    {/* Grade panel */}
-                    {showEvalForm && canEvaluate && (
-                        <View style={{ flexDirection: 'row', gap: 12, alignItems: 'flex-start' }}>
-                            <View
-                                style={{
-                                    width: 36,
-                                    height: 36,
-                                    borderRadius: 18,
-                                    backgroundColor: '#0d9488',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    flexShrink: 0,
-                                }}
-                            >
-                                <Stethoscope size={14} color="#fff" />
-                            </View>
-                            <View style={{ flex: 1 }}>
-                                <SessionGradePanel
-                                    session={session}
-                                    existing={isEvaluated}
-                                    onSuccess={() => {
-                                        setShowEvalForm(false);
-                                        onRefresh();
-                                    }}
-                                    onCancel={() => setShowEvalForm(false)}
-                                />
-                            </View>
-                        </View>
+                    {/* Grade panel modal */}
+                    {canEvaluate && (
+                        <SessionGradePanel
+                            session={session}
+                            existing={isEvaluated}
+                            visible={showEvalForm}
+                            onSuccess={() => {
+                                setShowEvalForm(false);
+                                onRefresh();
+                            }}
+                            onCancel={() => setShowEvalForm(false)}
+                        />
                     )}
 
                     {/* Add evaluation button */}
@@ -334,7 +316,7 @@ function SessionCard({
                             activeOpacity={0.8}
                             style={{
                                 paddingHorizontal: 16,
-                                paddingVertical: 10,
+                                paddingVertical: 12,
                                 borderRadius: 16,
                                 borderWidth: 1,
                                 borderStyle: 'dashed',
@@ -342,7 +324,7 @@ function SessionCard({
                                 backgroundColor: isDark ? '#0f172a' : '#f8fafc',
                             }}
                         >
-                            <Text style={{ fontSize: 13, color: isDark ? '#475569' : '#94a3b8' }}>
+                            <Text style={{ fontSize: 13, color: isDark ? '#475569' : '#94a3b8', textAlign: 'center' }}>
                                 Add your evaluation for this session…
                             </Text>
                         </TouchableOpacity>

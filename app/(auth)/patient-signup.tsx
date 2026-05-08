@@ -1,6 +1,5 @@
-import { FontAwesome5 } from "@expo/vector-icons";
-import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { zodResolver } from "@hookform/resolvers/zod";
+import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import {
@@ -13,35 +12,33 @@ import {
   EyeOff,
   Fingerprint,
   Lock,
-  MapPin,
   Phone,
   User,
-  XCircle,
+  XCircle
 } from "lucide-react-native";
 import React, { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import BrandLogo from "@/components/common/BrandLogo";
+import { City } from "@/types/types";
+import { CityPicker } from "../../components/auth/CityPicker";
 import {
   patientSignupSchema,
   PatientSignupValues,
 } from "../../features/auth/schemas/patientSignupSchema";
 import { authService } from "../../features/auth/services/authService";
 import { useThemeLanguage } from "../../store/ThemeLanguageContext";
-import { CityPicker } from "../../components/auth/CityPicker";
-import { City } from "@/types/types";
-import BrandLogo from "@/components/common/BrandLogo";
 
 export default function PatientSignupScreen() {
   const router = useRouter();
@@ -75,7 +72,7 @@ export default function PatientSignupScreen() {
   const birthDateValue = watch("birthDate");
   const selectedDate = new Date(birthDateValue);
 
-  const onDateChange = (event: DateTimePickerEvent, date?: Date) => {
+  const onDateChange = (_event: DateTimePickerEvent, date?: Date) => {
     if (Platform.OS === "android") {
       setShowDatePicker(false);
     }
